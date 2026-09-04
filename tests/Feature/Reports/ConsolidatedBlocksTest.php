@@ -184,6 +184,7 @@ class ConsolidatedBlocksTest extends TestCase
             'heading' => 'Site traffic',
             'commentary' => null,
             'icon' => 'chart',
+            'branding' => (object) ['primaryColor' => '#33406b'],
         ])->render();
 
         $this->assertStringContainsString('Site traffic', $html);
@@ -191,6 +192,8 @@ class ConsolidatedBlocksTest extends TestCase
         $this->assertStringContainsString('Avg bounce rate 46.7%', $html);
         $this->assertStringContainsString('Top pages', $html);
         $this->assertStringContainsString('No custom events recorded', $html);
+        // The visitors trend is a real SVG line chart embedded as a data-URI image.
+        $this->assertStringContainsString('data:image/svg+xml;base64,', $html);
     }
 
     public function test_uptime_overview_view_renders(): void

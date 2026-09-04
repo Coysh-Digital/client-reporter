@@ -5,57 +5,83 @@ declare(strict_types=1);
 namespace App\Support;
 
 /**
- * Renders a compact bar chart as inline SVG. Server-side and dependency-free, so
- * the identical markup displays on the web and through the dompdf PDF driver —
- * no client-side charting library or JavaScript required.
+ * Builds small, self-contained SVG charts for reports. The output is embedded as
+ * an <img src="data:image/svg+xml;..."> — dompdf renders SVG through its image
+ * pipeline (php-svg-lib), not as inline markup, so this is the one way to get
+ * real vector line graphs into the PDF (and it renders on the web too).
  */
 class SvgChart
 {
     /**
-     * @param  array<int, array{date?: string, value?: int|float}>  $points
+     * A filled line (area) chart. Colour is baked in as a hex string, since a
+     * data-URI image can't read the page's CSS variables.
+     *
+     * @param  array<int, array{date?: string, value?: int|float}>  $series
      */
-    public static function bars(array $points, string $color = '#33406b', int $width = 680, int $height = 150): string
+    public static function line(array $series, string $color, int $height = 160): string
     {
-        $points = array_values(array_filter($points, fn ($p) => isset($p['value'])));
-
-        if ($points === []) {
+        $values = array_map(fn ($p): float => (float) ($p['value'] ?? 0), $series);
+        $count = count($values);
+        if ($count === 0) {
             return '';
         }
 
-        $max = max(1, (int) max(array_map(fn ($p) => (int) $p['value'], $points)));
-        $count = count($points);
-        $gap = 2;
-        $barWidth = max(1.0, ($width - ($count - 1) * $gap) / $count);
-        $chartHeight = $height - 22; // leave room for a baseline label
+        $width = 560;
+        $padX = 6;
+        $padY = 10;
+        $plotW = $width - $padX * 2;
+        $plotH = $height - $padY * 2;
 
-        $bars = '';
-        foreach ($points as $i => $point) {
-            $value = (int) $point['value'];
-            $barHeight = ($value / $max) * $chartHeight;
-            $x = $i * ($barWidth + $gap);
-            $y = $chartHeight - $barHeight;
-            $bars .= sprintf(
-                '<rect x="%.2f" y="%.2f" width="%.2f" height="%.2f" rx="1.5" fill="%s" opacity="0.85" />',
-                $x, $y, $barWidth, max(0.0, $barHeight), htmlspecialchars($color, ENT_QUOTES),
-            );
+        $min = min(0.0, min($values));
+        $max = max($values);
+        $range = ($max - $min) ?: 1.0;
+
+        $x = fn (int $i): float => $count === 1
+            ? $padX + $plotW / 2
+            : $padX + ($i / ($count - 1)) * $plotW;
+        $y = fn (float $v): float => $padY + $plotH - (($v - $min) / $range) * $plotH;
+
+        $points = [];
+        foreach ($values as $i => $v) {
+            $points[] = round($x($i), 1).','.round($y($v), 1);
+        }
+        $line = implode(' ', $points);
+        $baseY = round($padY + $plotH, 1);
+        $area = round($x(0), 1).','.$baseY.' '.$line.' '.round($x($count - 1), 1).','.$baseY;
+
+        // Faint horizontal gridlines at quarters of the plot height.
+        $grid = '';
+        foreach ([0.0, 0.25, 0.5, 0.75, 1.0] as $frac) {
+            $gy = round($padY + $plotH * $frac, 1);
+            $grid .= '<line x1="'.$padX.'" y1="'.$gy.'" x2="'.($padX + $plotW).'" y2="'.$gy.'" stroke="#e8e1d2" stroke-width="1"/>';
         }
 
-        $first = htmlspecialchars((string) ($points[0]['date'] ?? ''), ENT_QUOTES);
-        $last = htmlspecialchars((string) ($points[$count - 1]['date'] ?? ''), ENT_QUOTES);
-        $labelY = $height - 4;
+        $color = self::safeColor($color);
 
-        return sprintf(
-            '<svg viewBox="0 0 %d %d" width="100%%" height="%d" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">'
-            .'%s'
-            .'<line x1="0" y1="%d" x2="%d" y2="%d" stroke="#e6e1d8" stroke-width="1" />'
-            .'<text x="0" y="%d" font-size="10" fill="#98938a">%s</text>'
-            .'<text x="%d" y="%d" font-size="10" fill="#98938a" text-anchor="end">%s</text>'
-            .'</svg>',
-            $width, $height, $height,
-            $bars,
-            $chartHeight, $width, $chartHeight,
-            $labelY, $first,
-            $width, $labelY, $last,
-        );
+        return '<svg width="'.$width.'" height="'.$height.'" viewBox="0 0 '.$width.' '.$height.'" xmlns="http://www.w3.org/2000/svg">'
+            .$grid
+            .'<polygon points="'.$area.'" fill="'.$color.'" fill-opacity="0.15"/>'
+            .'<polyline points="'.$line.'" fill="none" stroke="'.$color.'" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>'
+            .'</svg>';
+    }
+
+    /**
+     * The chart as a data URI ready for an <img src>.
+     *
+     * @param  array<int, array{date?: string, value?: int|float}>  $series
+     */
+    public static function lineDataUri(array $series, string $color, int $height = 160): string
+    {
+        $svg = self::line($series, $color, $height);
+
+        return $svg === '' ? '' : 'data:image/svg+xml;base64,'.base64_encode($svg);
+    }
+
+    /**
+     * Only allow a #hex colour into the SVG; fall back to a neutral otherwise.
+     */
+    private static function safeColor(string $color): string
+    {
+        return preg_match('/^#[0-9a-fA-F]{3,8}$/', $color) === 1 ? $color : '#33406b';
     }
 }
