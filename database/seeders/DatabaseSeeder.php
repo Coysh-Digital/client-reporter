@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Enums\UserRole;
-use App\Models\ReportTemplate;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -31,19 +30,6 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        ReportTemplate::query()->firstOrCreate(
-            ['name' => 'Standard Website Care Report'],
-            [
-                'description' => 'Cover, introduction, website overview, uptime and a closing message.',
-                'blocks' => [
-                    ['type' => 'cover', 'heading' => 'Cover'],
-                    ['type' => 'text', 'heading' => 'Introduction'],
-                    ['type' => 'website-overview', 'heading' => 'Website overview'],
-                    ['type' => 'uptime.summary', 'heading' => 'Uptime & availability'],
-                    ['type' => 'uptime.incidents', 'heading' => 'Incidents'],
-                    ['type' => 'closing', 'heading' => 'Thank you'],
-                ],
-            ]
-        );
+        $this->call(ReportTemplateSeeder::class);
     }
 }
