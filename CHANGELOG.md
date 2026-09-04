@@ -7,6 +7,7 @@
 - Added update-safe custom integrations: the git-ignored `extensions/` directory is autoloaded and auto-discovered, and an optional git-ignored `config/client-reporter.local.php` can register classes explicitly.
 - Added an `AGENTS.md` guide for contributors and AI agents (`CLAUDE.md` points to it).
 - Fixed the dashboard "Needs attention" list flagging every active site for the current, still-open period; it now surfaces only scheduled reports that are generated but not yet sent.
+- Fixed the installation wizard silently reloading the same step instead of advancing: sessions and cache now default to file storage, so they work before the database is set up.
 
 ## 0.1.0-alpha.1 - 2026-09-04
 
