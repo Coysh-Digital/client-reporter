@@ -58,9 +58,15 @@ class PageSpeedCollector extends AbstractCollector
         $lighthouse = (array) ($data['lighthouseResult'] ?? []);
         $audits = (array) ($lighthouse['audits'] ?? []);
 
-        $score = isset($lighthouse['categories']['performance']['score'])
-            ? (float) round(((float) $lighthouse['categories']['performance']['score']) * 100)
+        // Lighthouse category scores are 0..1; present it as 0..100.
+        $category = fn (string $key): ?float => isset($lighthouse['categories'][$key]['score'])
+            ? (float) round(((float) $lighthouse['categories'][$key]['score']) * 100)
             : null;
+
+        $score = $category('performance');
+        $accessibility = $category('accessibility');
+        $bestPractices = $category('best-practices');
+        $seo = $category('seo');
 
         $lcp = $field['LARGEST_CONTENTFUL_PAINT_MS']['percentile'] ?? ($audits['largest-contentful-paint']['numericValue'] ?? null);
         $inp = $field['INTERACTION_TO_NEXT_PAINT']['percentile'] ?? ($audits['interaction-to-next-paint']['numericValue'] ?? null);
@@ -80,6 +86,15 @@ class PageSpeedCollector extends AbstractCollector
 
         if ($score !== null) {
             $result->metric('performance.score', $score);
+        }
+        if ($accessibility !== null) {
+            $result->metric('performance.accessibility', $accessibility);
+        }
+        if ($bestPractices !== null) {
+            $result->metric('performance.best_practices', $bestPractices);
+        }
+        if ($seo !== null) {
+            $result->metric('performance.seo', $seo);
         }
         if ($lcp !== null) {
             $result->metric('performance.lcp_ms', (float) $lcp, 'ms');

@@ -118,6 +118,20 @@ class UptimeKumaTest extends TestCase
         $this->assertGreaterThan(0, (int) $metrics['uptime.downtime_seconds']->value);
     }
 
+    public function test_collector_reports_certificate_expiry_alerts(): void
+    {
+        $this->fakeMetrics(<<<'PROM'
+            monitor_status{monitor_name="Website"} 1
+            monitor_cert_days_remaining{monitor_name="Website"} 9
+            PROM);
+
+        $metrics = collect((new MonitorsCollector)->collect($this->connection(), DateRange::thisMonth())->metrics())->keyBy('key');
+
+        // 9 days < the 14-day threshold, so one alert; min days is surfaced too.
+        $this->assertSame(1, (int) $metrics['uptime.cert_alerts']->value);
+        $this->assertSame(9, (int) $metrics['uptime.cert_days_min']->value);
+    }
+
     public function test_collector_detects_a_down_then_up_transition_as_one_incident(): void
     {
         $connection = $this->connection();

@@ -50,6 +50,27 @@ class PageSpeedTest extends TestCase
         $this->assertSame(88.0, $metrics['performance.score']->value);
     }
 
+    public function test_collector_reads_all_four_lighthouse_categories(): void
+    {
+        Http::fake([
+            'www.googleapis.com/pagespeedonline/*' => Http::response([
+                'lighthouseResult' => ['categories' => [
+                    'performance' => ['score' => 0.91],
+                    'accessibility' => ['score' => 0.98],
+                    'best-practices' => ['score' => 0.96],
+                    'seo' => ['score' => 1.0],
+                ]],
+            ]),
+        ]);
+
+        $metrics = collect((new PageSpeedCollector)->collect($this->connection(), DateRange::thisMonth())->metrics())->keyBy('key');
+
+        $this->assertSame(91.0, $metrics['performance.score']->value);
+        $this->assertSame(98.0, $metrics['performance.accessibility']->value);
+        $this->assertSame(96.0, $metrics['performance.best_practices']->value);
+        $this->assertSame(100.0, $metrics['performance.seo']->value);
+    }
+
     public function test_a_request_for_a_past_period_still_polls_fresh_but_excludes_todays_entry_from_the_chart(): void
     {
         // PageSpeed can only ever report "right now" — there is no historical

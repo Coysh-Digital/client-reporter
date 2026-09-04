@@ -130,7 +130,11 @@ class ConsolidatedBlocksTest extends TestCase
         $this->metric($mon, 'uptime.response_time_ms', 323, $this->range, 'ms');
         $this->metric($mon, 'uptime.incidents', 0, $this->range);
         $this->metric($mon, 'uptime.monitors', 1, $this->range);
+        $this->metric($mon, 'uptime.cert_alerts', 0, $this->range);
         $this->metric($perf, 'performance.score', 91, $this->range);
+        $this->metric($perf, 'performance.accessibility', 98, $this->range);
+        $this->metric($perf, 'performance.best_practices', 96, $this->range);
+        $this->metric($perf, 'performance.seo', 100, $this->range);
 
         $this->snapshot($mon, 'monitors', [
             'timeseries' => [
@@ -147,8 +151,12 @@ class ConsolidatedBlocksTest extends TestCase
 
         $this->assertTrue($data['has_data']);
         $this->assertSame(99.92, $data['tiles'][0]['current']);
-        $this->assertSame(91, $data['performance_score']);
-        $this->assertSame('good', $data['performance_rating']);
+        $this->assertSame('Cert alerts', $data['tiles'][4]['label']);
+        $this->assertSame(0.0, $data['tiles'][4]['current']);
+
+        $this->assertCount(4, $data['lighthouse']);
+        $this->assertSame(['label' => 'Performance', 'score' => 91, 'rating' => 'good'], $data['lighthouse'][0]);
+        $this->assertSame('SEO', $data['lighthouse'][3]['label']);
         $this->assertStringContainsString('Lighthouse performance sits at 91', $data['summary']);
 
         $statuses = array_column($data['status_days'], 'status');
@@ -197,8 +205,10 @@ class ConsolidatedBlocksTest extends TestCase
                 'timeseries' => [['date' => '2026-08-01', 'value' => 100.0]],
                 'status_days' => [['date' => '2026-08-01', 'status' => 'healthy'], ['date' => '2026-08-02', 'status' => 'below']],
                 'incidents' => [],
-                'performance_score' => 91,
-                'performance_rating' => 'good',
+                'lighthouse' => [
+                    ['label' => 'Performance', 'score' => 91, 'rating' => 'good'],
+                    ['label' => 'SEO', 'score' => 100, 'rating' => 'good'],
+                ],
             ],
             'heading' => 'Uptime & performance',
             'commentary' => null,
