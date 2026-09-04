@@ -2,8 +2,6 @@
 
 Welcome to the Client Reporter documentation. Client Reporter is open-source, self-hosted client reporting for web agencies — it connects your clients' websites, analytics, ecommerce and uptime services and turns the data into beautifully branded reports.
 
-This documentation is a work in progress alongside the application. Sections marked "coming soon" will be filled in as the corresponding features land.
-
 ## Getting started
 
 - [Installation](installation/README.md) — install Client Reporter and run the install wizard.
@@ -18,11 +16,15 @@ This documentation is a work in progress alongside the application. Sections mar
 
 ## Integrations
 
-- [Integrations overview](integrations/README.md) — how integrations work and the bundled set.
-- [WordPress](wordpress/README.md) — the WordPress companion plugin integration.
-- [Craft CMS](craft/README.md) — the Craft CMS companion plugin integration.
-- [Analytics](analytics/README.md) — Google Analytics 4, Plausible and Fathom.
-- [UptimeRobot](uptime-robot/README.md) — uptime monitoring via UptimeRobot.
+Client Reporter connects to the services behind your clients' sites across eight categories — CMS, Analytics, Search, Ecommerce, Forms & Leads, Monitoring, Performance and Billing.
+
+- [Integrations overview](integrations/README.md) — how integrations work, the auth methods, workspace ("connect once") connections, encrypted credentials, and the full bundled set.
+- [WordPress](wordpress/README.md) — the WordPress companion plugin integration (read-only, HMAC-signed).
+- [Craft CMS](craft/README.md) — the Craft CMS companion plugin integration (read-only, HMAC-signed).
+- [Analytics](analytics/README.md) — Google Analytics 4, Google Ads, Plausible, Fathom, Matomo and Umami.
+- [UptimeRobot](uptime-robot/README.md) — uptime monitoring via UptimeRobot, Uptime Kuma and Better Uptime.
+
+Also bundled and covered in the [integrations overview](integrations/README.md): **Search** (Google Search Console), **Ecommerce** (WooCommerce, Craft Commerce, Shopify, Stripe), **Forms & Leads** (Mailchimp), **Performance** (PageSpeed) and **Billing** (FreeAgent, Xero).
 
 ## Extending Client Reporter
 

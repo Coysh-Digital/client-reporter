@@ -8,8 +8,6 @@
 
 Client Reporter connects your clients' websites, analytics, ecommerce and uptime services and turns the data into beautifully branded reports.
 
-> **Screenshots coming soon.**
-
 ## What is Client Reporter?
 
 Client Reporter is a self-hosted Laravel application that connects the services your clients' websites already run on — their CMS, analytics, ecommerce platform and uptime monitoring — collects data from them on a schedule, and turns that data into attractive, fully white-labelled client reports.
