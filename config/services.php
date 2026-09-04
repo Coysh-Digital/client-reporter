@@ -55,4 +55,23 @@ return [
         'client_secret' => env('XERO_CLIENT_SECRET'),
     ],
 
+    // Non-secret defaults for the optional AI report-summary providers. The API
+    // key itself is never stored here — it lives encrypted on the AiSetting
+    // model. These base URLs and default models are used when a provider is
+    // selected without an explicit override.
+    'openai' => [
+        'base_url' => env('OPENAI_BASE_URL', 'https://api.openai.com'),
+        'model' => env('OPENAI_MODEL', 'gpt-4o-mini'),
+    ],
+
+    'anthropic' => [
+        'base_url' => env('ANTHROPIC_BASE_URL', 'https://api.anthropic.com'),
+        'model' => env('ANTHROPIC_MODEL', 'claude-3-5-haiku-latest'),
+    ],
+
+    'ollama' => [
+        'base_url' => env('OLLAMA_BASE_URL', 'http://127.0.0.1:11434'),
+        'model' => env('OLLAMA_MODEL', 'llama3.1'),
+    ],
+
 ];

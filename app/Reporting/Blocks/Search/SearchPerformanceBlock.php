@@ -36,7 +36,7 @@ class SearchPerformanceBlock extends BlockType
 
     public function description(): string
     {
-        return 'Clicks, impressions, click-through rate, average position and top search queries.';
+        return 'Clicks, impressions, CTR, average position, a daily search-clicks trend, and top queries and landing pages.';
     }
 
     public function group(): string
@@ -59,8 +59,11 @@ class SearchPerformanceBlock extends BlockType
                 'ctr' => 'CTR',
                 'position' => 'Avg position',
             ], ['clicks', 'impressions', 'ctr', 'position']),
+            BlockOption::toggle('show_chart', 'Show search-clicks trend', true),
             BlockOption::toggle('show_queries', 'Show top queries', true),
             BlockOption::number('queries_limit', 'Top queries to show', 8, 3, 20),
+            BlockOption::toggle('show_pages', 'Show top landing pages', true),
+            BlockOption::number('pages_limit', 'Top pages to show', 8, 3, 20),
         ];
     }
 
@@ -99,10 +102,18 @@ class SearchPerformanceBlock extends BlockType
             $queries = array_slice($snapshot['top_queries'] ?? [], 0, $limit);
         }
 
+        $pages = [];
+        if ((bool) $context->block->configValue('show_pages', true)) {
+            $limit = (int) $context->block->configValue('pages_limit', 8);
+            $pages = array_slice($snapshot['top_pages'] ?? [], 0, $limit);
+        }
+
         return [
             'has_data' => $current !== [],
             'metrics' => $metrics,
             'queries' => $queries,
+            'pages' => $pages,
+            'timeseries' => (bool) $context->block->configValue('show_chart', true) ? ($snapshot['timeseries'] ?? []) : [],
             'insight' => Insight::headline(
                 'clicks from Google search',
                 $current['search.clicks']['value'] ?? null,

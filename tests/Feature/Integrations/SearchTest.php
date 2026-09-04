@@ -12,6 +12,8 @@ use App\Integrations\IntegrationRegistry;
 use App\Integrations\Support\IntegrationCategory;
 use App\Integrations\Support\IntegrationException;
 use App\Livewire\Reports\Builder;
+use App\Models\Metric;
+use App\Models\MetricSnapshot;
 use App\Models\Report;
 use App\Models\Site;
 use App\Models\SiteIntegration;
@@ -42,6 +44,13 @@ class SearchTest extends TestCase
                 }
                 if (in_array('query', $dimensions, true)) {
                     return Http::response(['rows' => [['keys' => ['northwind cafe'], 'clicks' => 120, 'impressions' => 3000, 'ctr' => 0.04, 'position' => 3.1]]]);
+                }
+                if (in_array('date', $dimensions, true)) {
+                    // Deliberately out of order to exercise the collector's sort.
+                    return Http::response(['rows' => [
+                        ['keys' => ['2026-08-02'], 'clicks' => 14, 'impressions' => 700],
+                        ['keys' => ['2026-08-01'], 'clicks' => 10, 'impressions' => 500],
+                    ]]);
                 }
 
                 return Http::response(['rows' => [['keys' => ['https://a.test/'], 'clicks' => 80, 'impressions' => 2000, 'ctr' => 0.04, 'position' => 5.2]]]);
@@ -106,6 +115,12 @@ class SearchTest extends TestCase
         $this->assertEqualsWithDelta(12.4, $metrics['search.position']->value, 0.05);
         $this->assertNotEmpty($result->snapshotPayload()['top_queries']);
         $this->assertSame('northwind cafe', $result->snapshotPayload()['top_queries'][0]['label']);
+
+        // Top landing pages are collected too, and the daily trend is sorted ascending.
+        $payload = $result->snapshotPayload();
+        $this->assertSame('https://a.test/', $payload['top_pages'][0]['label']);
+        $this->assertSame(['2026-08-01', '2026-08-02'], array_column($payload['timeseries'], 'date'));
+        $this->assertSame(10, $payload['timeseries'][0]['value']);
     }
 
     public function test_search_block_available_for_a_search_console_site(): void
@@ -119,5 +134,39 @@ class SearchTest extends TestCase
 
         Livewire::actingAs($manager)->test(Builder::class, ['report' => $report])
             ->assertSee('Search performance');
+    }
+
+    public function test_search_block_renders_queries_landing_pages_and_a_trend(): void
+    {
+        $admin = User::factory()->administrator()->create();
+        $site = Site::factory()->create();
+        $c = SiteIntegration::factory()->for($site)->create([
+            'integration_key' => 'google_search_console', 'status' => ConnectionStatus::Connected,
+        ]);
+
+        Metric::query()->create([
+            'site_integration_id' => $c->id, 'metric_key' => 'search.clicks',
+            'period_start' => '2026-08-01', 'period_end' => '2026-08-31', 'value' => 320, 'captured_at' => now(),
+        ]);
+        MetricSnapshot::query()->create([
+            'site_integration_id' => $c->id, 'collector_key' => 'search',
+            'period_start' => '2026-08-01', 'period_end' => '2026-08-31', 'granularity' => 'range',
+            'payload' => [
+                'top_queries' => [['label' => 'northwind cafe', 'clicks' => 120, 'impressions' => 3000, 'ctr' => 4.0, 'position' => 3.1]],
+                'top_pages' => [['label' => 'https://a.test/menu', 'clicks' => 80, 'impressions' => 2000, 'ctr' => 4.0, 'position' => 5.2]],
+                'timeseries' => [['date' => '2026-08-01', 'value' => 10], ['date' => '2026-08-02', 'value' => 14]],
+            ],
+            'captured_at' => now(),
+        ]);
+
+        $report = Report::factory()->for($site)->create(['range_start' => '2026-08-01', 'range_end' => '2026-08-31']);
+        $report->blocks()->create(['type' => 'search.summary', 'position' => 0, 'heading' => 'Search']);
+
+        $this->actingAs($admin)->get(route('reports.preview', $report))
+            ->assertOk()
+            ->assertSee('northwind cafe')
+            ->assertSee('Top landing pages')
+            ->assertSee('/menu')
+            ->assertSee('Search clicks over time');
     }
 }

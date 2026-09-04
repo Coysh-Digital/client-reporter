@@ -48,7 +48,44 @@ class SiteTrafficBlock extends BlockType
     {
         return [
             BlockOption::toggle('compare', 'Compare to previous period', true),
+            BlockOption::toggle('ai_summary', 'AI summary', false, 'Add an AI-written paragraph summarising this section (requires AI configured in Settings).'),
         ];
+    }
+
+    public function supportsAiSummary(): bool
+    {
+        return true;
+    }
+
+    public function defaultAiPrompt(): ?string
+    {
+        return 'Summarise this month\'s website traffic for a non-technical client in two to '
+            .'three sentences. Highlight how visitors moved versus the prior period, the leading '
+            .'traffic source and the most common device. Use only the figures provided.';
+    }
+
+    /**
+     * @param  array<string, mixed>  $resolved
+     * @return array<string, mixed>
+     */
+    public function aiFacts(array $resolved): array
+    {
+        if (! ($resolved['has_data'] ?? false)) {
+            return [];
+        }
+
+        $metrics = [];
+        foreach ($resolved['tiles'] ?? [] as $tile) {
+            $metrics[$tile['label']] = ['current' => $tile['current'], 'previous' => $tile['previous']];
+        }
+
+        return array_filter([
+            'provider' => $resolved['provider'] ?? null,
+            'metrics' => $metrics,
+            'bounce_rate' => $resolved['bounce_rate'] ?? null,
+            'top_source' => $resolved['sources'][0]['label'] ?? null,
+            'top_device' => $resolved['devices'][0]['label'] ?? null,
+        ], fn ($value): bool => $value !== null && $value !== []);
     }
 
     /**

@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * @property array<string, mixed>|null $config
  * @property bool $is_hidden
+ * @property string|null $ai_summary
  */
 class ReportBlock extends Model
 {
@@ -20,6 +21,7 @@ class ReportBlock extends Model
         'heading',
         'config',
         'commentary',
+        'ai_summary',
         'is_hidden',
     ];
 

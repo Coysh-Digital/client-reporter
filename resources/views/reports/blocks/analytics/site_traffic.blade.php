@@ -5,9 +5,10 @@
     <p class="muted">No analytics data was collected for this period yet.</p>
 @else
     @include('reports.blocks.partials.insight', ['insight' => $data['summary'] ?? null])
+    @include('reports.blocks.partials.ai-summary', ['aiSummary' => $data['ai_summary'] ?? null])
 
     {{-- Headline metric tiles --}}
-    <table style="width:100%;border-collapse:collapse;table-layout:fixed;margin-top:4px;">
+    <table class="tile-grid" style="width:100%;border-collapse:collapse;table-layout:fixed;margin-top:4px;">
         <tr>
             @foreach ($data['tiles'] as $t)
                 @php
@@ -44,7 +45,7 @@
     @endif
 
     {{-- Top pages / referrers / countries / devices --}}
-    <table style="width:100%;border-collapse:collapse;table-layout:fixed;margin-top:26px;">
+    <table class="tile-grid" style="width:100%;border-collapse:collapse;table-layout:fixed;margin-top:26px;">
         <tr>
             <td style="width:25%;padding-right:18px;vertical-align:top;">
                 @include('reports.blocks.partials.mini-bars', [

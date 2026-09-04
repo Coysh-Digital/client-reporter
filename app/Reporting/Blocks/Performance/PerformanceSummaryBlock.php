@@ -46,7 +46,41 @@ class PerformanceSummaryBlock extends BlockType
         return [
             BlockOption::toggle('show_score', 'Show performance score', true),
             BlockOption::toggle('show_chart', 'Show score history chart', true, 'Builds up day by day from when this site was connected.'),
+            BlockOption::toggle('ai_summary', 'AI summary', false, 'Add an AI-written paragraph summarising this section (requires AI configured in Settings).'),
         ];
+    }
+
+    public function supportsAiSummary(): bool
+    {
+        return true;
+    }
+
+    public function defaultAiPrompt(): ?string
+    {
+        return 'Summarise the site\'s Core Web Vitals this month in two to three sentences for a '
+            .'non-technical client, noting the performance score and any vitals needing attention. '
+            .'Use only the figures provided.';
+    }
+
+    /**
+     * @param  array<string, mixed>  $resolved
+     * @return array<string, mixed>
+     */
+    public function aiFacts(array $resolved): array
+    {
+        if (! ($resolved['has_data'] ?? false)) {
+            return [];
+        }
+
+        $vitals = [];
+        foreach ($resolved['vitals'] ?? [] as $vital) {
+            $vitals[$vital['key']] = ['value' => $vital['value'], 'rating' => $vital['rating']];
+        }
+
+        return array_filter([
+            'score' => $resolved['score'] ?? null,
+            'vitals' => $vitals,
+        ], fn ($value): bool => $value !== null && $value !== []);
     }
 
     /**

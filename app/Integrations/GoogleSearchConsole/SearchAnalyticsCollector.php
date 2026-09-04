@@ -41,6 +41,15 @@ class SearchAnalyticsCollector extends AbstractCollector
         $topQueries = array_map($mapRow, $client->query($range, ['query'], 10));
         $topPages = array_map($mapRow, $client->query($range, ['page'], 10));
 
+        // Daily clicks for a search-visibility trend line. GSC returns date rows
+        // in no guaranteed order, so sort ascending for the chart. rowLimit 500
+        // comfortably covers any report period.
+        $daily = array_map(fn (array $row): array => [
+            'date' => (string) (($row['keys'][0]) ?? ''),
+            'value' => (int) ($row['clicks'] ?? 0),
+        ], $client->query($range, ['date'], 500));
+        usort($daily, fn (array $a, array $b): int => strcmp($a['date'], $b['date']));
+
         return CollectorResult::make()
             ->metric('search.clicks', $clicks)
             ->metric('search.impressions', $impressions)
@@ -49,6 +58,7 @@ class SearchAnalyticsCollector extends AbstractCollector
             ->snapshot([
                 'top_queries' => $topQueries,
                 'top_pages' => $topPages,
+                'timeseries' => $daily,
             ]);
     }
 }

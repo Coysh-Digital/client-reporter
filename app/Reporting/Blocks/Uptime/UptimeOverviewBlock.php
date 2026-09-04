@@ -57,7 +57,47 @@ class UptimeOverviewBlock extends BlockType
         return [
             BlockOption::toggle('compare', 'Compare to previous period', true),
             BlockOption::number('incident_limit', 'Incidents to show', 10, 1, 50),
+            BlockOption::toggle('ai_summary', 'AI summary', false, 'Add an AI-written paragraph summarising this section (requires AI configured in Settings).'),
         ];
+    }
+
+    public function supportsAiSummary(): bool
+    {
+        return true;
+    }
+
+    public function defaultAiPrompt(): ?string
+    {
+        return 'Summarise the website\'s uptime and performance for the month in two to three '
+            .'sentences for a non-technical client. Mention availability, any incidents, and the '
+            .'Lighthouse performance score. Use only the figures provided.';
+    }
+
+    /**
+     * @param  array<string, mixed>  $resolved
+     * @return array<string, mixed>
+     */
+    public function aiFacts(array $resolved): array
+    {
+        if (! ($resolved['has_data'] ?? false)) {
+            return [];
+        }
+
+        $metrics = [];
+        foreach ($resolved['tiles'] ?? [] as $tile) {
+            $metrics[$tile['label']] = ['current' => $tile['current'], 'previous' => $tile['previous']];
+        }
+
+        $lighthouse = [];
+        foreach ($resolved['lighthouse'] ?? [] as $entry) {
+            $lighthouse[$entry['label']] = $entry['score'];
+        }
+
+        return array_filter([
+            'metrics' => $metrics,
+            'lighthouse' => $lighthouse,
+            'incident_count' => count($resolved['incidents'] ?? []),
+        ], fn ($value): bool => $value !== []);
     }
 
     /**

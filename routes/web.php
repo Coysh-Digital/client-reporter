@@ -120,6 +120,7 @@ Route::middleware(['auth', 'active', 'can:access-admin'])->group(function () {
 
     // Application settings
     Route::get('/settings', Settings\Manage::class)->middleware('can:manage-settings')->name('settings.edit');
+    Route::get('/settings/ai', Settings\Ai::class)->middleware('can:manage-settings')->name('settings.ai');
 
     Route::middleware('can:manage-users')->group(function () {
         Route::get('/users', Users\Index::class)->name('users.index');

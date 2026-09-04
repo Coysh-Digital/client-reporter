@@ -276,6 +276,8 @@ class MonitorsCollector extends AbstractCollector
                         ? round((float) $m['uptime_ratio'] * 100, 3)
                         : $percentage,
                     'avg_response_ms' => $m['avg_response_ms'] ?? $responseMs,
+                    // Days until the TLS certificate expires, where Kuma reports it.
+                    'cert_days' => $m['cert_days'] ?? null,
                 ], $log['monitors']),
                 'incidents' => $incidentsInRange,
                 'timeseries' => $this->dailyUptime($samplesInRange, $range),

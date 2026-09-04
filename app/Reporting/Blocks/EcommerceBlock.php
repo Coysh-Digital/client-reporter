@@ -76,7 +76,43 @@ class EcommerceBlock extends BlockType
             BlockOption::toggle('show_products', 'Show top products', true),
             BlockOption::number('products_limit', 'Top products to show', 4, 1, 15),
             BlockOption::toggle('show_chart', 'Show daily revenue chart', true, 'Only available for providers that report per-day sales (Shopify, Stripe).'),
+            BlockOption::toggle('ai_summary', 'AI summary', false, 'Add an AI-written paragraph summarising this section (requires AI configured in Settings).'),
         ];
+    }
+
+    public function supportsAiSummary(): bool
+    {
+        return true;
+    }
+
+    public function defaultAiPrompt(): ?string
+    {
+        return 'Summarise the store\'s performance this month in two to three sentences for a '
+            .'non-technical client. Cover revenue, orders and how they moved versus the prior '
+            .'period. Use only the figures provided.';
+    }
+
+    /**
+     * @param  array<string, mixed>  $resolved
+     * @return array<string, mixed>
+     */
+    public function aiFacts(array $resolved): array
+    {
+        if (! ($resolved['active'] ?? false)) {
+            return [];
+        }
+
+        $metrics = [];
+        foreach ($resolved['metrics'] ?? [] as $metric) {
+            $metrics[$metric['label']] = ['current' => $metric['current'], 'previous' => $metric['previous']];
+        }
+
+        return array_filter([
+            'provider' => $resolved['provider'] ?? null,
+            'currency' => $resolved['currency'] ?? null,
+            'metrics' => $metrics,
+            'top_product' => $resolved['top_products'][0]['label'] ?? null,
+        ], fn ($value): bool => $value !== null && $value !== []);
     }
 
     /**

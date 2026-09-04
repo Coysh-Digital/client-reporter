@@ -28,16 +28,19 @@ class BlockOptionsTest extends TestCase
         $this->assertNull($registry->find('ecommerce.craft'));
     }
 
-    public function test_add_menu_hides_blocks_without_a_data_source(): void
+    public function test_add_menu_marks_blocks_without_a_data_source_as_needing_an_integration(): void
     {
         $manager = User::factory()->manager()->create();
         $site = Site::factory()->create();
         $report = Report::factory()->for($site)->create();
 
+        // Blocks that need a data source now appear greyed with a hint (rather
+        // than being hidden), so staff can discover what an integration unlocks.
         Livewire::actingAs($manager)->test(Builder::class, ['report' => $report])
             ->assertSee('Cover')
-            ->assertDontSee('Analytics summary')
-            ->assertDontSee('Uptime summary');
+            ->assertSee('Needs an integration')
+            ->assertSee('Analytics summary')
+            ->assertSee('needs analytics');
     }
 
     public function test_add_menu_reveals_analytics_when_a_provider_is_connected(): void
