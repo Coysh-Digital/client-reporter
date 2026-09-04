@@ -8,6 +8,7 @@ use App\Integrations\Support\GoogleOAuth;
 use App\Integrations\Support\IntegrationException;
 use App\Support\DateRange;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 
 /**
@@ -51,11 +52,11 @@ class GoogleSearchConsoleClient
         }
 
         if ($response->status() === 403) {
-            throw new IntegrationException('Search Console denied access to this property. Check the property URL and that the account is verified for it.');
+            throw new IntegrationException('Search Console denied access to this property. Check the property URL and that the account is verified for it.'.$this->reason($response));
         }
 
         if ($response->failed()) {
-            throw new IntegrationException('Search Console returned an error (HTTP '.$response->status().'). Check the property URL.');
+            throw new IntegrationException('Search Console returned an error (HTTP '.$response->status().'). Check the property URL.'.$this->reason($response));
         }
 
         $rows = $response->json('rows', []);
@@ -79,12 +80,32 @@ class GoogleSearchConsoleClient
             throw new IntegrationException('Could not reach Google Search Console. Please try again shortly.');
         }
 
+        if ($response->status() === 403) {
+            throw new IntegrationException(
+                'Search Console denied the request (HTTP 403). Make sure the '
+                .'"Google Search Console API" is enabled in your Google Cloud project, '
+                .'and reconnect if you granted access before Search Console was added.'
+                .$this->reason($response),
+            );
+        }
+
         if ($response->failed()) {
-            throw new IntegrationException('Search Console returned an error (HTTP '.$response->status().').');
+            throw new IntegrationException('Search Console returned an error (HTTP '.$response->status().').'.$this->reason($response));
         }
 
         $entries = $response->json('siteEntry', []);
 
         return is_array($entries) ? $entries : [];
+    }
+
+    /**
+     * The specific reason Google gave, appended to our own message so a 403 says
+     * *why* (API disabled vs missing scope vs no access) instead of just a code.
+     */
+    private function reason(Response $response): string
+    {
+        $message = $response->json('error.message');
+
+        return is_string($message) && $message !== '' ? ' Google said: '.$message : '';
     }
 }

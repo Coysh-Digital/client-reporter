@@ -22,9 +22,13 @@ Artisan::command('inspire', function () {
 */
 Schedule::command('client-reporter:collect')->hourly()->withoutOverlapping();
 
-Schedule::command('queue:work --stop-when-empty --max-time=55 --tries=1')
+// --memory recycles the worker before it grows too large; the short
+// withoutOverlapping expiry means a worker the host OOM-kills (exit 137)
+// self-heals within minutes instead of wedging the queue for a day on a
+// stale lock. If 137s persist, the host is out of memory — give it more.
+Schedule::command('queue:work --stop-when-empty --max-time=55 --tries=1 --memory=120')
     ->everyMinute()
-    ->withoutOverlapping();
+    ->withoutOverlapping(5);
 
 Schedule::command('client-reporter:generate-scheduled')->daily()->withoutOverlapping();
 
