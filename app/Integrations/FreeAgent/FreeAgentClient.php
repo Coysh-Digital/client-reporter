@@ -18,6 +18,8 @@ class FreeAgentClient
 {
     private const BASE = 'https://api.freeagent.com/v2';
 
+    private ?string $token = null;
+
     public function __construct(
         private readonly string $refreshToken,
         private readonly string $clientId,
@@ -26,6 +28,10 @@ class FreeAgentClient
 
     public function accessToken(): string
     {
+        if ($this->token !== null) {
+            return $this->token;
+        }
+
         try {
             $response = Http::asForm()->timeout(20)->post(self::BASE.'/token_endpoint', [
                 'client_id' => $this->clientId,
@@ -43,7 +49,7 @@ class FreeAgentClient
             throw new IntegrationException('FreeAgent declined the connection. It may need to be reconnected.');
         }
 
-        return $token;
+        return $this->token = $token;
     }
 
     /**
@@ -53,9 +59,7 @@ class FreeAgentClient
      */
     public function contacts(): array
     {
-        $data = $this->get('/contacts', ['view' => 'active']);
-
-        return is_array($data['contacts'] ?? null) ? $data['contacts'] : [];
+        return $this->getAllPages('/contacts', ['view' => 'active'], 'contacts');
     }
 
     /**
@@ -65,9 +69,35 @@ class FreeAgentClient
      */
     public function invoicesForContact(string $contactUrl): array
     {
-        $data = $this->get('/invoices', ['contact' => $contactUrl, 'view' => 'all', 'sort' => '-dated_on']);
+        return $this->getAllPages('/invoices', ['contact' => $contactUrl, 'view' => 'all', 'sort' => '-dated_on'], 'invoices');
+    }
 
-        return is_array($data['invoices'] ?? null) ? $data['invoices'] : [];
+    /**
+     * Fetch every page of a list resource. FreeAgent paginates at 25 items by
+     * default, so request the 100-item maximum and keep following pages until
+     * one comes back short — that page is the last.
+     *
+     * @param  array<string, scalar>  $params
+     * @return array<int, array<string, mixed>>
+     */
+    private function getAllPages(string $path, array $params, string $key): array
+    {
+        $perPage = 100;
+        $page = 1;
+        $items = [];
+
+        do {
+            $data = $this->get($path, $params + ['per_page' => $perPage, 'page' => $page]);
+            $batch = is_array($data[$key] ?? null) ? $data[$key] : [];
+
+            foreach ($batch as $item) {
+                $items[] = $item;
+            }
+
+            $page++;
+        } while (count($batch) === $perPage && $page <= 100);
+
+        return $items;
     }
 
     /**

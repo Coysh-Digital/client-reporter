@@ -183,6 +183,20 @@ class WorkspaceSetup extends Component
     }
 
     /**
+     * Mark every still-unmapped discovered contact to be created as a new
+     * client. A shortcut for the common case of importing a whole FreeAgent
+     * account's worth of contacts as clients in one go.
+     */
+    public function createNewForUnmapped(): void
+    {
+        foreach (array_keys($this->discovered) as $index) {
+            if (($this->assignments[$index] ?? '') === '') {
+                $this->assignments[$index] = 'new';
+            }
+        }
+    }
+
+    /**
      * Phase 2 — create/update connections from the confirmed mapping. Maps to
      * sites (analytics, monitoring) or clients (billing) per
      * {@see Integration::workspaceMapsTo()}.
@@ -247,13 +261,22 @@ class WorkspaceSetup extends Component
     {
         $created = 0;
         foreach ($this->discovered as $index => $entity) {
-            $clientId = $this->assignments[$index] ?? '';
-            if ($clientId === '') {
+            $assignment = $this->assignments[$index] ?? '';
+            if ($assignment === '') {
                 continue;
             }
 
+            // "new" creates a fresh client from the discovered contact; anything
+            // else is the id of an existing client to map onto.
+            $clientId = $assignment === 'new'
+                ? Client::query()->create([
+                    'name' => $entity['label'],
+                    'contact_email' => $entity['email'],
+                ])->id
+                : (int) $assignment;
+
             $link = ClientBillingConnection::query()->updateOrCreate(
-                ['client_id' => (int) $clientId],
+                ['client_id' => $clientId],
                 [
                     'workspace_integration_id' => $workspace->id,
                     'external_contact_id' => $entity['externalId'],
