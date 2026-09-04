@@ -28,4 +28,19 @@ readonly class IntegrationManifest
         public ?string $connectorSlug = null,
         public ?string $providedBy = null,
     ) {}
+
+    /**
+     * The public asset URL for this integration's brand logo, or null when no
+     * icon is declared or the file isn't present yet (callers fall back to a
+     * letter avatar). Guarding on existence lets a manifest point at a logo
+     * that can be dropped in later without showing a broken image meanwhile.
+     */
+    public function iconUrl(): ?string
+    {
+        if ($this->icon === null || ! is_file(public_path($this->icon))) {
+            return null;
+        }
+
+        return asset($this->icon);
+    }
 }

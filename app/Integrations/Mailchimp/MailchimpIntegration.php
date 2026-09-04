@@ -24,6 +24,7 @@ class MailchimpIntegration extends Integration
             category: IntegrationCategory::Forms,
             authMethod: AuthMethod::ApiKey,
             description: 'Report new signups and audience growth from a Mailchimp list.',
+            icon: 'vendor/logos/mailchimp.svg',
             version: '1.0.0',
         );
     }

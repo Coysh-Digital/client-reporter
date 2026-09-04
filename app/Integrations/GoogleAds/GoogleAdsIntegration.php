@@ -26,6 +26,7 @@ class GoogleAdsIntegration extends Integration
             category: IntegrationCategory::Analytics,
             authMethod: AuthMethod::OAuth,
             description: 'Spend, clicks, impressions and conversions from a Google Ads account.',
+            icon: 'vendor/logos/google_ads.svg',
             version: '1.0.0',
         );
     }

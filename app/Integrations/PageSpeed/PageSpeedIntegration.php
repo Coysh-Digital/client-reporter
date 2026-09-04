@@ -8,11 +8,14 @@ use App\Integrations\Contracts\Collector;
 use App\Integrations\Contracts\Integration;
 use App\Integrations\Support\AuthMethod;
 use App\Integrations\Support\ConfigField;
+use App\Integrations\Support\DiscoveredConnection;
 use App\Integrations\Support\IntegrationCategory;
 use App\Integrations\Support\IntegrationException;
 use App\Integrations\Support\IntegrationManifest;
 use App\Integrations\Support\VerificationResult;
+use App\Models\Site;
 use App\Models\SiteIntegration;
+use App\Models\WorkspaceIntegration;
 
 class PageSpeedIntegration extends Integration
 {
@@ -36,8 +39,41 @@ class PageSpeedIntegration extends Integration
     {
         return [
             new ConfigField(key: 'api_key', label: 'Google API key', required: false, secret: true, help: 'Optional but recommended — a key with the PageSpeed Insights API enabled avoids rate limits. Leave blank to try without one.'),
-            ConfigField::select('strategy', 'Measure', ['mobile' => 'Mobile experience', 'desktop' => 'Desktop experience'], false),
+            new ConfigField(key: 'strategy', label: 'Measure', type: 'select', required: false, options: ['mobile' => 'Mobile experience', 'desktop' => 'Desktop experience'], scope: 'site'),
         ];
+    }
+
+    /**
+     * PageSpeed only needs its (optional) API key once for the whole workspace;
+     * each site is measured by its own address. Connecting at the workspace
+     * level lists your sites so you can enable measurement across them in one
+     * go, all sharing the one key.
+     */
+    public function supportsWorkspaceScope(): bool
+    {
+        return true;
+    }
+
+    /**
+     * PageSpeed has no "list properties" API — it measures any URL — so the
+     * things to map are the workspace's own active sites, each matched to
+     * itself by URL.
+     *
+     * @return array<int, DiscoveredConnection>
+     */
+    public function discoverConnections(WorkspaceIntegration $workspace): array
+    {
+        return Site::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Site $site): DiscoveredConnection => new DiscoveredConnection(
+                externalId: (string) $site->id,
+                label: $site->name,
+                url: $site->url,
+                settings: [],
+            ))
+            ->all();
     }
 
     /**

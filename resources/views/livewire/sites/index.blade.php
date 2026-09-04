@@ -31,7 +31,7 @@
                      class="flex flex-col gap-3 px-5 py-3.5 hover:bg-paper sm:grid sm:grid-cols-[minmax(0,1fr)_180px_120px_130px] sm:items-center sm:gap-4"
                      @if (! $loop->last) style="border-bottom:1px solid var(--color-line);" @endif>
                     <a href="{{ route('sites.show', $site) }}" wire:navigate class="flex min-w-0 items-center gap-3">
-                        <x-avatar :name="$site->name" size="lg" />
+                        <x-avatar :name="$site->name" size="lg" :icon="$site->faviconUrl()" />
                         <span class="min-w-0">
                             <span class="block truncate text-[14.5px] font-semibold text-ink">{{ $site->name }}</span>
                             <span class="block truncate text-[12.5px] text-faint">{{ $site->host() }}</span>

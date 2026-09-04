@@ -3,9 +3,14 @@
         <div class="mb-4 rounded-md bg-ok-soft px-3 py-2 text-sm text-ok">{{ session('status') }}</div>
     @endif
 
-    <div class="mb-2 text-sm text-muted">
-        <a href="{{ route('clients.show', $site->client) }}" wire:navigate class="hover:text-ink">{{ $site->client->name }}</a>
-        <span class="text-faint">/</span> {{ $site->name }}
+    <div class="mb-2 flex items-center gap-2 text-sm text-muted">
+        @if ($site->faviconUrl())
+            <img src="{{ $site->faviconUrl() }}" alt="" class="h-4 w-4 rounded-sm" />
+        @endif
+        <span>
+            <a href="{{ route('clients.show', $site->client) }}" wire:navigate class="hover:text-ink">{{ $site->client->name }}</a>
+            <span class="text-faint">/</span> {{ $site->name }}
+        </span>
     </div>
 
     <x-page-header :title="$site->name">

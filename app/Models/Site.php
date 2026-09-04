@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * @property ReportFrequency $report_frequency
@@ -25,6 +26,8 @@ class Site extends Model
         'client_id',
         'name',
         'url',
+        'favicon_path',
+        'favicon_fetched_at',
         'cms_type',
         'environment',
         'timezone',
@@ -40,7 +43,19 @@ class Site extends Model
             'is_active' => 'boolean',
             'settings' => 'array',
             'report_frequency' => ReportFrequency::class,
+            'favicon_fetched_at' => 'datetime',
         ];
+    }
+
+    /**
+     * The public URL of this site's cached favicon, or null if none has been
+     * fetched yet (callers fall back to a letter avatar).
+     */
+    public function faviconUrl(): ?string
+    {
+        return $this->favicon_path
+            ? Storage::disk('public')->url($this->favicon_path)
+            : null;
     }
 
     /**

@@ -26,6 +26,7 @@ class UptimeKumaIntegration extends Integration
             category: IntegrationCategory::Monitoring,
             authMethod: AuthMethod::ApiKey,
             description: 'Report uptime, incidents and response times from your self-hosted Uptime Kuma instance.',
+            icon: 'vendor/logos/uptime_kuma.svg',
             version: '1.0.0',
         );
     }

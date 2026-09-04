@@ -60,7 +60,7 @@
                                    'transition hover:border-line-strong hover:shadow-sm' => $connectUrl || ($onlyWorkspace && $canManage),
                                ])>
                                 <div class="flex items-start gap-3">
-                                    <x-avatar :name="$m->name" size="lg" :icon="$m->icon ? asset($m->icon) : null" />
+                                    <x-avatar :name="$m->name" size="lg" :icon="$m->iconUrl()" />
                                     <div class="min-w-0 flex-1">
                                         <div class="text-[15px] font-semibold text-ink">{{ $m->name }}</div>
                                         @if ($providerName)
