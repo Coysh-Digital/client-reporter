@@ -78,6 +78,14 @@
             @if ($discovered === [])
                 <p class="text-sm text-muted">No {{ $mapsToClient ? 'contacts' : 'monitors or properties' }} were found on this account yet.</p>
             @else
+                @if ($mapsToClient)
+                    <div class="mb-3 flex justify-end">
+                        <button type="button" wire:click="createNewForUnmapped" class="cr-btn cr-btn-secondary text-xs">
+                            ＋ Create new clients for all unmapped
+                        </button>
+                    </div>
+                @endif
+
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="border-b border-line text-left text-xs uppercase tracking-wide text-faint">
@@ -97,6 +105,9 @@
                                 <td class="py-3">
                                     <select wire:model="assignments.{{ $index }}" class="cr-input max-w-xs">
                                         <option value="">— Skip —</option>
+                                        @if ($mapsToClient)
+                                            <option value="new">＋ Create new client</option>
+                                        @endif
                                         @foreach ($options as $option)
                                             <option value="{{ $option->id }}">{{ $option->name }}</option>
                                         @endforeach
