@@ -25,8 +25,10 @@ class EnsureInstalled
         // Livewire's own endpoints (e.g. the component update route) run in the
         // web group too. They must always pass so the wizard can make component
         // updates without being redirected back to itself, which would look like
-        // the page simply reloading on every interaction.
-        if ($request->is('livewire/*')) {
+        // the page simply reloading on every interaction. Livewire 4 prefixes
+        // these routes with a per-app hash (e.g. "livewire-016dcaf9/update"), so
+        // match any path whose first segment starts with "livewire".
+        if (str_starts_with($request->path(), 'livewire')) {
             return $next($request);
         }
 

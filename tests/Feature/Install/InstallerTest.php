@@ -76,11 +76,15 @@ class InstallerTest extends TestCase
         $this->markNotInstalled();
 
         $middleware = app(EnsureInstalled::class);
-        $request = Request::create('/livewire/update', 'POST');
 
-        $response = $middleware->handle($request, fn () => new Response('reached'));
+        // Livewire 4 prefixes its routes with a per-app hash, so the path is
+        // e.g. "livewire-016dcaf9/update" rather than "livewire/update".
+        foreach (['livewire/update', 'livewire-016dcaf9/update'] as $path) {
+            $request = Request::create('/'.$path, 'POST');
+            $response = $middleware->handle($request, fn () => new Response('reached'));
 
-        $this->assertSame('reached', $response->getContent());
+            $this->assertSame('reached', $response->getContent(), "Gate should not redirect {$path}");
+        }
     }
 
     public function test_requirements_are_reported(): void
