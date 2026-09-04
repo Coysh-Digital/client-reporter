@@ -9,6 +9,7 @@ use App\Importers\MainWpImporter;
 use App\Importers\ManageWpImporter;
 use App\Importers\SiteImporterRegistry;
 use App\Importers\WpMgrImporter;
+use App\Integrations\ExtensionLoader;
 use App\Integrations\IntegrationRegistry;
 use App\Models\User;
 use App\Reporting\BlockTypeRegistry;
@@ -25,10 +26,16 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(Settings::class, fn ($app): Settings => new Settings($app['cache.store']));
 
+        // Autoload custom integrations dropped into the (git-ignored) extensions/
+        // directory, so they survive updates without a composer require.
+        ExtensionLoader::registerAutoloaders();
+
         $this->app->singleton(IntegrationRegistry::class, function (): IntegrationRegistry {
             $classes = array_values(array_unique(array_merge(
                 (array) config('client-reporter.integrations', []),
                 IntegrationRegistry::discoverFromComposer(),
+                ExtensionLoader::integrationClasses(),
+                ExtensionLoader::localIntegrationClasses(),
             )));
 
             return new IntegrationRegistry($classes);

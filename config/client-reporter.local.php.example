@@ -1,0 +1,25 @@
+<?php
+
+declare(strict_types=1);
+
+/*
+|--------------------------------------------------------------------------
+| Local integration registration
+|--------------------------------------------------------------------------
+|
+| Copy this file to `config/client-reporter.local.php` (which is git-ignored)
+| to register custom integration classes WITHOUT editing any file tracked by
+| the core repository — so your registrations survive updates.
+|
+| The listed classes must be autoloadable: either a package under `extensions/`
+| (autoloaded automatically) or a Composer-required package. Most of the time
+| you won't need this file at all — an integration dropped into `extensions/`
+| with an `extra.client-reporter.integrations` entry is discovered on its own.
+|
+*/
+
+return [
+    'integrations' => [
+        // \ClientReporter\Acme\AcmeIntegration::class,
+    ],
+];

@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Scheduled reports** — sites can now opt into a reporting schedule (weekly, monthly or quarterly; off by default). When a period closes, `client-reporter:generate-scheduled` (run daily) auto-generates that site's report — pulling the data and freezing the snapshot — so it's ready for you to review and send. Sending stays manual.
 - **Client page: report history & site summaries** — a client's page now shows a report-history list across all its sites (period, status, generated date) and a per-site summary (health, connected integrations, report count, schedule and latest-report status), plus a reporting totals card.
+- **Update-safe custom integrations** — the git-ignored `extensions/` directory is now autoloaded and auto-discovered, so a custom integration dropped there survives updates with no edit to any tracked file. An optional git-ignored `config/client-reporter.local.php` can register classes explicitly. `make-integration` scaffolds into `extensions/` accordingly.
 
 ### Fixed
 

@@ -10,6 +10,10 @@
 /database/*.sqlite-journal
 /database/*.sqlite-wal
 /database/*.sqlite-shm
+# Custom integrations live here and must survive updates — keep them out of core.
+/extensions/*
+!/extensions/README.md
+/config/client-reporter.local.php
 /.codex
 /.cursor/
 /.idea

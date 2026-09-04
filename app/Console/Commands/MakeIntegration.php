@@ -40,10 +40,10 @@ class MakeIntegration extends Command
         $this->write("{$dir}/src/{$studly}Collector.php", $this->collectorStub($namespace, $studly));
         $this->write("{$dir}/README.md", $this->readme($name, $slug));
 
-        $this->components->info("Integration scaffolded at extensions/{$slug}");
+        $this->components->info("Integration scaffolded at extensions/{$slug} (git-ignored — it survives updates)");
         $this->line('  1. Fill in the manifest, config fields, verify() and collector.');
-        $this->line('  2. Add the package repository and require it, or move it to its own repo.');
-        $this->line("  3. Run: composer require clientreporter/{$slug}");
+        $this->line('  2. Run `php artisan optimize:clear` — it is auto-discovered, no composer require needed.');
+        $this->line('  To share it, move the package to its own repo and require it via Composer.');
 
         return self::SUCCESS;
     }
@@ -186,8 +186,9 @@ class MakeIntegration extends Command
         return <<<MD
         # {$name} integration for Client Reporter
 
-        A Client Reporter integration package. Once installed via Composer, Client Reporter
-        discovers it automatically through `extra.client-reporter.integrations`.
+        A Client Reporter integration package. While it lives in `extensions/` it is
+        autoloaded and discovered automatically through
+        `extra.client-reporter.integrations` — no Composer install required.
 
         ## Develop
 
@@ -195,7 +196,9 @@ class MakeIntegration extends Command
         - Implement data collection in `src/{$name}Collector.php`.
         - Verify compatibility with the `IntegrationContractAssertions` test helper.
 
-        ## Install
+        ## Publish for others
+
+        Move this package to its own repository and publish it; other installs can then:
 
         ```
         composer require clientreporter/{$slug}
