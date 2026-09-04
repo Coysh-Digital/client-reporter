@@ -137,6 +137,11 @@ class MonitorsCollector extends AbstractCollector
                 3 => 'maintenance',
                 default => 'unknown',
             },
+            // Kuma's own aggregates (null on older versions), used in preference
+            // to the rolling sample average so figures match the Kuma dashboard
+            // from the very first collection.
+            'uptime_ratio' => $m['uptime_ratio'] ?? null,
+            'avg_response_ms' => $m['avg_response_ms'] ?? null,
         ], $monitors);
 
         return $log;
@@ -185,11 +190,30 @@ class MonitorsCollector extends AbstractCollector
         $upFractions = array_values(array_filter(array_map(fn (array $s) => $s['up'], $samplesInRange), fn ($v) => $v !== null));
         $responseSamples = array_values(array_filter(array_map(fn (array $s) => $s['response_ms'], $samplesInRange), fn ($v) => $v !== null));
 
-        $percentage = $upFractions === [] ? 0.0 : round((array_sum($upFractions) / count($upFractions)) * 100, 3);
-        $responseMs = $responseSamples === [] ? 0 : (int) round(array_sum($responseSamples) / count($responseSamples));
+        // Prefer Kuma's own aggregates when present (accurate immediately and
+        // matches the Kuma dashboard); otherwise fall back to the rolling
+        // sample average this collector builds itself.
+        $ratios = array_values(array_filter(
+            array_map(fn (array $m) => $m['uptime_ratio'] ?? null, $log['monitors']),
+            fn ($v) => $v !== null,
+        ));
+        $realResponses = array_values(array_filter(
+            array_map(fn (array $m) => $m['avg_response_ms'] ?? null, $log['monitors']),
+            fn ($v) => $v !== null,
+        ));
+
+        $avgRatio = $ratios === [] ? null : array_sum($ratios) / count($ratios);
+
+        $percentage = $avgRatio !== null
+            ? round($avgRatio * 100, 3)
+            : ($upFractions === [] ? 0.0 : round((array_sum($upFractions) / count($upFractions)) * 100, 3));
+
+        $responseMs = $realResponses !== []
+            ? (int) round(array_sum($realResponses) / count($realResponses))
+            : ($responseSamples === [] ? 0 : (int) round(array_sum($responseSamples) / count($responseSamples)));
 
         $incidentsInRange = [];
-        $downtimeSeconds = 0;
+        $observedDowntime = 0;
 
         foreach ($log['incidents'] as $incident) {
             $startedAt = CarbonImmutable::parse($incident['started_at']);
@@ -203,7 +227,7 @@ class MonitorsCollector extends AbstractCollector
             $overlapStart = $startedAt->max($range->start);
             $overlapEnd = $endedAt->min($range->end);
             $duration = max(0, (int) $overlapStart->diffInSeconds($overlapEnd));
-            $downtimeSeconds += $duration;
+            $observedDowntime += $duration;
 
             $incidentsInRange[] = [
                 'monitor' => $incident['monitor'],
@@ -212,6 +236,13 @@ class MonitorsCollector extends AbstractCollector
                 'reason' => $incident['reason'],
             ];
         }
+
+        // With a real uptime ratio, derive downtime from it over the elapsed
+        // part of the period so it stays consistent with the percentage shown;
+        // otherwise use the downtime observed from recorded incidents.
+        $downtimeSeconds = $avgRatio !== null
+            ? (int) round((1 - $avgRatio) * $this->elapsedSeconds($range))
+            : $observedDowntime;
 
         return CollectorResult::make()
             ->metric('uptime.percentage', $percentage, '%')
@@ -225,12 +256,26 @@ class MonitorsCollector extends AbstractCollector
                     'name' => $m['name'],
                     'url' => $m['url'] ?? '',
                     'status' => $m['status'],
-                    'uptime' => $percentage,
-                    'avg_response_ms' => $responseMs,
+                    'uptime' => isset($m['uptime_ratio'])
+                        ? round((float) $m['uptime_ratio'] * 100, 3)
+                        : $percentage,
+                    'avg_response_ms' => $m['avg_response_ms'] ?? $responseMs,
                 ], $log['monitors']),
                 'incidents' => $incidentsInRange,
                 'timeseries' => $this->dailyUptime($samplesInRange, $range),
             ]);
+    }
+
+    /**
+     * Seconds of the requested range that have actually elapsed (a still-open
+     * period is capped at "now"), used to turn an uptime ratio into a downtime
+     * estimate for the period.
+     */
+    private function elapsedSeconds(DateRange $range): int
+    {
+        $end = $range->end->isFuture() ? CarbonImmutable::now() : $range->end;
+
+        return max(0, (int) $range->start->diffInSeconds($end));
     }
 
     /**

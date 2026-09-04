@@ -92,6 +92,32 @@ class UptimeKumaTest extends TestCase
         $this->assertSame(120, (int) $metrics['uptime.response_time_ms']->value);
     }
 
+    public function test_collector_uses_kumas_real_uptime_ratio_and_response_aggregates(): void
+    {
+        // Newer Kuma exposes real aggregates; the collector should report those
+        // (matching the Kuma dashboard) rather than its own rolling average.
+        $this->fakeMetrics(<<<'PROM'
+            monitor_status{monitor_name="Website"} 1
+            monitor_response_time{monitor_name="Website"} 69
+            monitor_uptime_ratio{monitor_name="Website",window="1d"} 0.9972222222222222
+            monitor_uptime_ratio{monitor_name="Website",window="30d"} 0.9988597208795023
+            monitor_uptime_ratio{monitor_name="Website",window="365d"} 0.9988597208795023
+            monitor_response_time_seconds{monitor_name="Website",window="1d"} 0.08616
+            monitor_response_time_seconds{monitor_name="Website",window="30d"} 0.11466
+            PROM);
+
+        $result = (new MonitorsCollector)->collect($this->connection(), DateRange::thisMonth());
+
+        $metrics = collect($result->metrics())->keyBy('key');
+        // 30-day window is preferred: 0.99886 -> 99.886%, 0.11466s -> 115ms.
+        $this->assertEqualsWithDelta(99.886, $metrics['uptime.percentage']->value, 0.001);
+        $this->assertSame(115, (int) $metrics['uptime.response_time_ms']->value);
+        $this->assertSame(1, (int) $metrics['uptime.monitors']->value);
+        // Downtime is derived from the ratio, so it's non-zero despite no
+        // outage being observed in-sample.
+        $this->assertGreaterThan(0, (int) $metrics['uptime.downtime_seconds']->value);
+    }
+
     public function test_collector_detects_a_down_then_up_transition_as_one_incident(): void
     {
         $connection = $this->connection();
