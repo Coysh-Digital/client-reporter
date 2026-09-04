@@ -9,12 +9,13 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 
 /**
- * Reads current monitor status from a self-hosted Uptime Kuma instance's
- * Prometheus-compatible `/metrics` endpoint. Kuma has no historical,
- * query-by-date-range API (unlike UptimeRobot/Better Uptime) — it only ever
- * exposes the current, point-in-time status of each monitor. {@see
- * MonitorsCollector} is responsible for polling this repeatedly and building
- * its own history from the samples.
+ * Reads monitor data from a self-hosted Uptime Kuma instance's
+ * Prometheus-compatible `/metrics` endpoint: each monitor's current status and
+ * response time, plus — on newer Kuma versions — real uptime-ratio and average
+ * response-time aggregates over 1d/30d/365d windows. Kuma still has no
+ * query-by-arbitrary-date-range API, so {@see MonitorsCollector} also keeps its
+ * own rolling sample history (for incident detection and a daily timeseries),
+ * but prefers these real aggregates for the headline figures when present.
  */
 class UptimeKumaClient
 {
@@ -25,10 +26,12 @@ class UptimeKumaClient
 
     /**
      * Current status of every monitor exposed by the API key, optionally
-     * filtered to a set of monitor names.
+     * filtered to a set of monitor names. Newer Uptime Kuma also exposes real
+     * aggregates — an uptime ratio and average response time over 1d/30d/365d
+     * windows — which are read here (null on older versions that don't).
      *
      * @param  array<int, string>  $onlyNames
-     * @return array<int, array{name: string, url: ?string, status: int, response_time_ms: ?float}>
+     * @return array<int, array{name: string, url: ?string, status: int, response_time_ms: ?float, uptime_ratio: ?float, avg_response_ms: ?int}>
      */
     public function monitors(array $onlyNames = []): array
     {
@@ -52,6 +55,8 @@ class UptimeKumaClient
                 // 1 = up, 0 = down, 2 = pending, 3 = maintenance.
                 'status' => (int) $row['value'],
                 'response_time_ms' => null,
+                'uptime_ratio' => null,
+                'avg_response_ms' => null,
             ];
         }
 
@@ -64,7 +69,49 @@ class UptimeKumaClient
             $byName[$name]['response_time_ms'] = $row['value'];
         }
 
+        // Kuma's own uptime ratio (0..1) and average response time (seconds),
+        // preferring the 30-day window as the closest match to a monthly report.
+        $this->applyWindowed($metrics['monitor_uptime_ratio'] ?? [], $byName, 'uptime_ratio', fn (float $v): float => $v);
+        $this->applyWindowed($metrics['monitor_response_time_seconds'] ?? [], $byName, 'avg_response_ms', fn (float $v): int => (int) round($v * 1000));
+
         return array_values($byName);
+    }
+
+    /**
+     * Fold windowed Kuma metrics (labelled window="1d|30d|365d") onto each
+     * monitor, choosing the most report-appropriate window that's present.
+     *
+     * @param  array<int, array{labels: array<string, string>, value: float}>  $rows
+     * @param  array<string, array<string, mixed>>  $byName
+     */
+    private function applyWindowed(array $rows, array &$byName, string $target, callable $transform): void
+    {
+        $preferred = ['30d', '1d', '365d'];
+
+        $perMonitor = [];
+        foreach ($rows as $row) {
+            $name = $row['labels']['monitor_name'] ?? null;
+            if ($name === null || ! isset($byName[$name])) {
+                continue;
+            }
+            $perMonitor[$name][$row['labels']['window'] ?? ''] = $row['value'];
+        }
+
+        foreach ($perMonitor as $name => $windows) {
+            $value = null;
+            foreach ($preferred as $window) {
+                if (isset($windows[$window])) {
+                    $value = $windows[$window];
+                    break;
+                }
+            }
+            // Fall back to any single unlabelled/other value if no named window
+            // is present ($windows is never empty — a key only exists once a row
+            // for that monitor has been seen).
+            $value ??= reset($windows);
+
+            $byName[$name][$target] = $transform((float) $value);
+        }
     }
 
     private function fetch(): string
