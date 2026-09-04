@@ -28,6 +28,10 @@ Client Reporter talks to the services behind your clients' sites, spread across 
 
 Also bundled and covered in the [integrations overview](integrations/README.md): **Search** (Google Search Console), **Ecommerce** (WooCommerce, Craft Commerce, Shopify, Stripe), **Forms & Leads** (Mailchimp), **Performance** (PageSpeed) and **Billing** (FreeAgent, Xero).
 
+## Ask an AI about your data
+
+- [MCP server](mcp/README.md) — point an AI assistant (Claude Desktop, Claude Code, etc.) at your install and ask read-only questions about your clients, sites, reports and metrics.
+
 ## Extending Client Reporter
 
 - [Development](development/README.md) — contributing to the core application.

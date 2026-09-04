@@ -124,9 +124,21 @@ php artisan client-reporter:make-integration "Your Service"
 
 The [creating an integration](docs/creating-an-integration/README.md) guide walks through the whole thing.
 
+## Ask an AI about your data
+
+Client Reporter has a built-in [MCP](https://modelcontextprotocol.io) server, so you can point an AI assistant (Claude Desktop, Claude Code, or anything that speaks MCP) at your install and ask it things in plain English — "which sites need attention this month?", "what were Acme's visitor numbers last report?". It's **read-only**: the AI can look things up but can't change anything, and it never sees your integration credentials.
+
+Connect a local client by launching the server directly:
+
+```bash
+php artisan mcp:start client-reporter
+```
+
+Or connect over HTTP with a token (`php artisan client-reporter:mcp-token you@example.com`). Full setup — including Claude Desktop/Code config — is in [docs/mcp](docs/mcp/README.md).
+
 ## Documentation
 
-The full docs live in [docs/](docs/README.md) — installation, configuration, shared hosting, the reporting and branding guides, every integration, the security model, and how to build your own integration.
+The full docs live in [docs/](docs/README.md) — installation, configuration, shared hosting, the reporting and branding guides, every integration, the security model, the MCP server, and how to build your own integration.
 
 ## Want to help?
 

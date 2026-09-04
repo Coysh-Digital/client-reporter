@@ -14,9 +14,14 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
 /**
+ * @property int $id
+ * @property int $site_id
+ * @property string $title
+ * @property string $status
  * @property Carbon $range_start
  * @property Carbon $range_end
  * @property bool $compare_previous
+ * @property Carbon|null $generated_at
  */
 class Report extends Model
 {

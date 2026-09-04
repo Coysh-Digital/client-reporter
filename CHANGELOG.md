@@ -5,6 +5,12 @@ All notable changes to Client Reporter will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **MCP server** — a built-in, read-only [Model Context Protocol](https://modelcontextprotocol.io) server so an AI assistant can query your clients, sites, reports and metrics in plain English. Seven read-only tools (dashboard, clients, sites, site detail, reports, report data, site metrics), exposed over both a local (stdio) transport (`php artisan mcp:start client-reporter`) and an authenticated HTTP endpoint (Sanctum token with an `mcp:read` ability, minted via `php artisan client-reporter:mcp-token`). Access mirrors the app's staff roles and never exposes integration credentials. See [docs/mcp](docs/mcp/README.md).
+
 ## [0.1.0] - 2026-09-03
 
 The first public release.

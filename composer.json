@@ -10,6 +10,8 @@
         "php": "^8.3",
         "dompdf/dompdf": "^3.1",
         "laravel/framework": "^13.17",
+        "laravel/mcp": "^1.0@beta",
+        "laravel/sanctum": "^4.3",
         "laravel/tinker": "^3.0",
         "livewire/livewire": "^4.0",
         "spatie/laravel-pdf": "^2.13"
