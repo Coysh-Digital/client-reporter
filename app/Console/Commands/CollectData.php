@@ -15,15 +15,18 @@ use App\Support\Settings;
 use Illuminate\Console\Command;
 
 /**
- * Drives scheduled data collection. Keeps the two most common report periods
- * (this month and last month) warm for every live connection that is due,
- * building history and keeping the dashboard fresh.
+ * Drives scheduled data collection. By default it keeps the current month warm
+ * for every live connection that is due, building history and keeping the
+ * dashboard fresh. The `--history` mode collects the previous month instead:
+ * that is a completed, stable period, so the scheduler runs it just once a day
+ * rather than re-collecting it every cycle alongside the current month.
  */
 class CollectData extends Command
 {
     protected $signature = 'client-reporter:collect
         {--sync : Run collectors immediately instead of queueing}
         {--force : Collect even if a connection is not yet due}
+        {--history : Collect the previous (completed) month instead of the current one}
         {--connection= : Limit to a single connection id}';
 
     protected $description = 'Collect data from connected integrations';
@@ -37,36 +40,45 @@ class CollectData extends Command
             ->with('site')
             ->get();
 
-        $periods = [DateRange::thisMonth(), DateRange::lastMonth()];
+        $history = (bool) $this->option('history');
+        $range = $history ? DateRange::lastMonth() : DateRange::thisMonth();
         $dispatched = 0;
 
         foreach ($connections as $connection) {
-            if (! $this->option('force') && ! $this->isDue($connection)) {
+            // The previous month is stable, so history mode runs on its own daily
+            // cadence and always collects; the current month respects the interval.
+            if (! $history && ! $this->option('force') && ! $this->isDue($connection)) {
                 continue;
             }
 
-            foreach ($periods as $range) {
-                if ($this->option('sync')) {
-                    $runner->collectAll($connection, $range);
-                } else {
-                    RunConnectorCollection::dispatch($connection, $range->start->toDateString(), $range->end->toDateString());
-                }
+            if ($this->option('sync')) {
+                $runner->collectAll($connection, $range);
+            } else {
+                RunConnectorCollection::dispatch($connection, $range->start->toDateString(), $range->end->toDateString());
             }
 
             $dispatched++;
         }
 
         $verb = $this->option('sync') ? 'Collected' : 'Queued collection for';
-        $this->info("{$verb} {$dispatched} connection(s).");
+        $period = $history ? 'previous month' : 'current month';
+        $this->info("{$verb} {$dispatched} connection(s) ({$period}).");
 
         $this->pruneExpiredData();
 
         return self::SUCCESS;
     }
 
+    /**
+     * Whether a connection is due to be collected. Keyed off the last *attempt*
+     * (falling back to the last success for rows predating that column), so a
+     * connection that keeps failing backs off to the normal interval instead of
+     * being retried on every scheduler tick.
+     */
     private function isDue(SiteIntegration $connection): bool
     {
-        if ($connection->last_collected_at === null) {
+        $last = $connection->last_attempted_at ?? $connection->last_collected_at;
+        if ($last === null) {
             return true;
         }
 
@@ -75,7 +87,7 @@ class CollectData extends Command
             config('client-reporter.collection.default_interval', 360),
         );
 
-        return $connection->last_collected_at->addMinutes($interval)->isPast();
+        return $last->addMinutes($interval)->isPast();
     }
 
     /**

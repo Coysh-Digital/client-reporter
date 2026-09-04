@@ -27,6 +27,7 @@ use Illuminate\Support\Carbon;
  * @property array<string, mixed>|null $settings
  * @property Carbon|null $last_connected_at
  * @property Carbon|null $last_collected_at
+ * @property Carbon|null $last_attempted_at
  * @property string|null $last_error
  * @property string|null $connector_version
  */
@@ -46,6 +47,7 @@ class SiteIntegration extends Model
         'connector_version',
         'last_connected_at',
         'last_collected_at',
+        'last_attempted_at',
         'last_error',
     ];
 
@@ -59,6 +61,7 @@ class SiteIntegration extends Model
             'settings' => 'array',
             'last_connected_at' => 'datetime',
             'last_collected_at' => 'datetime',
+            'last_attempted_at' => 'datetime',
         ];
     }
 

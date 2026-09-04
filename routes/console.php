@@ -20,7 +20,13 @@ Artisan::command('inspire', function () {
 | queue each minute so shared hosts need nothing else. VPS users running a
 | persistent worker (or Horizon) can remove the queue:work line.
 */
+// Current month on the regular cadence (the command's own interval decides
+// which connections are actually due each run).
 Schedule::command('client-reporter:collect')->hourly()->withoutOverlapping();
+
+// The previous month is a completed, stable period — refresh it once a day
+// rather than re-collecting it every cycle alongside the current month.
+Schedule::command('client-reporter:collect --history')->dailyAt('04:00')->withoutOverlapping();
 
 // --memory recycles the worker before it grows too large; the short
 // withoutOverlapping expiry means a worker the host OOM-kills (exit 137)

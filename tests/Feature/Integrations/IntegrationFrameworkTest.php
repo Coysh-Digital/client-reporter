@@ -151,6 +151,10 @@ class IntegrationFrameworkTest extends TestCase
         $connection->refresh();
         $this->assertSame(ConnectionStatus::NeedsAttention, $connection->status);
         $this->assertSame('Your API key has expired.', $connection->last_error);
+        // The attempt is recorded even though it failed, so the due check backs
+        // the connection off instead of retrying it on every scheduler tick.
+        $this->assertNotNull($connection->last_attempted_at);
+        $this->assertNull($connection->last_collected_at);
     }
 
     public function test_unexpected_errors_do_not_leak_internals(): void
