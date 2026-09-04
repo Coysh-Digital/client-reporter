@@ -26,6 +26,8 @@ Schedule::command('queue:work --stop-when-empty --max-time=55 --tries=1')
     ->everyMinute()
     ->withoutOverlapping();
 
+Schedule::command('client-reporter:generate-scheduled')->daily()->withoutOverlapping();
+
 Schedule::command('client-reporter:check-updates')->daily();
 
 Schedule::command('client-reporter:sync-billing')->hourly()->withoutOverlapping();

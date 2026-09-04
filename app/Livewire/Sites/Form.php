@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Livewire\Sites;
 
+use App\Enums\ReportFrequency;
 use App\Models\Client;
+use App\Models\ReportTemplate;
 use App\Models\Site;
 use App\Support\AuditLogger;
 use Illuminate\Support\Collection;
@@ -30,6 +32,10 @@ class Form extends Component
 
     public bool $is_active = true;
 
+    public string $report_frequency = 'none';
+
+    public ?int $report_template_id = null;
+
     public function mount(?Site $site = null): void
     {
         $this->authorize('manage-sites');
@@ -43,6 +49,8 @@ class Form extends Component
             $this->environment = $site->environment;
             $this->timezone = $site->timezone;
             $this->is_active = $site->is_active;
+            $this->report_frequency = $site->report_frequency->value;
+            $this->report_template_id = $site->report_template_id;
 
             return;
         }
@@ -79,7 +87,14 @@ class Form extends Component
             'environment' => ['required', 'string', 'max:50'],
             'timezone' => ['required', 'timezone'],
             'is_active' => ['boolean'],
+            'report_frequency' => ['required', 'in:none,weekly,monthly,quarterly'],
+            'report_template_id' => ['nullable', 'integer', 'exists:report_templates,id'],
         ]);
+
+        // A schedule needs a closed period to report on; templates are optional.
+        if ($validated['report_frequency'] === 'none') {
+            $validated['report_template_id'] = null;
+        }
 
         if ($this->site) {
             $this->site->update($validated);
@@ -109,6 +124,22 @@ class Form extends Component
     public function timezones(): array
     {
         return timezone_identifiers_list();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function frequencies(): array
+    {
+        return ReportFrequency::options();
+    }
+
+    /**
+     * @return Collection<int, ReportTemplate>
+     */
+    public function templates(): Collection
+    {
+        return ReportTemplate::query()->orderBy('name')->get(['id', 'name']);
     }
 
     public function render(): mixed

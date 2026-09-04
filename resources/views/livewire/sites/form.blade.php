@@ -64,6 +64,36 @@
             @error('timezone') <p class="mt-1.5 text-xs text-danger">{{ $message }}</p> @enderror
         </div>
 
+        <div class="border-t border-line pt-5">
+            <div class="cr-eyebrow" style="color:var(--color-secondary);">Reporting schedule</div>
+            <p class="mt-1 text-[12.5px] text-faint">Optional. When set, a report is generated automatically once each period closes, ready for you to review and send. Leave off for sites you report on manually.</p>
+
+            <div class="mt-3 grid gap-5 sm:grid-cols-2">
+                <div>
+                    <label for="report_frequency" class="cr-label">Frequency</label>
+                    <select wire:model.live="report_frequency" id="report_frequency" class="cr-input">
+                        @foreach ($this->frequencies() as $value => $label)
+                            <option value="{{ $value }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    @error('report_frequency') <p class="mt-1.5 text-xs text-danger">{{ $message }}</p> @enderror
+                </div>
+
+                @if ($report_frequency !== 'none')
+                    <div>
+                        <label for="report_template_id" class="cr-label">Report template <span class="text-faint">(optional)</span></label>
+                        <select wire:model="report_template_id" id="report_template_id" class="cr-input">
+                            <option value="">Default sections</option>
+                            @foreach ($this->templates() as $template)
+                                <option value="{{ $template->id }}">{{ $template->name }}</option>
+                            @endforeach
+                        </select>
+                        @error('report_template_id') <p class="mt-1.5 text-xs text-danger">{{ $message }}</p> @enderror
+                    </div>
+                @endif
+            </div>
+        </div>
+
         <div class="flex items-center gap-3 border-t border-line pt-5">
             <button type="submit" class="cr-btn cr-btn-primary">{{ $site ? 'Save changes' : 'Create site' }}</button>
             <a href="{{ $site ? route('sites.show', $site) : route('sites.index') }}" wire:navigate class="cr-btn cr-btn-secondary">Cancel</a>

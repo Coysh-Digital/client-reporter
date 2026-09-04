@@ -34,7 +34,6 @@ class DashboardData
 
     public function __construct(
         private readonly SiteHealthResolver $health,
-        private readonly ReportStatusResolver $reports,
     ) {}
 
     /**
@@ -53,13 +52,12 @@ class DashboardData
         $sites = Site::query()->where('is_active', true)->with('client')->get();
 
         $health = $this->health->forSites($sites, $period);
-        $reportStatus = $this->reports->forSites($sites, $period);
 
         return [
             'period' => $period,
-            'portfolio' => $this->portfolio($sites, $health, $reportStatus),
-            'needsAttention' => $this->needsAttention($sites, $reportStatus, $period),
-            'reportsThisPeriod' => $this->reportsThisPeriod($sites, $reportStatus),
+            'portfolio' => $this->portfolio($sites, $health),
+            'needsAttention' => $this->needsAttention($sites, $period),
+            'reportsThisPeriod' => $this->reportsThisPeriod(),
             'notableChanges' => $this->notableChanges($period, $comparison),
         ];
     }
@@ -67,10 +65,9 @@ class DashboardData
     /**
      * @param  Collection<int, Site>  $sites
      * @param  array<int, SiteHealth>  $health
-     * @param  array<int, array{status: ReportPeriodStatus, report: ?Report}>  $reportStatus
      * @return array<string, mixed>
      */
-    private function portfolio(Collection $sites, array $health, array $reportStatus): array
+    private function portfolio(Collection $sites, array $health): array
     {
         $healthy = count(array_filter($health, fn (SiteHealth $h): bool => $h === SiteHealth::Healthy));
         $warn = count(array_filter($health, fn (SiteHealth $h): bool => $h === SiteHealth::NeedsAttention));
@@ -86,9 +83,7 @@ class DashboardData
             ->whereHas('site', fn ($q) => $q->where('is_active', true))
             ->count();
 
-        $statuses = array_map(fn (array $r): ReportPeriodStatus => $r['status'], $reportStatus);
-        $sent = count(array_filter($statuses, fn (ReportPeriodStatus $s): bool => $s === ReportPeriodStatus::Sent));
-        $toPrepare = count(array_filter($statuses, fn (ReportPeriodStatus $s): bool => $s === ReportPeriodStatus::NotStarted));
+        $sitesScheduled = $sites->filter(fn (Site $s): bool => $s->hasReportSchedule())->count();
 
         return [
             'clients' => Client::count(),
@@ -97,17 +92,16 @@ class DashboardData
             'healthSplit' => ['ok' => $healthy, 'warn' => $warn, 'danger' => $down],
             'integrations' => $integrations,
             'integrationsNeedReconnect' => $needReconnect,
-            'reportsSent' => $sent,
-            'reportsToPrepare' => $toPrepare,
+            'sitesScheduled' => $sitesScheduled,
+            'reportsToPrepare' => $this->scheduledReadyToSend()->count(),
         ];
     }
 
     /**
      * @param  Collection<int, Site>  $sites
-     * @param  array<int, array{status: ReportPeriodStatus, report: ?Report}>  $reportStatus
      * @return array<int, array<string, mixed>>
      */
-    private function needsAttention(Collection $sites, array $reportStatus, DateRange $period): array
+    private function needsAttention(Collection $sites, DateRange $period): array
     {
         $items = [];
 
@@ -149,19 +143,21 @@ class DashboardData
             ];
         }
 
-        // Reports not started for the period.
-        foreach ($sites as $site) {
-            if (($reportStatus[$site->id]['status'] ?? null) === ReportPeriodStatus::NotStarted) {
-                $items[] = [
-                    'severity' => 1,
-                    'variant' => 'warn',
-                    'title' => $period->label().' report not created',
-                    'subtitle' => $this->siteLine($site),
-                    'when' => '',
-                    'actionLabel' => 'Create report',
-                    'actionUrl' => route('reports.create'),
-                ];
+        // Scheduled reports that have been auto-generated but not yet sent.
+        foreach ($this->scheduledReadyToSend() as $report) {
+            if ($report->site === null) {
+                continue;
             }
+
+            $items[] = [
+                'severity' => 1,
+                'variant' => 'info',
+                'title' => $report->dateRange()->label().' report ready to send',
+                'subtitle' => $this->siteLine($report->site),
+                'when' => $report->generated_at?->diffForHumans() ?? '',
+                'actionLabel' => 'Review & send',
+                'actionUrl' => route('reports.show', $report),
+            ];
         }
 
         usort($items, fn (array $a, array $b): int => $b['severity'] <=> $a['severity']);
@@ -170,41 +166,53 @@ class DashboardData
     }
 
     /**
-     * @param  Collection<int, Site>  $sites
-     * @param  array<int, array{status: ReportPeriodStatus, report: ?Report}>  $reportStatus
+     * The scheduled reports that have been generated, with their send status,
+     * newest first. Only scheduled sites appear here — manual reporting stays
+     * off the dashboard.
+     *
      * @return array<int, array<string, mixed>>
      */
-    private function reportsThisPeriod(Collection $sites, array $reportStatus): array
+    private function reportsThisPeriod(): array
     {
-        return $sites
-            ->map(function (Site $site) use ($reportStatus): array {
-                $entry = $reportStatus[$site->id] ?? ['status' => ReportPeriodStatus::NotStarted, 'report' => null];
-                /** @var ReportPeriodStatus $status */
-                $status = $entry['status'];
-                /** @var Report|null $report */
-                $report = $entry['report'];
-
-                $url = match ($status) {
-                    ReportPeriodStatus::NotStarted => route('reports.create'),
-                    ReportPeriodStatus::Draft => $report ? route('reports.edit', $report) : route('reports.create'),
-                    default => $report ? route('reports.show', $report) : route('reports.index'),
-                };
+        return Report::query()
+            ->where('scheduled', true)
+            ->whereNotNull('generated_at')
+            ->whereHas('site', fn ($q) => $q->where('is_active', true))
+            ->with('site.client')
+            ->withCount('shares')
+            ->orderByDesc('generated_at')
+            ->limit(50)
+            ->get()
+            ->map(function (Report $report): array {
+                $status = ((int) ($report->shares_count ?? 0)) > 0
+                    ? ReportPeriodStatus::Sent
+                    : ReportPeriodStatus::Ready;
 
                 return [
-                    'client' => $site->client->name,
-                    'site' => $site->name,
+                    'client' => $report->site->client->name,
+                    'site' => $report->site->name,
                     'status' => $status,
-                    'actionUrl' => $url,
+                    'actionUrl' => route('reports.show', $report),
                 ];
             })
-            ->sortBy(fn (array $r): int => match ($r['status']) {
-                ReportPeriodStatus::NotStarted => 0,
-                ReportPeriodStatus::Draft => 1,
-                ReportPeriodStatus::Ready => 2,
-                ReportPeriodStatus::Sent => 3,
-            })
-            ->values()
             ->all();
+    }
+
+    /**
+     * Scheduled reports that have been generated but not yet sent (no share link).
+     *
+     * @return Collection<int, Report>
+     */
+    private function scheduledReadyToSend(): Collection
+    {
+        return Report::query()
+            ->where('scheduled', true)
+            ->whereNotNull('generated_at')
+            ->whereHas('site', fn ($q) => $q->where('is_active', true))
+            ->doesntHave('shares')
+            ->with('site.client')
+            ->orderByDesc('generated_at')
+            ->get();
     }
 
     /**

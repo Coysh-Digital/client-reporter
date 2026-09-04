@@ -5,6 +5,16 @@ All notable changes to Client Reporter will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Scheduled reports** — sites can now opt into a reporting schedule (weekly, monthly or quarterly; off by default). When a period closes, `client-reporter:generate-scheduled` (run daily) auto-generates that site's report — pulling the data and freezing the snapshot — so it's ready for you to review and send. Sending stays manual.
+
+### Fixed
+
+- **Dashboard "Needs attention"** no longer flags every active site for the current, still-open period. It now surfaces only scheduled reports that have been generated but not yet sent, and the "Reports" tile/panel reflect scheduled sites rather than all sites.
+
 ## [0.1.0-alpha.1] - 2026-09-04
 
 The first public (alpha) release. Feature-complete for an MVP but early — expect rough edges, and test before pointing real clients at it.

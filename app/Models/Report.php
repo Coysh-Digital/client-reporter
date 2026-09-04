@@ -18,6 +18,7 @@ use Illuminate\Support\Carbon;
  * @property int $site_id
  * @property string $title
  * @property string $status
+ * @property bool $scheduled
  * @property Carbon $range_start
  * @property Carbon $range_end
  * @property bool $compare_previous
@@ -36,6 +37,7 @@ class Report extends Model
         'range_end',
         'compare_previous',
         'status',
+        'scheduled',
         'intro',
         'created_by',
         'generated_at',
@@ -47,6 +49,7 @@ class Report extends Model
             'range_start' => 'date',
             'range_end' => 'date',
             'compare_previous' => 'boolean',
+            'scheduled' => 'boolean',
             'generated_at' => 'datetime',
         ];
     }

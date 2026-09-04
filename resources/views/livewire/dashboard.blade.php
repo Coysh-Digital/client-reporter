@@ -72,12 +72,12 @@
             @endif
         </div>
         <div class="px-5 py-4">
-            <div class="cr-eyebrow">Reports this period</div>
-            <div class="tnum mt-2 font-serif text-3xl font-semibold text-ink">{{ $portfolio['reportsSent'] }}<span class="text-lg font-medium text-faint"> / {{ $portfolio['sitesTotal'] }} sent</span></div>
-            @if ($portfolio['reportsToPrepare'] > 0)
-                <div class="mt-1 text-[12.5px]" style="color:var(--color-warn);">{{ $portfolio['reportsToPrepare'] }} still to prepare</div>
+            <div class="cr-eyebrow">Reports to send</div>
+            <div class="tnum mt-2 font-serif text-3xl font-semibold text-ink">{{ $portfolio['reportsToPrepare'] }}</div>
+            @if ($portfolio['sitesScheduled'] > 0)
+                <div class="mt-1 text-[12.5px] text-faint">{{ $portfolio['sitesScheduled'] }} {{ Str::plural('site', $portfolio['sitesScheduled']) }} on a schedule</div>
             @else
-                <div class="mt-1 text-[12.5px] text-faint">All prepared</div>
+                <div class="mt-1 text-[12.5px] text-faint">No sites scheduled</div>
             @endif
         </div>
     </div>
@@ -114,11 +114,11 @@
     <div class="mb-8 grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
         <section class="cr-panel">
             <div class="flex items-baseline justify-between border-b border-line px-5 py-3.5">
-                <h2 class="font-serif text-base font-semibold text-ink">Reports this period</h2>
-                <span class="text-xs text-faint">{{ $data['period']->label() }}</span>
+                <h2 class="font-serif text-base font-semibold text-ink">Scheduled reports</h2>
+                <span class="text-xs text-faint">Auto-generated</span>
             </div>
             @if (empty($data['reportsThisPeriod']))
-                <p class="px-5 py-8 text-center text-sm text-faint">No active sites yet.</p>
+                <p class="px-5 py-8 text-center text-sm text-faint">No scheduled reports yet.</p>
             @else
                 <div>
                     @foreach ($data['reportsThisPeriod'] as $row)

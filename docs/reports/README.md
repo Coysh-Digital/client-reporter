@@ -91,6 +91,16 @@ Generating a report is what turns a live, editable draft into a stable deliverab
 
 Everything a client can see — the shared link, the emailed copy, the PDF — comes **from the frozen render**, never from live data. So a shared report loads instantly and stays exactly as it was when you generated it, even if you later reconnect integrations, re-brand, or the underlying metrics shift. Want a fresh render? Just regenerate the report.
 
+## Scheduling reports
+
+Not every site needs a report on a clock, so scheduling is **opt-in per site**. On a site's edit page there's a **Reporting schedule** section where you can set a frequency — Weekly, Monthly or Quarterly — and, optionally, a [template](#report-templates) to build the report from (leave it on "Default sections" if you'd rather use the standard spine). Leave the frequency on "Not scheduled" for sites you report on by hand.
+
+Once a period has **fully closed**, the `client-reporter:generate-scheduled` command (run daily by the scheduler) picks up each scheduled site, creates the report for that period, and generates it — pulling the data and freezing the snapshot, exactly as if you'd made it yourself. It won't touch the current, still-open period, and it never duplicates a report you've already made for a period.
+
+Crucially, **sending stays manual**. A scheduled report lands as generated-but-unsent, and shows up on your [dashboard](../../README.md) under "Needs attention" as *ready to send* — so you always review it and decide when (and whether) a client sees it. Nothing goes out on its own.
+
+If a scheduled generation fails (say an integration is down), nothing half-made is left behind — the next daily run simply tries again.
+
 ## Outputs
 
 Once a report is generated you can hand it over in a few different ways, all coming from the same frozen render and all fully white-labelled:

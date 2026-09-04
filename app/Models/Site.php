@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\ReportFrequency;
 use Database\Factories\SiteFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,6 +12,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 
+/**
+ * @property ReportFrequency $report_frequency
+ * @property int|null $report_template_id
+ */
 class Site extends Model
 {
     /** @use HasFactory<SiteFactory> */
@@ -25,6 +30,8 @@ class Site extends Model
         'timezone',
         'is_active',
         'settings',
+        'report_frequency',
+        'report_template_id',
     ];
 
     protected function casts(): array
@@ -32,6 +39,7 @@ class Site extends Model
         return [
             'is_active' => 'boolean',
             'settings' => 'array',
+            'report_frequency' => ReportFrequency::class,
         ];
     }
 
@@ -69,6 +77,25 @@ class Site extends Model
     public function reports(): HasMany
     {
         return $this->hasMany(Report::class);
+    }
+
+    /**
+     * The template scheduled reports are built from (optional; falls back to a
+     * default set of blocks when none is chosen).
+     *
+     * @return BelongsTo<ReportTemplate, $this>
+     */
+    public function reportTemplate(): BelongsTo
+    {
+        return $this->belongsTo(ReportTemplate::class);
+    }
+
+    /**
+     * Whether this site is on a reporting schedule.
+     */
+    public function hasReportSchedule(): bool
+    {
+        return $this->report_frequency->isScheduled();
     }
 
     /**
