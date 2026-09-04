@@ -4,14 +4,20 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Integrations;
 
+use App\Enums\ConnectionStatus;
 use App\Integrations\PageSpeed\PageSpeedCollector;
+use App\Integrations\PageSpeed\PageSpeedIntegration;
+use App\Livewire\Integrations\WorkspaceSetup;
 use App\Models\MetricSnapshot;
 use App\Models\Site;
 use App\Models\SiteIntegration;
+use App\Models\User;
+use App\Models\WorkspaceIntegration;
 use App\Support\DateRange;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class PageSpeedTest extends TestCase
@@ -48,6 +54,50 @@ class PageSpeedTest extends TestCase
 
         $metrics = collect($result->metrics())->keyBy('key');
         $this->assertSame(88.0, $metrics['performance.score']->value);
+    }
+
+    public function test_pagespeed_connects_at_the_workspace_level_across_sites(): void
+    {
+        $manager = User::factory()->manager()->create();
+        $northwind = Site::factory()->create(['name' => 'Northwind', 'url' => 'https://northwind.test']);
+        Site::factory()->create(['name' => 'Inactive', 'url' => 'https://inactive.test', 'is_active' => false]);
+
+        Livewire::actingAs($manager)->test(WorkspaceSetup::class, ['key' => 'pagespeed'])
+            ->set('values.api_key', 'shared-key')
+            ->call('connect')
+            ->assertSet('phase', 'mapping')
+            // Only the active site is discovered, matched to itself by URL.
+            ->assertSet('assignments.0', $northwind->id)
+            ->call('confirm')
+            ->assertRedirect(route('integrations.index'));
+
+        $workspace = WorkspaceIntegration::query()->firstWhere('integration_key', 'pagespeed');
+        $this->assertNotNull($workspace);
+
+        $connection = SiteIntegration::query()
+            ->where('site_id', $northwind->id)->where('integration_key', 'pagespeed')->first();
+        $this->assertNotNull($connection);
+        $this->assertSame($workspace->id, $connection->workspace_integration_id);
+        // The per-site connection borrows the workspace's API key.
+        $this->assertSame('shared-key', $connection->credential('api_key'));
+    }
+
+    public function test_pagespeed_discovers_only_active_sites(): void
+    {
+        Site::factory()->create(['url' => 'https://a.test']);
+        Site::factory()->create(['url' => 'https://b.test', 'is_active' => false]);
+
+        $workspace = WorkspaceIntegration::query()->create([
+            'integration_key' => 'pagespeed',
+            'name' => 'PageSpeed (workspace)',
+            'status' => ConnectionStatus::Connected,
+            'credentials' => ['api_key' => 'k'],
+        ]);
+
+        $discovered = (new PageSpeedIntegration)->discoverConnections($workspace);
+
+        $this->assertCount(1, $discovered);
+        $this->assertSame('https://a.test', $discovered[0]->url);
     }
 
     public function test_collector_reads_all_four_lighthouse_categories(): void

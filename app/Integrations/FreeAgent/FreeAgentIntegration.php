@@ -35,6 +35,7 @@ class FreeAgentIntegration extends Integration
             category: IntegrationCategory::Billing,
             authMethod: AuthMethod::OAuth,
             description: "Sync invoices you've raised in FreeAgent into your clients' reports automatically.",
+            icon: 'vendor/logos/freeagent.svg',
             version: '1.0.0',
         );
     }

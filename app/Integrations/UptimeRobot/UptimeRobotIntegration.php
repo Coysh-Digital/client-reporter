@@ -26,6 +26,7 @@ class UptimeRobotIntegration extends Integration
             category: IntegrationCategory::Monitoring,
             authMethod: AuthMethod::ApiKey,
             description: 'Report uptime, incidents and response times from your UptimeRobot monitors.',
+            icon: 'vendor/logos/uptimerobot.svg',
             version: '1.0.0',
         );
     }

@@ -30,4 +30,6 @@ Schedule::command('client-reporter:generate-scheduled')->daily()->withoutOverlap
 
 Schedule::command('client-reporter:check-updates')->daily();
 
+Schedule::command('client-reporter:fetch-favicons')->weekly()->withoutOverlapping();
+
 Schedule::command('client-reporter:sync-billing')->hourly()->withoutOverlapping();
