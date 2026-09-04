@@ -71,6 +71,7 @@ class CollectorRunner
                 'status' => ConnectionStatus::Connected,
                 'last_connected_at' => now(),
                 'last_collected_at' => now(),
+                'last_attempted_at' => now(),
                 'last_error' => null,
             ]);
         } catch (Throwable $e) {
@@ -85,6 +86,7 @@ class CollectorRunner
 
             $connection->update([
                 'status' => ConnectionStatus::NeedsAttention,
+                'last_attempted_at' => now(),
                 'last_error' => $message,
             ]);
 
