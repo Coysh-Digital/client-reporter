@@ -270,4 +270,30 @@
             </div>
         </div>
     </div>
+
+    {{-- Generating overlay: a friendlier wait while we collect fresh data,
+         resolve every section and freeze the render. Shown only while the
+         `generate` action is in flight; the cycling messages are cosmetic. --}}
+    <div wire:loading.flex wire:target="generate" wire:key="generating-overlay"
+         class="fixed inset-0 z-50 items-center justify-center p-4"
+         style="background:color-mix(in srgb, var(--color-ink) 45%, transparent);backdrop-filter:blur(2px);">
+        <div class="w-full max-w-sm rounded-2xl border border-line bg-surface p-6 text-center shadow-xl"
+             x-data="{ i: 0, timer: null, messages: [
+                'Collecting the latest data…',
+                'Crunching the numbers…',
+                'Rendering charts…',
+                'Writing summaries…',
+                'Putting it all together…',
+             ] }"
+             x-init="timer = setInterval(() => { i = (i + 1) % messages.length }, 1800)"
+             x-on:destroy="clearInterval(timer)">
+            <div class="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-full" style="background:var(--color-accent-soft);">
+                <x-icon name="file-chart-column" class="h-5 w-5" style="color:var(--color-accent);" />
+            </div>
+            <p class="text-[15px] font-semibold text-ink">Generating your report</p>
+            <p class="mt-1 h-4 text-[13px] text-muted" x-text="messages[i]"></p>
+            <div class="cr-progress mt-4"><div class="cr-progress-bar"></div></div>
+            <p class="mt-3 text-[11px] text-faint">This can take a moment while we gather fresh data.</p>
+        </div>
+    </div>
 </div>

@@ -84,6 +84,6 @@
             @endforeach
         </div>
 
-        <div class="mt-4">{{ $clients->links() }}</div>
+        <div class="mt-4">{{ $clients->links('vendor.pagination.cr') }}</div>
     @endif
 </div>
