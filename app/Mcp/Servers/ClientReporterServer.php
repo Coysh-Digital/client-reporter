@@ -17,7 +17,7 @@ use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Attributes\Version;
 
 #[Name('Client Reporter')]
-#[Version('0.1.0')]
+#[Version('0.1.0-alpha.1')]
 #[Instructions(<<<'TXT'
 Read-only access to a Client Reporter installation — an agency's clients, their
 websites, the reports built for them, and the metrics collected behind them.

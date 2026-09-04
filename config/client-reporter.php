@@ -58,7 +58,7 @@ return [
 
     'name' => 'Client Reporter',
 
-    'version' => '0.1.0',
+    'version' => '0.1.0-alpha.1',
 
     'repository' => 'coysh-digital/client-reporter',
 

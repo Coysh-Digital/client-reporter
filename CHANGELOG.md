@@ -5,15 +5,9 @@ All notable changes to Client Reporter will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.1.0-alpha.1] - 2026-09-04
 
-### Added
-
-- **MCP server** — a built-in, read-only [Model Context Protocol](https://modelcontextprotocol.io) server so an AI assistant can query your clients, sites, reports and metrics in plain English. Seven read-only tools (dashboard, clients, sites, site detail, reports, report data, site metrics), exposed over both a local (stdio) transport (`php artisan mcp:start client-reporter`) and an authenticated HTTP endpoint (Sanctum token with an `mcp:read` ability, minted via `php artisan client-reporter:mcp-token`). Access mirrors the app's staff roles and never exposes integration credentials. See [docs/mcp](docs/mcp/README.md).
-
-## [0.1.0] - 2026-09-03
-
-The first public release.
+The first public (alpha) release. Feature-complete for an MVP but early — expect rough edges, and test before pointing real clients at it.
 
 ### Added
 
@@ -27,5 +21,6 @@ The first public release.
 - **Report outputs** — beautiful branded web reports, secure share links (expiry, password, revocation), dompdf PDF export (with optional Browsershot on a VPS), branded email delivery, and a restricted client portal. Generated reports are frozen to an immutable snapshot so shared, emailed and exported copies stay stable.
 - **Billing** — a lightweight per-client invoice ledger with a report block, plus optional invoice sync from FreeAgent and Xero.
 - **Installation & operations** — a browser installation wizard (SQLite/MySQL/PostgreSQL), a GitHub update checker with an admin notice, and `client-reporter:update`, `client-reporter:sync-billing` and `client-reporter:make-integration` helpers plus reusable integration contract test helpers.
+- **MCP server** — a built-in, read-only [Model Context Protocol](https://modelcontextprotocol.io) server so an AI assistant can query your clients, sites, reports and metrics in plain English. Seven read-only tools (dashboard, clients, sites, site detail, reports, report data, site metrics), exposed over both a local (stdio) transport (`php artisan mcp:start client-reporter`) and an authenticated HTTP endpoint (Sanctum token with an `mcp:read` ability, minted via `php artisan client-reporter:mcp-token`). Access mirrors the app's staff roles and never exposes integration credentials. See [docs/mcp](docs/mcp/README.md).
 
-[0.1.0]: https://github.com/coysh-digital/client-reporter/releases/tag/v0.1.0
+[0.1.0-alpha.1]: https://github.com/coysh-digital/client-reporter/releases/tag/v0.1.0-alpha.1
