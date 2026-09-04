@@ -26,6 +26,8 @@ class ReportComposer
         ['type' => 'cover', 'heading' => 'Cover'],
         ['type' => 'text', 'heading' => 'Introduction'],
         ['type' => 'website-overview', 'heading' => 'Website overview'],
+        ['type' => 'analytics.site_traffic', 'heading' => 'Site traffic'],
+        ['type' => 'uptime.overview', 'heading' => 'Uptime & performance'],
         ['type' => 'closing', 'heading' => 'Thank you'],
     ];
 

@@ -91,6 +91,12 @@
         table.bars .bar-track { display: block; height: 6px; background: #eee7d9; border-radius: 3px; overflow: hidden; }
         table.bars .bar-fill { display: block; height: 6px; background: var(--brand-primary); border-radius: 3px; }
         .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 11px; }
+        .mini-bars-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--brand-secondary); }
+        .status-strip { width: 100%; border-collapse: collapse; table-layout: fixed; margin-top: 12px; }
+        .status-strip td { padding: 0 1px; }
+        .status-cell { display: block; height: 20px; border-radius: 3px; font-size: 0; line-height: 0; }
+        .gauge-ring { display: inline-block; width: 66px; height: 66px; border-radius: 50%; border: 5px solid #eee7d9; text-align: center; }
+        .gauge-value { font-family: {!! $branding->headingFont !!}; font-size: 22px; line-height: 56px; }
         .report-footer { text-align: center; color: #9a9384; font-size: 12.5px; margin-top: 22px; line-height: 1.7; }
         .report-footer .footer-name { font-family: {!! $branding->headingFont !!}; font-size: 15px; font-weight: 600; color: #4a463d; display: block; margin-bottom: 4px; }
         a { color: var(--brand-primary); text-decoration: none; }
