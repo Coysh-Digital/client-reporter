@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace Tests\Feature\Integrations;
 
 use App\Enums\ConnectionStatus;
+use App\Integrations\GoogleSearchConsole\GoogleSearchConsoleClient;
 use App\Integrations\GoogleSearchConsole\GoogleSearchConsoleIntegration;
 use App\Integrations\GoogleSearchConsole\SearchAnalyticsCollector;
 use App\Integrations\IntegrationRegistry;
 use App\Integrations\Support\IntegrationCategory;
+use App\Integrations\Support\IntegrationException;
 use App\Livewire\Reports\Builder;
 use App\Models\Report;
 use App\Models\Site;
@@ -55,6 +57,31 @@ class SearchTest extends TestCase
             'integration_key' => 'google_search_console', 'status' => ConnectionStatus::Connected,
             'credentials' => ['refresh_token' => 'rt'], 'settings' => ['site_url' => 'https://a.test/'],
         ]);
+    }
+
+    public function test_a_403_on_find_sites_surfaces_googles_specific_reason(): void
+    {
+        config(['services.google.client_id' => 'id', 'services.google.client_secret' => 'secret']);
+
+        Http::fake(function ($request) {
+            if (str_contains($request->url(), 'oauth2.googleapis.com')) {
+                return Http::response(['access_token' => 'at']);
+            }
+
+            return Http::response([
+                'error' => ['code' => 403, 'message' => 'Google Search Console API has not been used in project 123 before or it is disabled.'],
+            ], 403);
+        });
+
+        $client = new GoogleSearchConsoleClient('rt', 'https://a.test/', 'id', 'secret');
+
+        try {
+            $client->sites();
+            $this->fail('Expected an IntegrationException.');
+        } catch (IntegrationException $e) {
+            $this->assertStringContainsString('enabled in your Google Cloud project', $e->getMessage());
+            $this->assertStringContainsString('has not been used in project', $e->getMessage());
+        }
     }
 
     public function test_search_console_is_registered_in_a_search_category(): void
