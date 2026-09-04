@@ -38,7 +38,7 @@
     </table>
 
     @if (! empty($data['timeseries']))
-        @include('reports.blocks.partials.chart', ['series' => $data['timeseries']])
+        @include('reports.blocks.partials.line-chart', ['series' => $data['timeseries'], 'color' => $branding->primaryColor, 'chartHeight' => 120, 'zeroBased' => false])
     @endif
 @endif
 

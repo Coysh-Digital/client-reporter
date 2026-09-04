@@ -43,9 +43,12 @@
         </tr>
     </table>
 
-    {{-- Daily uptime strip --}}
+    {{-- Daily uptime: a % trend line above a per-day health strip --}}
     @if (! empty($days))
         <div class="mini-bars-title" style="margin-top:24px;">Daily uptime</div>
+        @if (! empty($data['timeseries']))
+            @include('reports.blocks.partials.line-chart', ['series' => $data['timeseries'], 'color' => $branding->primaryColor, 'chartHeight' => 120, 'zeroBased' => false])
+        @endif
         <table class="status-strip">
             <tr>
                 @foreach ($days as $day)
@@ -80,6 +83,10 @@
                 @endforeach
             </tr>
         </table>
+        @if (! empty($data['lighthouse_history']))
+            <div class="mini-bars-title" style="margin-top:18px;">Performance score over time</div>
+            @include('reports.blocks.partials.line-chart', ['series' => $data['lighthouse_history'], 'color' => $branding->primaryColor, 'chartHeight' => 110, 'zeroBased' => false])
+        @endif
     @endif
 
     {{-- Incidents --}}

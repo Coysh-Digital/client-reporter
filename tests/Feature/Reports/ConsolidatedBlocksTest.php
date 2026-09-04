@@ -146,6 +146,9 @@ class ConsolidatedBlocksTest extends TestCase
             'incidents' => [],
             'monitors' => [['name' => 'stroudcf.org', 'status' => 'up']],
         ]);
+        $this->snapshot($perf, 'core-web-vitals', [
+            'timeseries' => [['date' => '2026-08-01', 'value' => 88], ['date' => '2026-08-02', 'value' => 91]],
+        ]);
 
         $data = (new UptimeOverviewBlock)->resolve($this->context($site, ['compare' => true]));
 
@@ -157,6 +160,7 @@ class ConsolidatedBlocksTest extends TestCase
         $this->assertCount(4, $data['lighthouse']);
         $this->assertSame(['label' => 'Performance', 'score' => 91, 'rating' => 'good'], $data['lighthouse'][0]);
         $this->assertSame('SEO', $data['lighthouse'][3]['label']);
+        $this->assertCount(2, $data['lighthouse_history']);
         $this->assertStringContainsString('Lighthouse performance sits at 91', $data['summary']);
 
         $statuses = array_column($data['status_days'], 'status');
@@ -212,10 +216,12 @@ class ConsolidatedBlocksTest extends TestCase
                     ['label' => 'Performance', 'score' => 91, 'rating' => 'good'],
                     ['label' => 'SEO', 'score' => 100, 'rating' => 'good'],
                 ],
+                'lighthouse_history' => [['date' => '2026-08-01', 'value' => 88], ['date' => '2026-08-02', 'value' => 91]],
             ],
             'heading' => 'Uptime & performance',
             'commentary' => null,
             'icon' => 'pulse',
+            'branding' => (object) ['primaryColor' => '#33406b'],
         ])->render();
 
         $this->assertStringContainsString('Uptime &amp; performance', $html);
@@ -223,6 +229,9 @@ class ConsolidatedBlocksTest extends TestCase
         $this->assertStringContainsString('Below 99.5%', $html);
         $this->assertStringContainsString('91', $html);
         $this->assertStringContainsString('No outages detected', $html);
+        // Both trend lines render as SVG data-URI images.
+        $this->assertStringContainsString('data:image/svg+xml;base64,', $html);
+        $this->assertStringContainsString('Performance score over time', $html);
     }
 
     public function test_blocks_are_registered_and_in_the_default_template(): void

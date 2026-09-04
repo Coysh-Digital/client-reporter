@@ -25,6 +25,7 @@
 - The Activity page now lists jobs currently on the queue (waiting and running), and a live queue monitor in the sidebar shows at a glance whether background jobs are idle, queued or running.
 - Reorganised the Activity page into Recent runs / Queued / Failed jobs tabs. Failed jobs can be retried or dismissed (individually or all at once), and a stuck queue can be cleared.
 - Report trends now render as real vector line graphs (visitors over time, and the daily-visitors block) in both the web report and the PDF.
+- Extended the line graphs to the daily-uptime trend and a Lighthouse performance-score history in the Uptime & performance component (and the standalone uptime/performance blocks); these use a fitted y-axis so small movements near the top of the range are visible.
 
 ## 0.1.0-alpha.1 - 2026-09-04
 
