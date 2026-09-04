@@ -6,6 +6,7 @@
     <p class="muted">No store was detected on this site for the period.</p>
 @else
     @include('reports.blocks.partials.insight', ['insight' => $data['insight'] ?? null])
+    @include('reports.blocks.partials.ai-summary', ['aiSummary' => $data['ai_summary'] ?? null])
     @include('reports.blocks.partials.metric-grid', ['metrics' => $data['metrics'], 'currency' => $data['currency'] ?? null])
 
     @if (! empty($data['timeseries']))

@@ -15,9 +15,10 @@
     <p class="muted">No uptime data was collected for this period yet.</p>
 @else
     @include('reports.blocks.partials.insight', ['insight' => $data['summary'] ?? null])
+    @include('reports.blocks.partials.ai-summary', ['aiSummary' => $data['ai_summary'] ?? null])
 
     {{-- Headline tiles --}}
-    <table style="width:100%;border-collapse:collapse;table-layout:fixed;margin-top:4px;">
+    <table class="tile-grid" style="width:100%;border-collapse:collapse;table-layout:fixed;margin-top:4px;">
         <tr>
             @foreach ($data['tiles'] as $t)
                 @php
@@ -72,7 +73,7 @@
     {{-- Lighthouse scores --}}
     @if (! empty($data['lighthouse']))
         <div class="mini-bars-title" style="margin-top:26px;">Lighthouse scores</div>
-        <table style="width:100%;border-collapse:collapse;table-layout:fixed;margin-top:12px;">
+        <table class="gauge-grid" style="width:100%;border-collapse:collapse;table-layout:fixed;margin-top:12px;">
             <tr>
                 @foreach ($data['lighthouse'] as $score)
                     @php $rc = $ratingColors[$score['rating']] ?? '#8b857a'; @endphp
@@ -94,19 +95,21 @@
     @if (empty($data['incidents']))
         <p style="margin:8px 0 0;font-size:13.5px;color:#3f7d54;">No outages detected during this period. 🎉</p>
     @else
-        <table class="data">
-            <thead><tr><th>Service</th><th>Started</th><th style="text-align:right;">Duration</th><th>Reason</th></tr></thead>
-            <tbody>
-                @foreach ($data['incidents'] as $incident)
-                    <tr>
-                        <td>{{ $incident['monitor'] ?? '—' }}</td>
-                        <td>{{ isset($incident['started_at']) ? \Illuminate\Support\Carbon::parse($incident['started_at'])->format('d M, H:i') : '—' }}</td>
-                        <td style="text-align:right;">{{ Format::duration($incident['duration_seconds'] ?? 0) }}</td>
-                        <td>{{ $incident['reason'] ?? 'Down' }}</td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
+        <div class="table-scroll">
+            <table class="data">
+                <thead><tr><th>Service</th><th>Started</th><th style="text-align:right;">Duration</th><th>Reason</th></tr></thead>
+                <tbody>
+                    @foreach ($data['incidents'] as $incident)
+                        <tr>
+                            <td>{{ $incident['monitor'] ?? '—' }}</td>
+                            <td>{{ isset($incident['started_at']) ? \Illuminate\Support\Carbon::parse($incident['started_at'])->format('d M, H:i') : '—' }}</td>
+                            <td style="text-align:right;">{{ Format::duration($incident['duration_seconds'] ?? 0) }}</td>
+                            <td>{{ $incident['reason'] ?? 'Down' }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
     @endif
 @endif
 

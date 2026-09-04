@@ -53,6 +53,8 @@
         h1, h2, h3 { font-family: {!! $branding->headingFont !!}; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
         .block { padding: 32px 44px; border-top: 1px solid #efe8da; }
         .block:first-child { border-top: 0; }
+        /* Gently marks the section the builder preview just scrolled to. */
+        .block:target { box-shadow: inset 3px 0 0 var(--brand-primary); }
         .block-heading-row { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
         .block-heading { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.09em; color: var(--brand-secondary); overflow: hidden; }
         .block-heading-icon { display: block; float: left; width: 20px; height: 20px; margin-top: -2px; }
@@ -66,6 +68,8 @@
         .table-scroll { overflow-x: auto; }
         .insight { background: #f8f4e8; border: 1px solid #ece2c8; border-radius: 6px; padding: 12px 16px; margin: -4px 0 20px; font-size: 13.5px; line-height: 1.6; color: #4a4638; }
         .insight-label { display: block; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--brand-secondary); margin-bottom: 4px; }
+        .ai-summary { background: #faf4ee; border: 1px solid #f0e2d2; border-radius: 6px; padding: 12px 16px; margin: -4px 0 20px; font-size: 13.5px; line-height: 1.6; color: #4a4638; }
+        .ai-summary-label { display: block; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--brand-primary); margin-bottom: 4px; }
         .contents-grid { width: 100%; border-collapse: collapse; margin-top: 4px; table-layout: fixed; }
         .contents-grid td { width: 33.33%; padding: 0 10px 12px 0; vertical-align: top; }
         .contents-item { display: block; padding: 14px 12px; border: 1px solid #efe8da; border-radius: 6px; overflow: hidden; }
@@ -118,6 +122,23 @@
             .metric-grid td { padding: 10px 0; border-bottom: 1px solid #f3ecdf; }
             .metric-grid tr td:last-child { border-bottom: 0; }
             table.data { font-size: 12.5px; }
+            /* Stack fixed-width tile rows (headline tiles, mini-bar columns) one
+               per row so they never cram at ~360px. width:100%!important beats the
+               inline width:20%/25% these tables carry for the desktop/PDF layout. */
+            .tile-grid, .tile-grid tbody, .tile-grid tr, .tile-grid td {
+                display: block; width: 100% !important;
+            }
+            .tile-grid td { padding: 10px 0 !important; }
+            /* Lighthouse-style gauge rows go two-up rather than fully stacked. */
+            .gauge-grid, .gauge-grid tbody, .gauge-grid tr { display: block; }
+            .gauge-grid td { display: inline-block; width: 48% !important; padding: 10px 0 !important; vertical-align: top; }
+            /* Two-column cover rows stack, dropping the desktop right-alignment. */
+            .cover-split, .cover-split tbody, .cover-split tr, .cover-split td {
+                display: block; width: 100% !important;
+            }
+            .cover-split td { text-align: left !important; white-space: normal !important; padding-left: 0 !important; padding-right: 0 !important; }
+            /* Long query strings / URLs wrap instead of forcing horizontal scroll. */
+            table.data td { word-break: break-word; }
         }
         @if ($branding->customCss) {!! $branding->customCss !!} @endif
     </style>

@@ -47,7 +47,17 @@ class ReportResolver
             branding: $branding ?? $this->branding($report),
         );
 
-        return $type->resolve($context);
+        $resolved = $type->resolve($context);
+
+        // Carry the persisted AI summary draft (previewed or hand-edited in the
+        // builder) through into the block data, so it shows in the live preview
+        // and is captured when the render is frozen. The generator fills any
+        // that are still empty at generate time.
+        if ($block->ai_summary !== null && $block->ai_summary !== '') {
+            $resolved['ai_summary'] = $block->ai_summary;
+        }
+
+        return $resolved;
     }
 
     /**

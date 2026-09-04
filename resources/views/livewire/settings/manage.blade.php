@@ -13,6 +13,12 @@
     @endif
 
     <div class="mx-auto max-w-3xl space-y-6">
+        {{-- Settings tabs --}}
+        <div class="flex gap-1 border-b border-line">
+            <a href="{{ route('settings.edit') }}" wire:navigate class="border-b-2 px-3 py-2 text-sm font-semibold text-ink" style="border-color:var(--color-accent)">General</a>
+            <a href="{{ route('settings.ai') }}" wire:navigate class="border-b-2 border-transparent px-3 py-2 text-sm text-muted hover:text-ink">AI summaries</a>
+        </div>
+
         {{-- Software updates --}}
         <section class="cr-panel">
             <div class="border-b border-line px-5 py-3.5"><h2 class="cr-eyebrow">Software updates</h2></div>

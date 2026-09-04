@@ -22,6 +22,7 @@ use App\Integrations\WooCommerce\WooCommerceIntegration;
 use App\Integrations\WordPress\WordPressIntegration;
 use App\Integrations\Xero\XeroIntegration;
 use App\Reporting\Blocks\Ads\AdsSummaryBlock;
+use App\Reporting\Blocks\Ai\AiSummaryBlock;
 use App\Reporting\Blocks\Analytics\AnalyticsChartBlock;
 use App\Reporting\Blocks\Analytics\AnalyticsSummaryBlock;
 use App\Reporting\Blocks\Analytics\CustomEventsBlock;
@@ -39,6 +40,7 @@ use App\Reporting\Blocks\Forms\LeadsSummaryBlock;
 use App\Reporting\Blocks\Performance\PerformanceSummaryBlock;
 use App\Reporting\Blocks\Search\SearchPerformanceBlock;
 use App\Reporting\Blocks\TextBlock;
+use App\Reporting\Blocks\Uptime\CertificatesBlock;
 use App\Reporting\Blocks\Uptime\IncidentsBlock;
 use App\Reporting\Blocks\Uptime\UptimeOverviewBlock;
 use App\Reporting\Blocks\Uptime\UptimeSummaryBlock;
@@ -129,6 +131,7 @@ return [
     'report_blocks' => [
         CoverBlock::class,
         ContentsBlock::class,
+        AiSummaryBlock::class,
         TextBlock::class,
         WebsiteOverviewBlock::class,
         SiteTrafficBlock::class,
@@ -146,6 +149,7 @@ return [
         UptimeOverviewBlock::class,
         UptimeSummaryBlock::class,
         IncidentsBlock::class,
+        CertificatesBlock::class,
         PerformanceSummaryBlock::class,
         BillingBlock::class,
         ClosingBlock::class,

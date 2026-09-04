@@ -29,7 +29,7 @@
 @else
     {{-- Standard / bold: full-bleed branded cover band. --}}
     <div class="cover-band" style="background:var(--brand-primary);color:#eef0f6;margin:-32px -44px 0;padding:{{ $bold ? '60px 44px 54px' : '52px 44px 46px' }};">
-        <table style="width:100%;border-collapse:collapse;"><tr>
+        <table class="cover-split" style="width:100%;border-collapse:collapse;"><tr>
             <td style="vertical-align:middle;">
                 @if ($branding->hasLogo())
                     <img src="{{ $branding->logoUrl }}" alt="{{ $branding->agencyName }}" style="height:42px;max-width:240px;">
@@ -46,7 +46,7 @@
         </div>
 
         @if ($intro || $contact || $preparedOn)
-            <table style="width:100%;border-collapse:collapse;margin-top:44px;border-top:1px solid rgba(255,255,255,.16);"><tr>
+            <table class="cover-split" style="width:100%;border-collapse:collapse;margin-top:44px;border-top:1px solid rgba(255,255,255,.16);"><tr>
                 <td style="vertical-align:top;padding-top:20px;max-width:440px;font-size:14.5px;line-height:1.6;color:#d7dbe8;">{{ $intro }}</td>
                 @if ($contact || $preparedOn)
                     <td style="vertical-align:top;padding-top:20px;text-align:right;font-size:12.5px;color:#a9b0cd;line-height:1.7;white-space:nowrap;">

@@ -110,6 +110,39 @@ abstract class BlockType
     }
 
     /**
+     * Whether an optional AI-written summary can be produced for this block.
+     * AI-capable blocks override this and {@see aiFacts()}, and expose an
+     * `ai_summary` toggle in their options().
+     */
+    public function supportsAiSummary(): bool
+    {
+        return false;
+    }
+
+    /**
+     * The editable default instruction sent to the AI for this block's summary
+     * (or the report-level roundup). Null when the block has no AI summary.
+     */
+    public function defaultAiPrompt(): ?string
+    {
+        return null;
+    }
+
+    /**
+     * A small, whitelisted set of already-resolved figures for the AI to
+     * summarise. Only this is ever sent to the provider — never the full
+     * resolve() output — so the prompt stays small and leaks nothing beyond the
+     * intended numbers. Return an empty array when there is nothing to summarise.
+     *
+     * @param  array<string, mixed>  $resolved  this block's resolve() output
+     * @return array<string, mixed>
+     */
+    public function aiFacts(array $resolved): array
+    {
+        return [];
+    }
+
+    /**
      * The configurable options this block exposes in the builder. Override to
      * let staff tune the block (row limits, which metrics to show, comparison…).
      *

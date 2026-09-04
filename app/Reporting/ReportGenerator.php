@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Reporting;
 
+use App\Ai\AiSummariser;
 use App\Integrations\CollectorRunner;
 use App\Models\Report;
 use App\Models\ReportRender;
@@ -20,6 +21,7 @@ class ReportGenerator
         private readonly BlockTypeRegistry $blocks,
         private readonly ReportResolver $resolver,
         private readonly CollectorRunner $runner,
+        private readonly AiSummariser $ai,
     ) {}
 
     public function generate(Report $report): ReportRender
@@ -30,10 +32,15 @@ class ReportGenerator
 
         $branding = $this->resolver->branding($report);
 
+        // Resolve every block, then let the summariser fill any empty AI
+        // summaries (a no-op when AI is disabled). The result is frozen, so the
+        // provider is never called again when the report is viewed or exported.
+        $data = $this->ai->augment($report, $this->resolver->resolveAll($report));
+
         $render = ReportRender::create([
             'report_id' => $report->id,
             'rendered_at' => now(),
-            'data' => $this->resolver->resolveAll($report),
+            'data' => $data,
             'branding_snapshot' => $branding->toArray(),
             'meta' => [
                 'range' => $report->dateRange()->toArray(),

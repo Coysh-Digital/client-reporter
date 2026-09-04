@@ -11,6 +11,7 @@ use App\Models\Report;
 use App\Models\Site;
 use App\Models\SiteIntegration;
 use App\Reporting\Blocks\Analytics\SiteTrafficBlock;
+use App\Reporting\Blocks\Uptime\CertificatesBlock;
 use App\Reporting\Blocks\Uptime\UptimeOverviewBlock;
 use App\Reporting\BlockTypeRegistry;
 use App\Reporting\MetricReader;
@@ -112,6 +113,35 @@ class ConsolidatedBlocksTest extends TestCase
         $this->assertCount(1, $data['top_pages']);
         $this->assertStringContainsString('14,310 visitors', $data['summary']);
         $this->assertStringContainsString('Google.com was the largest source', $data['summary']);
+    }
+
+    public function test_certificates_block_lists_monitors_soonest_expiry_first(): void
+    {
+        $site = Site::factory()->create();
+        $mon = SiteIntegration::factory()->for($site)->create([
+            'integration_key' => 'uptime_kuma',
+            'status' => ConnectionStatus::Connected,
+        ]);
+
+        $this->snapshot($mon, 'monitors', [
+            'monitors' => [
+                ['name' => 'Marketing', 'url' => 'https://www.example.com', 'status' => 'up', 'cert_days' => 74],
+                ['name' => 'App', 'url' => 'https://app.example.com', 'status' => 'up', 'cert_days' => 9],
+                ['name' => 'Legacy', 'url' => 'https://old.example.com', 'status' => 'up', 'cert_days' => null],
+            ],
+            'incidents' => [],
+            'timeseries' => [],
+        ]);
+
+        $data = (new CertificatesBlock)->resolve($this->context($site, ['warn_days' => 30]));
+
+        $this->assertTrue($data['has_data']);
+        // Monitors without cert data are skipped; the rest sort soonest-first.
+        $this->assertCount(2, $data['certificates']);
+        $this->assertSame('app.example.com', $data['certificates'][0]['host']);
+        $this->assertSame('poor', $data['certificates'][0]['rating']);      // 9 days -> renew now
+        $this->assertSame('good', $data['certificates'][1]['rating']);      // 74 days -> valid
+        $this->assertSame(9, $data['soonest']);
     }
 
     public function test_uptime_overview_block_consolidates_monitoring_and_performance(): void
