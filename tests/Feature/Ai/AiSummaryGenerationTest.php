@@ -11,6 +11,7 @@ use App\Models\Site;
 use App\Models\SiteIntegration;
 use App\Reporting\ReportDocument;
 use App\Reporting\ReportGenerator;
+use App\Support\Settings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -86,8 +87,39 @@ class AiSummaryGenerationTest extends TestCase
         // The frozen text renders into the document (through the ai-summary partial).
         $document = app(ReportDocument::class)->fromRender($render);
         $html = view('reports.document', $document)->render();
-        $this->assertStringContainsString('ai-summary-label', $html);
+        $this->assertStringContainsString('class="ai-summary-label"', $html);
         $this->assertStringContainsString('A concise AI summary.', $html);
+        // With an AI summary present, the deterministic "Summary" is suppressed.
+        $this->assertStringNotContainsString('class="insight-label"', $html);
+    }
+
+    public function test_the_standard_summary_shows_when_there_is_no_ai_summary(): void
+    {
+        $this->fakeUptime();
+        // No AiSetting → AI disabled, so the section keeps its deterministic summary.
+        $report = $this->reportWithAiBlocks();
+
+        $render = app(ReportGenerator::class)->generate($report);
+        $document = app(ReportDocument::class)->fromRender($render);
+        $html = view('reports.document', $document)->render();
+
+        $this->assertStringContainsString('class="insight-label"', $html);
+        $this->assertStringNotContainsString('class="ai-summary-label"', $html);
+    }
+
+    public function test_the_ai_summary_label_can_be_rebranded(): void
+    {
+        $this->fakeUptime();
+        $this->enableAi();
+        app(Settings::class)->set('ai.summary_label', 'Bolt Summary');
+
+        $report = $this->reportWithAiBlocks();
+        $render = app(ReportGenerator::class)->generate($report);
+        $document = app(ReportDocument::class)->fromRender($render);
+        $html = view('reports.document', $document)->render();
+
+        $this->assertStringContainsString('Bolt Summary', $html);
+        $this->assertStringNotContainsString('>AI summary<', $html);
     }
 
     public function test_disabled_ai_produces_no_calls_and_no_summary(): void

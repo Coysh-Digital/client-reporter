@@ -7,6 +7,7 @@ namespace App\Reporting\Blocks\Analytics;
 use App\Integrations\Support\IntegrationCategory;
 use App\Reporting\Contracts\BlockType;
 use App\Reporting\Support\BlockContext;
+use App\Reporting\Support\BlockOption;
 
 class AnalyticsChartBlock extends BlockType
 {
@@ -35,14 +36,30 @@ class AnalyticsChartBlock extends BlockType
         return IntegrationCategory::Analytics;
     }
 
+    public function options(): array
+    {
+        return [
+            BlockOption::toggle('compare', 'Overlay the previous period', true),
+        ];
+    }
+
     /**
      * @return array<string, mixed>
      */
     public function resolve(BlockContext $context): array
     {
-        $snapshot = $context->reader->snapshotForCategory($context->site, IntegrationCategory::Analytics, 'summary', $context->range) ?? [];
+        $compare = (bool) $context->block->configValue('compare', true);
 
-        return ['timeseries' => $snapshot['timeseries'] ?? [], 'provider' => $snapshot['provider'] ?? null];
+        $snapshot = $context->reader->snapshotForCategory($context->site, IntegrationCategory::Analytics, 'summary', $context->range) ?? [];
+        $previousSnapshot = $compare && $context->comparison
+            ? ($context->reader->snapshotForCategory($context->site, IntegrationCategory::Analytics, 'summary', $context->comparison) ?? [])
+            : [];
+
+        return [
+            'timeseries' => $snapshot['timeseries'] ?? [],
+            'timeseries_previous' => $previousSnapshot['timeseries'] ?? [],
+            'provider' => $snapshot['provider'] ?? null,
+        ];
     }
 
     public function icon(): string

@@ -13,7 +13,7 @@
 @if (! ($data['has_data'] ?? false))
     <p class="muted">No performance data was collected for this period yet.</p>
 @else
-    @include('reports.blocks.partials.insight', ['insight' => $data['insight'] ?? null])
+    @include('reports.blocks.partials.insight', ['insight' => empty($data['ai_summary']) ? ($data['insight'] ?? null) : null])
     @include('reports.blocks.partials.ai-summary', ['aiSummary' => $data['ai_summary'] ?? null])
     <table class="metric-grid" style="width:100%;border-collapse:collapse;margin-top:4px;">
         <tr>

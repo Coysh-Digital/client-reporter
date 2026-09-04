@@ -6,7 +6,7 @@
 --}}
 @if (! empty($aiSummary))
     <div class="ai-summary">
-        <span class="ai-summary-label">AI summary</span>
+        <span class="ai-summary-label">{{ $branding->aiSummaryLabel ?? 'AI summary' }}</span>
         {{ $aiSummary }}
     </div>
 @endif

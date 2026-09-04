@@ -39,6 +39,9 @@ class Ai extends Component
 
     public string $tone = '';
 
+    /** Client-facing label for AI summaries in reports (e.g. "Bolt Summary"). */
+    public string $summaryLabel = '';
+
     /** @var array<string, string> Per-component prompt overrides, keyed by block type. */
     public array $prompts = [];
 
@@ -58,6 +61,7 @@ class Ai extends Component
         $this->has_key = $setting->apiKey() !== null;
 
         $this->tone = (string) $settings->get('ai.tone', '');
+        $this->summaryLabel = (string) $settings->get('ai.summary_label', '');
 
         foreach ($this->promptBlocks() as $type) {
             $this->prompts[$type->type()] = (string) $settings->get('ai.prompt.'.$type->type(), '');
@@ -75,6 +79,7 @@ class Ai extends Component
             'base_url' => ['nullable', 'url', 'max:255'],
             'api_key' => ['nullable', 'string', 'max:255'],
             'tone' => ['nullable', 'string', 'max:2000'],
+            'summaryLabel' => ['nullable', 'string', 'max:60'],
             'prompts.*' => ['nullable', 'string', 'max:2000'],
         ]);
 
@@ -94,6 +99,7 @@ class Ai extends Component
         $setting->save();
 
         $settings->set('ai.tone', $this->tone);
+        trim($this->summaryLabel) !== '' ? $settings->set('ai.summary_label', $this->summaryLabel) : $settings->forget('ai.summary_label');
         foreach ($this->prompts as $type => $prompt) {
             $key = 'ai.prompt.'.$type;
             trim($prompt) !== '' ? $settings->set($key, $prompt) : $settings->forget($key);

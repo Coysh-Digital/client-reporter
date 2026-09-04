@@ -7,6 +7,7 @@ namespace App\Support\Branding;
 use App\Models\BrandingProfile;
 use App\Models\Client;
 use App\Models\Site;
+use App\Support\Settings;
 
 /**
  * Resolves the effective branding for a client-facing surface by cascading
@@ -85,7 +86,19 @@ class BrandingResolver
             headingFont: $pick('heading_font') ?? self::DEFAULT_HEADING_FONT,
             bodyFont: $pick('body_font') ?? self::DEFAULT_BODY_FONT,
             customCss: $pick('custom_css'),
+            aiSummaryLabel: $this->aiSummaryLabel(),
         );
+    }
+
+    /**
+     * The label shown on AI-written summaries in reports. Agencies can rename it
+     * (e.g. "Bolt Summary") from the AI settings screen; defaults to "AI summary".
+     */
+    private function aiSummaryLabel(): string
+    {
+        $label = trim((string) app(Settings::class)->get('ai.summary_label', ''));
+
+        return $label !== '' ? $label : 'AI summary';
     }
 
     /**

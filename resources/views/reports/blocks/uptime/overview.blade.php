@@ -14,7 +14,7 @@
 @if (! ($data['has_data'] ?? false) || empty($data['tiles']))
     <p class="muted">No uptime data was collected for this period yet.</p>
 @else
-    @include('reports.blocks.partials.insight', ['insight' => $data['summary'] ?? null])
+    @include('reports.blocks.partials.insight', ['insight' => empty($data['ai_summary']) ? ($data['summary'] ?? null) : null])
     @include('reports.blocks.partials.ai-summary', ['aiSummary' => $data['ai_summary'] ?? null])
 
     {{-- Headline tiles --}}

@@ -37,6 +37,21 @@ class SvgChartTest extends TestCase
         $this->assertStringContainsString('<svg', base64_decode(substr($uri, strlen('data:image/svg+xml;base64,'))));
     }
 
+    public function test_a_comparison_series_adds_a_dashed_second_line(): void
+    {
+        $current = [['value' => 100], ['value' => 250], ['value' => 180]];
+        $previous = [['value' => 80], ['value' => 200], ['value' => 220]];
+
+        $withCompare = SvgChart::line($current, '#33406b', 150, true, $previous);
+        $withoutCompare = SvgChart::line($current, '#33406b');
+
+        // The comparison line is dashed; the plain chart has no dashed stroke.
+        $this->assertStringContainsString('stroke-dasharray', $withCompare);
+        $this->assertStringNotContainsString('stroke-dasharray', $withoutCompare);
+        // Two lines (previous + current) plus the current area polygon.
+        $this->assertSame(2, substr_count($withCompare, '<polyline'));
+    }
+
     public function test_a_non_hex_colour_falls_back_safely(): void
     {
         // Guards against anything but a #hex colour reaching the SVG markup.
