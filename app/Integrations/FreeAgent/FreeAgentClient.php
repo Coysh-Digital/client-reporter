@@ -73,6 +73,16 @@ class FreeAgentClient
     }
 
     /**
+     * A contact's recurring invoice schedules (all statuses).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function recurringInvoicesForContact(string $contactUrl): array
+    {
+        return $this->getAllPages('/recurring_invoices', ['contact' => $contactUrl], 'recurring_invoices');
+    }
+
+    /**
      * Fetch every page of a list resource. FreeAgent paginates at 25 items by
      * default, so request the 100-item maximum and keep following pages until
      * one comes back short — that page is the last.

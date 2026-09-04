@@ -169,6 +169,9 @@ class InvoicePanel extends Component
     {
         return view('livewire.billing.invoice-panel', [
             'invoices' => $this->client->invoices()->orderByDesc('issued_at')->get(),
+            'recurringInvoices' => $this->client->recurringInvoices()
+                ->orderByRaw('next_recurs_on is null, next_recurs_on')
+                ->get(),
             'statuses' => InvoiceStatus::cases(),
             'billingConnection' => $this->client->billingConnection,
         ]);

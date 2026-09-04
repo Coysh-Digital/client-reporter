@@ -73,6 +73,17 @@ class Client extends Model
     }
 
     /**
+     * Recurring invoice schedules synced from a billing connection — used to
+     * show what's coming up. Never counted in reports.
+     *
+     * @return HasMany<RecurringInvoice, $this>
+     */
+    public function recurringInvoices(): HasMany
+    {
+        return $this->hasMany(RecurringInvoice::class);
+    }
+
+    /**
      * This client's link to a contact on a billing connection (FreeAgent,
      * Xero), if one has been mapped.
      *

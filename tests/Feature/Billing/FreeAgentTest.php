@@ -35,6 +35,7 @@ class FreeAgentTest extends TestCase
                 ['url' => 'https://api.freeagent.com/v2/contacts/1', 'organisation_name' => 'Northwind Cafe', 'email' => 'billing@northwind.test'],
                 ['url' => 'https://api.freeagent.com/v2/contacts/2', 'organisation_name' => 'Unmatched Ltd', 'email' => 'nobody@nowhere.test'],
             ]]),
+            '*api.freeagent.com/v2/recurring_invoices*' => Http::response(['recurring_invoices' => []]),
             '*api.freeagent.com/v2/invoices*' => Http::response(['invoices' => [
                 ['url' => 'https://api.freeagent.com/v2/invoices/9', 'reference' => 'INV-9', 'dated_on' => '2026-08-05', 'due_on' => '2026-08-19', 'paid_on' => '2026-08-10', 'total_value' => '1850.00', 'currency' => 'GBP', 'status' => 'Paid'],
                 ['url' => 'https://api.freeagent.com/v2/invoices/10', 'reference' => 'INV-10', 'dated_on' => '2026-08-20', 'due_on' => '2026-07-01', 'total_value' => '2400.00', 'currency' => 'GBP', 'status' => 'Overdue'],
