@@ -6,6 +6,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * A stored normalised metric value for a period. The public $timestamps are off;
@@ -13,6 +14,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * @property string $metric_key
  * @property float $value
+ * @property string|null $unit
+ * @property Carbon $period_start
+ * @property Carbon $period_end
  */
 class Metric extends Model
 {
