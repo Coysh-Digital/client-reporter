@@ -4,6 +4,7 @@
     <p class="muted">No ad platform data was collected for this period yet.</p>
 @else
     @include('reports.blocks.partials.insight', ['insight' => $data['insight'] ?? null])
+    @include('reports.blocks.partials.ai-summary', ['aiSummary' => $data['ai_summary'] ?? null])
     @include('reports.blocks.partials.metric-grid', ['metrics' => $data['metrics'], 'currency' => $data['currency'] ?? null])
 @endif
 

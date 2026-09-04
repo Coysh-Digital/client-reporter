@@ -9,6 +9,7 @@ use App\Models\BrandingProfile;
 use App\Models\User;
 use App\Support\EnvWriter;
 use App\Support\Settings;
+use Database\Seeders\ReportTemplateSeeder;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -186,6 +187,10 @@ class Wizard extends Component
             'agency_name' => $this->agency_name,
             'primary_color' => $this->primary_color,
         ]);
+
+        // Seed the out-of-the-box report templates so a fresh install has ready-made
+        // report layouts to build from.
+        Artisan::call('db:seed', ['--class' => ReportTemplateSeeder::class, '--force' => true]);
 
         $settings->flush();
         $settings->setMany([

@@ -64,7 +64,41 @@ class SearchPerformanceBlock extends BlockType
             BlockOption::number('queries_limit', 'Top queries to show', 8, 3, 20),
             BlockOption::toggle('show_pages', 'Show top landing pages', true),
             BlockOption::number('pages_limit', 'Top pages to show', 8, 3, 20),
+            BlockOption::toggle('ai_summary', 'AI summary', false, 'Add an AI-written paragraph summarising this section (requires AI configured in Settings).'),
         ];
+    }
+
+    public function supportsAiSummary(): bool
+    {
+        return true;
+    }
+
+    public function defaultAiPrompt(): ?string
+    {
+        return 'Summarise the site\'s Google search performance this month in two to three '
+            .'sentences for a non-technical client. Cover clicks, impressions and average '
+            .'position versus the prior period, and the leading query. Use only the figures provided.';
+    }
+
+    /**
+     * @param  array<string, mixed>  $resolved
+     * @return array<string, mixed>
+     */
+    public function aiFacts(array $resolved): array
+    {
+        if (! ($resolved['has_data'] ?? false)) {
+            return [];
+        }
+
+        $metrics = [];
+        foreach ($resolved['metrics'] ?? [] as $metric) {
+            $metrics[$metric['label']] = ['current' => $metric['current'], 'previous' => $metric['previous']];
+        }
+
+        return array_filter([
+            'metrics' => $metrics,
+            'top_query' => $resolved['queries'][0]['label'] ?? null,
+        ], fn ($value): bool => $value !== null && $value !== []);
     }
 
     /**

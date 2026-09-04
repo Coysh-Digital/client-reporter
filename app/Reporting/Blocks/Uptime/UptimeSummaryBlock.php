@@ -61,7 +61,40 @@ class UptimeSummaryBlock extends BlockType
                 'response_time' => 'Avg response',
             ], ['uptime', 'incidents', 'downtime', 'response_time']),
             BlockOption::toggle('show_chart', 'Show daily uptime chart', true, 'Only available for providers that report per-day history (Uptime Kuma).'),
+            BlockOption::toggle('ai_summary', 'AI summary', false, 'Add an AI-written paragraph summarising this section (requires AI configured in Settings).'),
         ];
+    }
+
+    public function supportsAiSummary(): bool
+    {
+        return true;
+    }
+
+    public function defaultAiPrompt(): ?string
+    {
+        return 'Summarise the website\'s uptime this month in two to three sentences for a '
+            .'non-technical client. Mention availability, any incidents and the average response '
+            .'time. Use only the figures provided.';
+    }
+
+    /**
+     * @param  array<string, mixed>  $resolved
+     * @return array<string, mixed>
+     */
+    public function aiFacts(array $resolved): array
+    {
+        if (! ($resolved['has_data'] ?? false)) {
+            return [];
+        }
+
+        $metrics = [];
+        foreach ($resolved['metrics'] ?? [] as $metric) {
+            $metrics[$metric['label']] = ['current' => $metric['current'], 'previous' => $metric['previous']];
+        }
+
+        return array_filter([
+            'metrics' => $metrics,
+        ], fn ($value): bool => $value !== []);
     }
 
     /**
