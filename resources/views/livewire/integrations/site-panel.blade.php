@@ -27,6 +27,26 @@
                             @if ($connection->last_error)
                                 <p class="mt-2 rounded bg-danger-soft px-2 py-1 text-xs text-danger">{{ $connection->last_error }}</p>
                             @endif
+
+                            @php $insight = $insights[$connection->id] ?? null; @endphp
+                            @if ($insight)
+                                <div class="mt-3">
+                                    <div class="flex flex-wrap gap-2">
+                                        @foreach ($insight['chips'] as $chip)
+                                            <div class="rounded-md bg-paper px-2.5 py-1.5">
+                                                <div class="text-[11px] text-faint">{{ $chip['label'] }}</div>
+                                                <div class="tnum text-sm font-semibold text-ink">{{ $chip['value'] }}</div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                    <div class="mt-3 max-w-md" wire:ignore>
+                                        <p class="mb-1 text-[11px] text-faint">{{ $insight['chart']['label'] }} · by period</p>
+                                        <div class="h-40" x-data="crBarChart(@js($insight['chart']))">
+                                            <canvas x-ref="canvas"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
                         </div>
                         @can('manage-integrations')
                             <div class="flex shrink-0 items-center gap-3 text-sm">

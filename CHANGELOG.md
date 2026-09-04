@@ -12,6 +12,7 @@
 - Added recurring invoice schedules from FreeAgent so you can see what's coming up for a client. They appear as an "Upcoming (recurring)" list on the client's billing panel and are deliberately kept out of reports.
 - Added an Activity page (under Setup) showing background data collection live — queued, running, recently finished and failed runs, with durations, record counts and error messages. "Collect now" on a site now runs in the background instead of blocking the page.
 - Fixed queued data collection failing on PHP 8.4+: the collection job's property name collided with the queue trait's, which is a fatal error on newer PHP. Scheduled/queued collection now runs.
+- Added a per-integration snapshot to the site page: each connected service shows when it was last collected, its latest metrics, and a small Chart.js chart of its headline metric across periods.
 
 ## 0.1.0-alpha.1 - 2026-09-04
 
