@@ -15,6 +15,7 @@ use App\Integrations\Support\IntegrationManifest;
 use App\Integrations\Support\VerificationResult;
 use App\Models\ClientBillingConnection;
 use App\Models\Invoice;
+use App\Models\RecurringInvoice;
 use App\Models\SiteIntegration;
 use App\Models\WorkspaceIntegration;
 use Carbon\CarbonImmutable;
@@ -114,6 +115,14 @@ class FreeAgentIntegration extends Integration
         $workspace = $link->workspaceIntegration;
         $client = $this->clientFor($workspace);
 
+        // Recurring schedules are a best-effort extra (they need no extra
+        // permission, but shouldn't be able to break the core invoice sync).
+        try {
+            $this->syncRecurring($link, $client);
+        } catch (IntegrationException) {
+            // Ignored — invoices are what matter; recurring retries next sync.
+        }
+
         $synced = 0;
         foreach ($client->invoicesForContact($link->external_contact_id) as $invoice) {
             $reference = (string) ($invoice['url'] ?? $invoice['reference'] ?? '');
@@ -143,6 +152,43 @@ class FreeAgentIntegration extends Integration
         }
 
         return $synced;
+    }
+
+    /**
+     * Sync the contact's recurring invoice schedules so the agency can see
+     * what's coming up. Upserted by external id, and any that FreeAgent no
+     * longer returns (ended or deleted) are pruned so "upcoming" stays accurate.
+     */
+    private function syncRecurring(ClientBillingConnection $link, FreeAgentClient $client): void
+    {
+        $seen = [];
+
+        foreach ($client->recurringInvoicesForContact($link->external_contact_id) as $recurring) {
+            $externalId = (string) ($recurring['url'] ?? '');
+            if ($externalId === '') {
+                continue;
+            }
+            $seen[] = $externalId;
+
+            RecurringInvoice::query()->updateOrCreate(
+                ['client_id' => $link->client_id, 'source' => 'freeagent', 'external_id' => $externalId],
+                [
+                    'reference' => isset($recurring['reference']) ? (string) $recurring['reference'] : null,
+                    'frequency' => isset($recurring['frequency']) ? (string) $recurring['frequency'] : null,
+                    'status' => isset($recurring['recurring_status']) ? (string) $recurring['recurring_status'] : null,
+                    'amount' => (float) ($recurring['total_value'] ?? 0),
+                    'currency' => isset($recurring['currency']) ? strtoupper((string) $recurring['currency']) : null,
+                    'next_recurs_on' => ! empty($recurring['next_recurs_on']) ? CarbonImmutable::parse((string) $recurring['next_recurs_on'])->toDateString() : null,
+                    'ends_on' => ! empty($recurring['recurring_end_date']) ? CarbonImmutable::parse((string) $recurring['recurring_end_date'])->toDateString() : null,
+                ],
+            );
+        }
+
+        RecurringInvoice::query()
+            ->where('client_id', $link->client_id)
+            ->where('source', 'freeagent')
+            ->when($seen !== [], fn ($query) => $query->whereNotIn('external_id', $seen))
+            ->delete();
     }
 
     /**

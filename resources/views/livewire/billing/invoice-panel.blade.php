@@ -137,4 +137,33 @@
             @endforeach
         </div>
     @endif
+
+    @if ($recurringInvoices->isNotEmpty())
+        <div class="mt-6">
+            <h3 class="mb-2 text-xs font-semibold uppercase tracking-wide text-faint">Upcoming (recurring)</h3>
+            <div class="cr-card divide-y divide-line">
+                @foreach ($recurringInvoices as $recurring)
+                    <div wire:key="recurring-{{ $recurring->id }}" class="flex items-center justify-between gap-4 px-5 py-3.5">
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-2">
+                                <span class="font-medium text-ink">{{ $recurring->frequency ?: 'Recurring' }}</span>
+                                @unless ($recurring->isActive())
+                                    <x-badge variant="neutral">{{ $recurring->status ?: 'Inactive' }}</x-badge>
+                                @endunless
+                            </div>
+                            <div class="mt-0.5 truncate text-xs text-muted">
+                                @if ($recurring->next_recurs_on)
+                                    Next {{ $recurring->next_recurs_on->format('d M Y') }}
+                                @else
+                                    No upcoming date
+                                @endif
+                                @if ($recurring->ends_on) · Ends {{ $recurring->ends_on->format('d M Y') }} @endif
+                            </div>
+                        </div>
+                        <span class="tnum text-sm font-semibold text-ink">{{ Format::money((float) $recurring->amount, $recurring->currency) }}</span>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
 </div>

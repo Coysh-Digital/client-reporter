@@ -9,6 +9,7 @@
 - Fixed the dashboard "Needs attention" list flagging every active site for the current, still-open period; it now surfaces only scheduled reports that are generated but not yet sent.
 - Fixed the installation wizard reloading the same step instead of advancing: the "not installed" gate was redirecting Livewire's own (hash-prefixed) update requests back to the wizard. Sessions and cache also now default to file storage so they work before the database is set up.
 - Fixed the FreeAgent contact import stopping at the first 25 contacts; it now pages through every contact. When mapping, each contact can be imported as a new client (individually or all unmapped at once), not just matched or skipped.
+- Added recurring invoice schedules from FreeAgent so you can see what's coming up for a client. They appear as an "Upcoming (recurring)" list on the client's billing panel and are deliberately kept out of reports.
 
 ## 0.1.0-alpha.1 - 2026-09-04
 
