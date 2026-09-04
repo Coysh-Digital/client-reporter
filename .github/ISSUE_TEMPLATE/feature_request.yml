@@ -1,0 +1,40 @@
+name: Feature request
+description: Suggest a new capability for Client Reporter
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a feature. Client Reporter is deliberately narrow — please check the
+        "What Client Reporter deliberately does not do" section of the README before opening a request.
+        To propose a new service integration, use the "Integration proposal" template instead.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: What problem are you trying to solve? What is the use case?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the capability you would like to see.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any alternative solutions or workarounds you have considered.
+    validations:
+      required: false
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope check
+      description: Please confirm the following.
+      options:
+        - label: I have read the README and this request fits Client Reporter's focus on client reporting.
+          required: true

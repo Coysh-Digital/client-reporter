@@ -1,0 +1,173 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../views';
+
+/*
+| Client Reporter — admin design system.
+| Restrained, editorial, calm. Warm paper ground, ink text, one considered
+| accent, generous whitespace. Client-facing reports use their own agency
+| palette injected at render time (see report layout), not these tokens.
+*/
+@theme {
+    --font-sans: 'Hanken Grotesk', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-serif: 'Source Serif 4', ui-serif, Georgia, Cambria, 'Times New Roman', serif;
+
+    /* Warm neutral foundation */
+    --color-paper: #faf9f6;
+    --color-surface: #ffffff;
+    --color-ink: #1b1a18;
+    --color-muted: #6c675f;
+    --color-faint: #98938a;
+    --color-line: #e8e3da;
+    --color-line-strong: #d8d2c6;
+
+    /* Considered accent — deep ink-indigo */
+    --color-accent: #33406b;
+    --color-accent-hover: #29335a;
+    --color-accent-soft: #eceef4;
+    --color-accent-contrast: #ffffff;
+
+    /* Secondary — muted gold, for small-caps labels & section eyebrows */
+    --color-secondary: #8a6a2c;
+    --color-secondary-soft: #f4ecd9;
+
+    /* Status palette (integration/report health) */
+    --color-ok: #3f7d54;
+    --color-ok-soft: #eaf3ec;
+    --color-warn: #a4712a;
+    --color-warn-soft: #f7efe1;
+    --color-danger: #a13b32;
+    --color-danger-soft: #f6e9e7;
+    --color-info: #35617f;
+    --color-info-soft: #e8f0f4;
+
+    --radius-card: 0.5rem;
+    --radius-panel: 0.75rem;
+}
+
+@layer base {
+    html {
+        background-color: var(--color-paper);
+        color: var(--color-ink);
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+    }
+
+    body {
+        min-height: 100vh;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4 {
+        font-weight: 600;
+        letter-spacing: -0.01em;
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
+}
+
+/* Tabular figures for all metrics, tables and timestamps. */
+.tnum {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+}
+
+/* Reusable, restrained component utilities used across the admin. */
+@layer components {
+    .cr-card {
+        background-color: var(--color-surface);
+        border: 1px solid var(--color-line);
+        border-radius: var(--radius-card);
+    }
+
+    /* Larger-radius surface for dashboard panels and grouped lists. */
+    .cr-panel {
+        background-color: var(--color-surface);
+        border: 1px solid var(--color-line);
+        border-radius: var(--radius-panel);
+        overflow: hidden;
+    }
+
+    /* Small-caps section eyebrow used across dashboard and detail screens. */
+    .cr-eyebrow {
+        font-size: 0.6875rem;
+        font-weight: 700;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        color: var(--color-faint);
+    }
+
+    .cr-input {
+        width: 100%;
+        border: 1px solid var(--color-line-strong);
+        border-radius: 0.375rem;
+        background-color: var(--color-surface);
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+        color: var(--color-ink);
+    }
+
+    .cr-input:focus {
+        outline: none;
+        border-color: var(--color-accent);
+        box-shadow: 0 0 0 3px var(--color-accent-soft);
+    }
+
+    .cr-label {
+        display: block;
+        font-size: 0.8125rem;
+        font-weight: 500;
+        color: var(--color-ink);
+        margin-bottom: 0.375rem;
+    }
+
+    .cr-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        border-radius: 0.375rem;
+        padding: 0.5rem 0.9rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        line-height: 1.25rem;
+        transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+        cursor: pointer;
+    }
+
+    .cr-btn-primary {
+        background-color: var(--color-accent);
+        color: var(--color-accent-contrast);
+    }
+
+    .cr-btn-primary:hover {
+        background-color: var(--color-accent-hover);
+    }
+
+    .cr-btn-secondary {
+        background-color: var(--color-surface);
+        color: var(--color-ink);
+        border: 1px solid var(--color-line-strong);
+    }
+
+    .cr-btn-secondary:hover {
+        background-color: var(--color-paper);
+    }
+
+    .cr-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        border-radius: 9999px;
+        padding: 0.15rem 0.6rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+}

@@ -1,0 +1,65 @@
+name: Integration proposal
+description: Propose a new service integration for Client Reporter
+title: "[Integration]: "
+labels: ["integration"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template to propose a new integration — a CMS, analytics, ecommerce or monitoring
+        service that Client Reporter should be able to collect data from.
+  - type: input
+    id: service
+    attributes:
+      label: Which service?
+      description: The name of the service you would like to integrate.
+      placeholder: "e.g. Matomo"
+    validations:
+      required: true
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      description: Which category does this service fall under?
+      options:
+        - CMS
+        - Analytics
+        - Ecommerce
+        - Monitoring
+    validations:
+      required: true
+  - type: input
+    id: api-docs
+    attributes:
+      label: API documentation URL
+      description: A link to the service's API / developer documentation.
+      placeholder: "https://..."
+    validations:
+      required: true
+  - type: dropdown
+    id: auth-method
+    attributes:
+      label: Authentication method
+      description: How does the service authenticate API requests?
+      options:
+        - API key / token
+        - OAuth 2.0
+        - Basic auth
+        - HMAC-signed requests (companion plugin)
+        - Other (describe below)
+    validations:
+      required: true
+  - type: textarea
+    id: data
+    attributes:
+      label: What data / metrics should it collect?
+      description: The metrics or report blocks you would expect this integration to provide.
+    validations:
+      required: false
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional notes
+      description: Anything else relevant — rate limits, a companion plugin requirement, offers to help build it, etc.
+    validations:
+      required: false

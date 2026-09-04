@@ -1,0 +1,47 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Middleware;
+
+use App\Support\Settings;
+use Closure;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Throwable;
+
+/**
+ * Redirects to the browser installation wizard until Client Reporter has been
+ * installed, and keeps the wizard from being re-run afterwards. A database that
+ * is missing or unmigrated is treated as "not installed" so a fresh clone lands
+ * on the wizard rather than an error page.
+ */
+class EnsureInstalled
+{
+    public function __construct(private readonly Settings $settings) {}
+
+    public function handle(Request $request, Closure $next): Response
+    {
+        $installed = $this->isInstalled();
+        $onInstaller = $request->is('install', 'install/*');
+
+        if (! $installed && ! $onInstaller) {
+            return redirect()->route('install');
+        }
+
+        if ($installed && $onInstaller) {
+            return redirect()->route('login');
+        }
+
+        return $next($request);
+    }
+
+    private function isInstalled(): bool
+    {
+        try {
+            return $this->settings->isInstalled();
+        } catch (Throwable) {
+            return false;
+        }
+    }
+}

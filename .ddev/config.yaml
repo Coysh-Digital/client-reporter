@@ -1,0 +1,31 @@
+name: client-reporter
+type: laravel
+docroot: public
+php_version: "8.3"
+webserver_type: nginx-fpm
+composer_version: "2"
+nodejs_version: "20"
+corepack_enable: false
+
+# The app manages its own .env (defaulting to SQLite), so DDEV should not rewrite
+# it to point at the MariaDB container. The DB container is still available if you
+# want to use MySQL via the install wizard (host: db, database/user/password: db).
+disable_settings_management: true
+
+# A MariaDB container is provided so you can exercise the MySQL path through the
+# install wizard (host: db, database: db, user: db, password: db). The app itself
+# defaults to SQLite, so it works with no database wiring at all.
+database:
+  type: mariadb
+  version: "10.11"
+
+hooks:
+  post-start:
+    - composer: install
+    - exec: "[ -f .env ] || cp .env.example .env"
+    - exec: "grep -q '^APP_KEY=base64' .env || php artisan key:generate --force"
+    - exec: 'sed -i "s#^APP_URL=.*#APP_URL=${DDEV_PRIMARY_URL}#" .env'
+    - exec: "mkdir -p database && touch database/database.sqlite"
+    - exec: "php artisan migrate --force"
+    - exec: "npm install --no-audit --no-fund"
+    - exec: "npm run build"
