@@ -40,7 +40,7 @@
     {{-- Visitors over time --}}
     @if (! empty($data['timeseries']))
         <div class="mini-bars-title" style="margin-top:24px;">Visitors over time</div>
-        @include('reports.blocks.partials.area-chart', ['series' => $data['timeseries'], 'chartHeight' => 130])
+        @include('reports.blocks.partials.line-chart', ['series' => $data['timeseries'], 'color' => $branding->primaryColor, 'chartHeight' => 150])
     @endif
 
     {{-- Top pages / referrers / countries / devices --}}
