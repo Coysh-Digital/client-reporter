@@ -107,6 +107,8 @@ class UptimeOverviewBlock extends BlockType
             }
         }
 
+        $performanceSnapshot = $context->reader->snapshotForCategory($context->site, IntegrationCategory::Performance, 'core-web-vitals', $context->range) ?? [];
+
         return [
             'has_data' => $current !== [],
             'summary' => $this->summary($current, $performance['performance.score']['value'] ?? null),
@@ -115,6 +117,7 @@ class UptimeOverviewBlock extends BlockType
             'status_days' => $this->statusDays($snapshot['timeseries'] ?? []),
             'incidents' => array_slice($snapshot['incidents'] ?? [], 0, $limit),
             'lighthouse' => $lighthouse,
+            'lighthouse_history' => $performanceSnapshot['timeseries'] ?? [],
         ];
     }
 

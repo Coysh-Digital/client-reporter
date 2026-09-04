@@ -17,8 +17,11 @@ class SvgChart
      * data-URI image can't read the page's CSS variables.
      *
      * @param  array<int, array{date?: string, value?: int|float}>  $series
+     * @param  bool  $zeroBased  Start the y-axis at zero (good for counts). Set
+     *                           false for metrics that hug the top of their range
+     *                           (uptime %, Lighthouse scores) so variation shows.
      */
-    public static function line(array $series, string $color, int $height = 160): string
+    public static function line(array $series, string $color, int $height = 160, bool $zeroBased = true): string
     {
         $values = array_map(fn ($p): float => (float) ($p['value'] ?? 0), $series);
         $count = count($values);
@@ -32,8 +35,16 @@ class SvgChart
         $plotW = $width - $padX * 2;
         $plotH = $height - $padY * 2;
 
-        $min = min(0.0, min($values));
-        $max = max($values);
+        if ($zeroBased) {
+            $min = min(0.0, min($values));
+            $max = max($values);
+        } else {
+            $min = min($values);
+            $max = max($values);
+            $pad = (($max - $min) * 0.1) ?: 1.0;
+            $min -= $pad;
+            $max += $pad;
+        }
         $range = ($max - $min) ?: 1.0;
 
         $x = fn (int $i): float => $count === 1
@@ -70,9 +81,9 @@ class SvgChart
      *
      * @param  array<int, array{date?: string, value?: int|float}>  $series
      */
-    public static function lineDataUri(array $series, string $color, int $height = 160): string
+    public static function lineDataUri(array $series, string $color, int $height = 160, bool $zeroBased = true): string
     {
-        $svg = self::line($series, $color, $height);
+        $svg = self::line($series, $color, $height, $zeroBased);
 
         return $svg === '' ? '' : 'data:image/svg+xml;base64,'.base64_encode($svg);
     }

@@ -8,7 +8,8 @@
     $series = $series ?? [];
     $color = $color ?? '#33406b';
     $chartHeight = $chartHeight ?? 150;
-    $uri = \App\Support\SvgChart::lineDataUri($series, $color, $chartHeight);
+    $zeroBased = $zeroBased ?? true;
+    $uri = \App\Support\SvgChart::lineDataUri($series, $color, $chartHeight, $zeroBased);
     $firstDate = $series[0]['date'] ?? null;
     $lastDate = ! empty($series) ? ($series[count($series) - 1]['date'] ?? null) : null;
 @endphp
