@@ -1,38 +1,23 @@
-# Changelog
+# Release Notes for Client Reporter
 
-All notable changes to Client Reporter will be documented in this file.
+## Unreleased
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+- Added opt-in weekly, monthly and quarterly report scheduling; `client-reporter:generate-scheduled` auto-generates each scheduled site's report once its period closes, ready to review and send.
+- Added a report-history list and per-site summaries (health, connected integrations, report count, schedule, latest report) plus a reporting totals card to the client page.
+- Added update-safe custom integrations: the git-ignored `extensions/` directory is autoloaded and auto-discovered, and an optional git-ignored `config/client-reporter.local.php` can register classes explicitly.
+- Added an `AGENTS.md` guide for contributors and AI agents (`CLAUDE.md` points to it).
+- Fixed the dashboard "Needs attention" list flagging every active site for the current, still-open period; it now surfaces only scheduled reports that are generated but not yet sent.
 
-## [Unreleased]
+## 0.1.0-alpha.1 - 2026-09-04
 
-### Added
-
-- **Scheduled reports** — sites can now opt into a reporting schedule (weekly, monthly or quarterly; off by default). When a period closes, `client-reporter:generate-scheduled` (run daily) auto-generates that site's report — pulling the data and freezing the snapshot — so it's ready for you to review and send. Sending stays manual.
-- **Client page: report history & site summaries** — a client's page now shows a report-history list across all its sites (period, status, generated date) and a per-site summary (health, connected integrations, report count, schedule and latest-report status), plus a reporting totals card.
-- **Update-safe custom integrations** — the git-ignored `extensions/` directory is now autoloaded and auto-discovered, so a custom integration dropped there survives updates with no edit to any tracked file. An optional git-ignored `config/client-reporter.local.php` can register classes explicitly. `make-integration` scaffolds into `extensions/` accordingly.
-
-### Fixed
-
-- **Dashboard "Needs attention"** no longer flags every active site for the current, still-open period. It now surfaces only scheduled reports that have been generated but not yet sent, and the "Reports" tile/panel reflect scheduled sites rather than all sites.
-
-## [0.1.0-alpha.1] - 2026-09-04
-
-The first public (alpha) release. Feature-complete for an MVP but early — expect rough edges, and test before pointing real clients at it.
-
-### Added
-
-- **Foundation** — Laravel 13 + Livewire 4 + Tailwind 4, a restrained editorial admin UI, Pint + PHPStan (level 5) + PHPUnit tooling, and CI.
-- **Authentication & access** — session auth with password reset, a staff role hierarchy (Administrator, Manager, Viewer) via policies/gates, audit logging, a command palette, and user management.
-- **Clients & Sites** — the client → site hierarchy with full CRUD, plus bulk site import from MainWP, ManageWP and WPMgr.
-- **White-label branding** — a global → client → site branding cascade (logo, colours, typography, footers, custom CSS) with a live report-cover preview; client-facing output can be fully agency-branded.
-- **Integration framework** — a Laravel-native SDK (manifest, config fields, auth methods, collectors, report blocks), a registry with Composer-package discovery, encrypted credentials, a `DateRange` value object with correct previous-period comparison, a metrics/snapshots storage model, a resilient collector runtime, and the `client-reporter:collect` scheduler command (shared-hosting friendly). Integrations can be connected once for the whole workspace and auto-matched to sites and clients, or per site.
-- **Bundled integrations** — WordPress and Craft CMS (via signed, read-only companion plugins); analytics from Google Analytics 4, Google Ads, Plausible, Fathom, Matomo and Umami; Google Search Console; ecommerce from WooCommerce, Craft Commerce, Shopify and Stripe; uptime from UptimeRobot, Uptime Kuma and BetterUptime; PageSpeed Insights performance; Mailchimp; and invoice/billing sync from FreeAgent and Xero.
-- **Reporting engine** — reusable templates, a drag-and-drop block builder with live preview and per-section commentary, custom date ranges with previous-period comparison, deterministic per-section plain-English summaries, and blocks for cover/contents, CMS status & updates, analytics (summary, chart, top pages, sources, countries, devices, events), search performance, ads, ecommerce, performance, uptime & incidents, forms/leads, billing, free text and closing.
-- **Report outputs** — beautiful branded web reports, secure share links (expiry, password, revocation), dompdf PDF export (with optional Browsershot on a VPS), branded email delivery, and a restricted client portal. Generated reports are frozen to an immutable snapshot so shared, emailed and exported copies stay stable.
-- **Billing** — a lightweight per-client invoice ledger with a report block, plus optional invoice sync from FreeAgent and Xero.
-- **Installation & operations** — a browser installation wizard (SQLite/MySQL/PostgreSQL), a GitHub update checker with an admin notice, and `client-reporter:update`, `client-reporter:sync-billing` and `client-reporter:make-integration` helpers plus reusable integration contract test helpers.
-- **MCP server** — a built-in, read-only [Model Context Protocol](https://modelcontextprotocol.io) server so an AI assistant can query your clients, sites, reports and metrics in plain English. Seven read-only tools (dashboard, clients, sites, site detail, reports, report data, site metrics), exposed over both a local (stdio) transport (`php artisan mcp:start client-reporter`) and an authenticated HTTP endpoint (Sanctum token with an `mcp:read` ability, minted via `php artisan client-reporter:mcp-token`). Access mirrors the app's staff roles and never exposes integration credentials. See [docs/mcp](docs/mcp/README.md).
-
-[0.1.0-alpha.1]: https://github.com/coysh-digital/client-reporter/releases/tag/v0.1.0-alpha.1
+- Added the foundation: Laravel 13, Livewire 4 and Tailwind 4, a restrained editorial admin UI, and Pint + PHPStan (level 5) + PHPUnit tooling with CI.
+- Added authentication and access: session auth with password reset, an Administrator/Manager/Viewer role hierarchy, audit logging, a command palette, and user management.
+- Added the client → site hierarchy with full CRUD, plus bulk site import from MainWP, ManageWP and WPMgr.
+- Added white-label branding with a global → client → site cascade (logo, colours, typography, footers, custom CSS) and a live report-cover preview.
+- Added the integration SDK (manifest, config fields, auth methods, collectors, report blocks), a registry with Composer-package discovery, encrypted credentials, scheduled collection via `client-reporter:collect`, and workspace-wide "connect once" connections auto-matched to sites and clients.
+- Added bundled integrations: WordPress and Craft CMS (read-only companion plugins); Google Analytics 4, Google Ads, Plausible, Fathom, Matomo and Umami; Google Search Console; WooCommerce, Craft Commerce, Shopify and Stripe; UptimeRobot, Uptime Kuma and Better Uptime; PageSpeed Insights; Mailchimp; and FreeAgent and Xero billing sync.
+- Added the reporting engine: reusable templates, a drag-and-drop block builder with live preview and per-section commentary, previous-period comparison, deterministic plain-English summaries, and blocks for cover/contents, CMS status and updates, analytics, search, ads, ecommerce, performance, uptime, forms/leads, billing, text and closing.
+- Added report outputs: branded web reports, secure share links (expiry, password, revocation), dompdf PDF export (Browsershot optional on a VPS), branded email delivery, and a restricted client portal — all frozen to an immutable snapshot so shared copies stay stable.
+- Added a lightweight per-client invoice ledger with a billing report block.
+- Added a browser installation wizard (SQLite/MySQL/PostgreSQL), a GitHub update checker with an admin notice, and the `client-reporter:update`, `client-reporter:sync-billing` and `client-reporter:make-integration` commands.
+- Added a built-in read-only MCP server so an AI assistant can query clients, sites, reports and metrics, over stdio (`php artisan mcp:start client-reporter`) and an authenticated HTTP endpoint (a Sanctum `mcp:read` token). See [docs/mcp](docs/mcp/README.md).

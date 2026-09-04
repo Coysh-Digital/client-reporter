@@ -100,6 +100,16 @@ This is a working application, not a package: the app roots are `app/`, `config/
 - Fake outbound HTTP in integration tests (`Http::fake()` / `Http::preventStrayRequests()`).
 - Keep the suite green: `composer check` must pass before you finish.
 
+## Changelog
+
+- **Keep `CHANGELOG.md` current** — add an entry for every user-facing change in the
+  same commit that makes the change. Update it frequently; don't batch it up.
+- New entries go at the top of the `## Unreleased` section, one concise, past-tense
+  bullet per change: **Added** / **Improved** / **Changed** / **Fixed** / **Removed**.
+  Link a PR or issue when there is one, e.g. `([#123](https://github.com/coysh-digital/client-reporter/pull/123))`.
+- On release, rename `## Unreleased` to `## <version> - <YYYY-MM-DD>` and open a fresh
+  empty `## Unreleased` above it. Keep `config('client-reporter.version')` in step.
+
 ## Commits, pull requests & public-facing text
 
 - **Never reference AI, assistants, or tooling in anything public.** That includes
