@@ -102,6 +102,12 @@ class SiteTrafficBlock extends BlockType
 
         $snapshot = $context->reader->snapshotForCategory($context->site, IntegrationCategory::Analytics, 'summary', $context->range) ?? [];
 
+        // The previous period's daily visitors, so the trend can show it as a
+        // second (dashed) line when comparison is on.
+        $previousSnapshot = $compare && $context->comparison
+            ? ($context->reader->snapshotForCategory($context->site, IntegrationCategory::Analytics, 'summary', $context->comparison) ?? [])
+            : [];
+
         $tile = fn (string $key, string $label, string $fmt, bool $goodUp): array => [
             'label' => $label,
             'fmt' => $fmt,
@@ -122,6 +128,7 @@ class SiteTrafficBlock extends BlockType
             ],
             'bounce_rate' => $current['analytics.bounce_rate']['value'] ?? null,
             'timeseries' => $snapshot['timeseries'] ?? [],
+            'timeseries_previous' => $previousSnapshot['timeseries'] ?? [],
             'top_pages' => array_slice($snapshot['top_pages'] ?? [], 0, 6),
             'sources' => array_slice($snapshot['sources'] ?? [], 0, 6),
             'countries' => array_slice($snapshot['countries'] ?? [], 0, 6),

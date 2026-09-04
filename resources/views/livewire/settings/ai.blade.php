@@ -98,6 +98,13 @@
                           placeholder="e.g. Warm and plain-spoken, British English, avoid jargon, address the client as “you”."></textarea>
                 @error('tone') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
                 <p class="mt-1 text-xs text-faint">Applied to every AI summary, on top of each section’s own prompt.</p>
+
+                <div class="mt-5">
+                    <label class="cr-label">Summary label</label>
+                    <input wire:model="summaryLabel" maxlength="60" placeholder="AI summary" class="cr-input max-w-xs">
+                    @error('summaryLabel') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
+                    <p class="mt-1 text-xs text-faint">The label shown above AI-written summaries in reports. Rename it to match your brand (e.g. “Bolt Summary”).</p>
+                </div>
             </div>
         </section>
 

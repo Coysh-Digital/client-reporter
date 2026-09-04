@@ -28,6 +28,7 @@ readonly class ResolvedBranding
         public string $headingFont,
         public string $bodyFont,
         public ?string $customCss,
+        public string $aiSummaryLabel = 'AI summary',
     ) {}
 
     public function hasLogo(): bool
@@ -57,6 +58,7 @@ readonly class ResolvedBranding
             'headingFont' => $this->headingFont,
             'bodyFont' => $this->bodyFont,
             'customCss' => $this->customCss,
+            'aiSummaryLabel' => $this->aiSummaryLabel,
         ];
     }
 
@@ -82,6 +84,7 @@ readonly class ResolvedBranding
             headingFont: (string) ($data['headingFont'] ?? "'Source Serif 4', Georgia, serif"),
             bodyFont: (string) ($data['bodyFont'] ?? "'Hanken Grotesk', sans-serif"),
             customCss: $data['customCss'] ?? null,
+            aiSummaryLabel: (string) ($data['aiSummaryLabel'] ?? 'AI summary'),
         );
     }
 

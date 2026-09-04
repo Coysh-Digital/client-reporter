@@ -20,8 +20,12 @@ class SvgChart
      * @param  bool  $zeroBased  Start the y-axis at zero (good for counts). Set
      *                           false for metrics that hug the top of their range
      *                           (uptime %, Lighthouse scores) so variation shows.
+     * @param  array<int, array{date?: string, value?: int|float}>  $compare  an
+     *                                                                        optional previous-period series, drawn as a
+     *                                                                        dashed second line (no area) on the same axis so
+     *                                                                        the two periods can be compared day for day.
      */
-    public static function line(array $series, string $color, int $height = 160, bool $zeroBased = true): string
+    public static function line(array $series, string $color, int $height = 160, bool $zeroBased = true, array $compare = []): string
     {
         $values = array_map(fn ($p): float => (float) ($p['value'] ?? 0), $series);
         $count = count($values);
@@ -29,34 +33,47 @@ class SvgChart
             return '';
         }
 
+        $compareValues = array_map(fn ($p): float => (float) ($p['value'] ?? 0), $compare);
+
         $width = 560;
         $padX = 6;
         $padY = 10;
         $plotW = $width - $padX * 2;
         $plotH = $height - $padY * 2;
 
+        // Scale the y-axis over both series so neither line is clipped.
+        $allValues = array_merge($values, $compareValues);
         if ($zeroBased) {
-            $min = min(0.0, min($values));
-            $max = max($values);
+            $min = min(0.0, min($allValues));
+            $max = max($allValues);
         } else {
-            $min = min($values);
-            $max = max($values);
+            $min = min($allValues);
+            $max = max($allValues);
             $pad = (($max - $min) * 0.1) ?: 1.0;
             $min -= $pad;
             $max += $pad;
         }
         $range = ($max - $min) ?: 1.0;
 
+        $y = fn (float $v): float => $padY + $plotH - (($v - $min) / $range) * $plotH;
+
+        // Each series maps its own indices across the full width, so a shorter
+        // previous period still overlays the current one end to end.
+        $polyline = function (array $vals) use ($padX, $plotW, $y): string {
+            $n = count($vals);
+            $points = [];
+            foreach ($vals as $i => $v) {
+                $px = $n === 1 ? $padX + $plotW / 2 : $padX + ($i / ($n - 1)) * $plotW;
+                $points[] = round($px, 1).','.round($y($v), 1);
+            }
+
+            return implode(' ', $points);
+        };
+
         $x = fn (int $i): float => $count === 1
             ? $padX + $plotW / 2
             : $padX + ($i / ($count - 1)) * $plotW;
-        $y = fn (float $v): float => $padY + $plotH - (($v - $min) / $range) * $plotH;
-
-        $points = [];
-        foreach ($values as $i => $v) {
-            $points[] = round($x($i), 1).','.round($y($v), 1);
-        }
-        $line = implode(' ', $points);
+        $line = $polyline($values);
         $baseY = round($padY + $plotH, 1);
         $area = round($x(0), 1).','.$baseY.' '.$line.' '.round($x($count - 1), 1).','.$baseY;
 
@@ -69,9 +86,17 @@ class SvgChart
 
         $color = self::safeColor($color);
 
+        // The previous period sits underneath the current line as a dashed,
+        // muted stroke with no area fill, so the current period stays dominant.
+        $compareLine = '';
+        if (count($compareValues) > 0) {
+            $compareLine = '<polyline points="'.$polyline($compareValues).'" fill="none" stroke="'.$color.'" stroke-opacity="0.45" stroke-width="1.75" stroke-dasharray="4 3" stroke-linejoin="round" stroke-linecap="round"/>';
+        }
+
         return '<svg width="'.$width.'" height="'.$height.'" viewBox="0 0 '.$width.' '.$height.'" xmlns="http://www.w3.org/2000/svg">'
             .$grid
             .'<polygon points="'.$area.'" fill="'.$color.'" fill-opacity="0.15"/>'
+            .$compareLine
             .'<polyline points="'.$line.'" fill="none" stroke="'.$color.'" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>'
             .'</svg>';
     }
@@ -80,10 +105,11 @@ class SvgChart
      * The chart as a data URI ready for an <img src>.
      *
      * @param  array<int, array{date?: string, value?: int|float}>  $series
+     * @param  array<int, array{date?: string, value?: int|float}>  $compare
      */
-    public static function lineDataUri(array $series, string $color, int $height = 160, bool $zeroBased = true): string
+    public static function lineDataUri(array $series, string $color, int $height = 160, bool $zeroBased = true, array $compare = []): string
     {
-        $svg = self::line($series, $color, $height, $zeroBased);
+        $svg = self::line($series, $color, $height, $zeroBased, $compare);
 
         return $svg === '' ? '' : 'data:image/svg+xml;base64,'.base64_encode($svg);
     }

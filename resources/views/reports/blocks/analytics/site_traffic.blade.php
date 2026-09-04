@@ -4,7 +4,7 @@
 @if (! ($data['has_data'] ?? false) || empty($data['tiles']))
     <p class="muted">No analytics data was collected for this period yet.</p>
 @else
-    @include('reports.blocks.partials.insight', ['insight' => $data['summary'] ?? null])
+    @include('reports.blocks.partials.insight', ['insight' => empty($data['ai_summary']) ? ($data['summary'] ?? null) : null])
     @include('reports.blocks.partials.ai-summary', ['aiSummary' => $data['ai_summary'] ?? null])
 
     {{-- Headline metric tiles --}}
@@ -41,7 +41,7 @@
     {{-- Visitors over time --}}
     @if (! empty($data['timeseries']))
         <div class="mini-bars-title" style="margin-top:24px;">Visitors over time</div>
-        @include('reports.blocks.partials.line-chart', ['series' => $data['timeseries'], 'color' => $branding->primaryColor, 'chartHeight' => 150])
+        @include('reports.blocks.partials.line-chart', ['series' => $data['timeseries'], 'compareSeries' => $data['timeseries_previous'] ?? [], 'color' => $branding->primaryColor, 'chartHeight' => 150])
     @endif
 
     {{-- Top pages / referrers / countries / devices --}}
