@@ -110,6 +110,13 @@
                 @endforeach
             </nav>
 
+            {{-- Queue monitor --}}
+            @can('manage-integrations')
+                <div class="border-t border-line px-3 py-2">
+                    <livewire:activity.queue-status />
+                </div>
+            @endcan
+
             {{-- User --}}
             @auth
                 <div class="border-t border-line p-3">

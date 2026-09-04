@@ -73,6 +73,9 @@
     @can('manage-integrations')
         <div class="cr-card px-5 py-4">
             <h3 class="text-xs font-medium uppercase tracking-wide text-faint">Connect a service</h3>
+            @if ($available === [])
+                <p class="mt-3 text-sm text-muted">Every available service is already connected — here or once for the whole workspace.</p>
+            @endif
             <div class="mt-3 space-y-4">
                 @foreach ($available as $category => $integrations)
                     <div>

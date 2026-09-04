@@ -7,6 +7,7 @@ namespace App\Livewire\Activity;
 use App\Models\CollectorRun;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
@@ -47,6 +48,7 @@ class Index extends Component
 
         return view('livewire.activity.index', [
             'runs' => $runs,
+            'queuedJobs' => $this->queuedJobs(),
             'queued' => $this->queueDepth(),
             'running' => CollectorRun::query()->where('status', 'running')->count(),
             'failedRecently' => CollectorRun::query()
@@ -55,6 +57,35 @@ class Index extends Component
                 ->count(),
             'failedJobs' => $this->failedJobCount(),
         ]);
+    }
+
+    /**
+     * The jobs currently on the queue (waiting or reserved/running), read from
+     * the database queue. The payload's displayName gives the job type without
+     * unserialising the command.
+     *
+     * @return array<int, array{id: int, name: string, queue: string, attempts: int, reserved: bool, queued_at: Carbon}>
+     */
+    private function queuedJobs(): array
+    {
+        try {
+            return DB::table('jobs')->orderBy('id')->limit(50)->get()
+                ->map(function (object $job): array {
+                    $payload = json_decode((string) $job->payload, true);
+                    $name = is_array($payload) && isset($payload['displayName']) ? (string) $payload['displayName'] : 'Job';
+
+                    return [
+                        'id' => (int) $job->id,
+                        'name' => Str::headline(class_basename($name)),
+                        'queue' => (string) $job->queue,
+                        'attempts' => (int) $job->attempts,
+                        'reserved' => $job->reserved_at !== null,
+                        'queued_at' => Carbon::createFromTimestamp((int) $job->created_at),
+                    ];
+                })->all();
+        } catch (\Throwable) {
+            return [];
+        }
     }
 
     private function queueDepth(): int

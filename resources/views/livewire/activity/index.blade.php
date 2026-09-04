@@ -31,8 +31,34 @@
         @endforeach
     </div>
 
+    {{-- Queue (waiting / running jobs) --}}
+    @if (! empty($queuedJobs))
+        <div class="mt-5">
+            <h2 class="mb-2 text-xs font-semibold uppercase tracking-wide text-faint">On the queue</h2>
+            <div class="cr-card divide-y divide-line">
+                @foreach ($queuedJobs as $job)
+                    <div wire:key="job-{{ $job['id'] }}" class="flex items-center justify-between gap-4 px-5 py-3">
+                        <div class="flex items-center gap-2 min-w-0">
+                            @if ($job['reserved'])
+                                <x-badge variant="info">Running</x-badge>
+                            @else
+                                <x-badge variant="neutral">Queued</x-badge>
+                            @endif
+                            <span class="truncate font-medium text-ink">{{ $job['name'] }}</span>
+                            @if ($job['attempts'] > 1)
+                                <span class="text-xs text-faint">attempt {{ $job['attempts'] }}</span>
+                            @endif
+                        </div>
+                        <span class="shrink-0 text-xs text-faint">waiting {{ $job['queued_at']->diffForHumans(null, true) }}</span>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     {{-- Runs --}}
-    <div class="mt-3">
+    <div class="mt-5">
+        <h2 class="mb-2 text-xs font-semibold uppercase tracking-wide text-faint">Recent runs</h2>
         @if ($runs->isEmpty())
             <x-empty-state title="No collection activity yet"
                            description="Runs appear here when data is collected — automatically on schedule, or when you use Collect now on a site." />

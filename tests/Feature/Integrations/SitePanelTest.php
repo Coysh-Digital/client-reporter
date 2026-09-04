@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Integrations;
 
+use App\Enums\ConnectionStatus;
 use App\Livewire\Integrations\SitePanel;
 use App\Models\Metric;
 use App\Models\Site;
 use App\Models\SiteIntegration;
 use App\Models\User;
+use App\Models\WorkspaceIntegration;
 use App\Support\MetricLabel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -66,6 +68,30 @@ class SitePanelTest extends TestCase
         $this->assertSame('Visitors', $insight['chart']['label']);
         $this->assertSame(['Aug 2026', 'Sep 2026'], $insight['chart']['labels']);
         $this->assertSame([4000.0, 5200.0], $insight['chart']['data']);
+    }
+
+    public function test_connect_list_hides_connected_workspace_and_workspace_only_services(): void
+    {
+        $manager = User::factory()->manager()->create();
+        $site = Site::factory()->create();
+
+        // Already connected on this site.
+        SiteIntegration::factory()->for($site)->create(['integration_key' => 'uptimerobot', 'status' => ConnectionStatus::Connected]);
+        // Connected once for the whole workspace.
+        WorkspaceIntegration::query()->create([
+            'integration_key' => 'uptime_kuma',
+            'name' => 'Uptime Kuma (workspace)',
+            'status' => ConnectionStatus::Connected,
+            'credentials' => ['api_key' => 'k'],
+        ]);
+
+        $available = Livewire::actingAs($manager)->test(SitePanel::class, ['site' => $site])->viewData('available');
+        $keys = collect($available)->flatten(1)->map(fn ($i) => $i->key())->all();
+
+        $this->assertNotContains('uptimerobot', $keys, 'A service already connected here should be hidden.');
+        $this->assertNotContains('uptime_kuma', $keys, 'A workspace-connected service should be hidden.');
+        $this->assertNotContains('freeagent', $keys, 'A workspace-only service should never appear here.');
+        $this->assertContains('plausible', $keys, 'Unconnected services should still be offered.');
     }
 
     public function test_panel_has_no_insight_before_any_collection(): void
