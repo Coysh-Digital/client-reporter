@@ -14,8 +14,17 @@
         </x-slot:actions>
     </x-page-header>
 
-    <div class="mb-4">
+    <div class="mb-4 flex items-center justify-between gap-3">
         <input wire:model.live.debounce.300ms="search" type="search" placeholder="Search sites or clients…" class="cr-input max-w-xs">
+        <label class="flex shrink-0 items-center gap-2 text-[12.5px] text-muted">
+            <span class="hidden sm:inline">Show</span>
+            <select wire:model.live="perPage" class="cr-input w-auto py-1.5 pr-8 text-sm">
+                @foreach (\App\Livewire\Sites\Index::PER_PAGE_OPTIONS as $option)
+                    <option value="{{ $option }}">{{ $option }}</option>
+                @endforeach
+            </select>
+            <span class="hidden sm:inline">per page</span>
+        </label>
     </div>
 
     @if ($sites->isEmpty())
@@ -59,6 +68,6 @@
                 </div>
             @endforeach
         </div>
-        <div class="mt-4">{{ $sites->links() }}</div>
+        <div class="mt-4">{{ $sites->links('vendor.pagination.cr') }}</div>
     @endif
 </div>

@@ -20,10 +20,21 @@ class Index extends Component
 {
     use WithPagination;
 
+    /** Selectable page sizes for the results-per-page control. */
+    public const PER_PAGE_OPTIONS = [15, 30, 50, 100];
+
     #[Url(as: 'q')]
     public string $search = '';
 
+    #[Url]
+    public int $perPage = 15;
+
     public function updatingSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingPerPage(): void
     {
         $this->resetPage();
     }
@@ -41,7 +52,16 @@ class Index extends Component
                     ->orWhereHas('client', fn ($c) => $c->where('name', 'like', "%{$this->search}%"));
             }))
             ->orderBy('name')
-            ->paginate(15);
+            ->paginate($this->pageSize());
+    }
+
+    /**
+     * The validated results-per-page, guarding the URL-bound value against
+     * anything outside the offered options.
+     */
+    private function pageSize(): int
+    {
+        return in_array($this->perPage, self::PER_PAGE_OPTIONS, true) ? $this->perPage : 15;
     }
 
     public function render(SiteHealthResolver $resolver): mixed
