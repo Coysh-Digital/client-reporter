@@ -21,6 +21,8 @@
 - Added automatic site favicons: each active site's favicon is fetched from the site, cached, and shown on the sites list and site page; refreshed weekly.
 - Google Search Console errors now include Google's own reason (e.g. the API not being enabled) instead of a bare HTTP code, so a 403 on "Find sites" is actionable.
 - Made the scheduled queue worker resilient to being out-of-memory-killed: it recycles on a memory ceiling and no longer wedges the queue on a stale lock if the host kills it.
+- The site "Connect a service" list now hides services already connected here, connected once for the whole workspace, or that are workspace-only.
+- The Activity page now lists jobs currently on the queue (waiting and running), and a live queue monitor in the sidebar shows at a glance whether background jobs are idle, queued or running.
 
 ## 0.1.0-alpha.1 - 2026-09-04
 

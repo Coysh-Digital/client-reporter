@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Livewire\Integrations;
 
+use App\Integrations\Contracts\Integration;
 use App\Integrations\IntegrationRegistry;
 use App\Jobs\RunConnectorCollection;
 use App\Models\Metric;
 use App\Models\Site;
 use App\Models\SiteIntegration;
+use App\Models\WorkspaceIntegration;
 use App\Support\AuditLogger;
 use App\Support\DateRange;
 use App\Support\Format;
@@ -67,9 +69,27 @@ class SitePanel extends Component
         $registry = app(IntegrationRegistry::class);
         $connections = $this->site->integrations()->orderBy('name')->get();
 
+        // Hide services that can't (or shouldn't) be connected here: already
+        // connected on this site, connected once for the whole workspace, or
+        // workspace-only integrations (billing/accounting).
+        $hidden = $connections->pluck('integration_key')
+            ->merge(WorkspaceIntegration::query()->pluck('integration_key'))
+            ->all();
+
+        $available = [];
+        foreach ($registry->byCategory() as $category => $items) {
+            $items = array_values(array_filter(
+                $items,
+                fn (Integration $i): bool => ! in_array($i->key(), $hidden, true) && ! $i->onlyWorkspaceScope(),
+            ));
+            if ($items !== []) {
+                $available[$category] = $items;
+            }
+        }
+
         return view('livewire.integrations.site-panel', [
             'connections' => $connections,
-            'available' => $registry->byCategory(),
+            'available' => $available,
             'insights' => $connections->mapWithKeys(
                 fn (SiteIntegration $connection): array => [$connection->id => $this->insightFor($connection)],
             )->all(),
