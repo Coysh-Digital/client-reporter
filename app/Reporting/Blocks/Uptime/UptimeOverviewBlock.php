@@ -19,13 +19,12 @@ use App\Support\Format;
  */
 class UptimeOverviewBlock extends BlockType
 {
-    /** key => [metric_key, label, fmt, goodUp] */
-    private const METRICS = [
-        'uptime' => ['uptime.percentage', 'Avg uptime', 'uptime', true],
-        'response_time' => ['uptime.response_time_ms', 'Avg response', 'ms', false],
-        'incidents' => ['uptime.incidents', 'Incidents', 'number', false],
-        'downtime' => ['uptime.downtime_seconds', 'Downtime', 'duration', false],
-        'monitors' => ['uptime.monitors', 'Monitors', 'number', true],
+    /** Lighthouse category metric key => label, in display order. */
+    private const LIGHTHOUSE = [
+        'performance.score' => 'Performance',
+        'performance.accessibility' => 'Accessibility',
+        'performance.best_practices' => 'Best practices',
+        'performance.seo' => 'SEO',
     ];
 
     public function type(): string
@@ -75,32 +74,47 @@ class UptimeOverviewBlock extends BlockType
 
         $snapshot = $context->reader->snapshotForCategory($context->site, IntegrationCategory::Monitoring, 'monitors', $context->range) ?? [];
 
-        $tiles = [];
-        foreach (self::METRICS as [$metricKey, $label, $fmt, $goodUp]) {
-            $tiles[] = [
-                'label' => $label,
-                'fmt' => $fmt,
-                'goodUp' => $goodUp,
-                'current' => $current[$metricKey]['value'] ?? null,
-                'previous' => $previous[$metricKey]['value'] ?? null,
-            ];
-        }
+        $tile = fn (string $metricKey, string $label, string $fmt, bool $goodUp): array => [
+            'label' => $label,
+            'fmt' => $fmt,
+            'goodUp' => $goodUp,
+            'current' => $current[$metricKey]['value'] ?? null,
+            'previous' => $previous[$metricKey]['value'] ?? null,
+        ];
+
+        $tiles = [
+            $tile('uptime.percentage', 'Avg uptime', 'uptime', true),
+            $tile('uptime.response_time_ms', 'Avg response', 'ms', false),
+            $tile('uptime.incidents', 'Incidents', 'number', false),
+            $tile('uptime.downtime_seconds', 'Downtime', 'duration', false),
+        ];
+        // A cert-alerts tile where the provider reports certificate expiry
+        // (Uptime Kuma); otherwise fall back to the monitor count.
+        $tiles[] = isset($current['uptime.cert_alerts'])
+            ? $tile('uptime.cert_alerts', 'Cert alerts', 'number', false)
+            : $tile('uptime.monitors', 'Monitors', 'number', true);
 
         $limit = (int) $context->block->configValue('incident_limit', 10);
 
-        // Lighthouse performance score, only if a performance integration is connected.
+        // Lighthouse scores, only for whichever a connected performance
+        // integration collected (accessibility/best-practices/SEO are lab-only).
         $performance = $context->reader->metricsForCategory($context->site, IntegrationCategory::Performance, $context->range);
-        $score = $performance['performance.score']['value'] ?? null;
+        $lighthouse = [];
+        foreach (self::LIGHTHOUSE as $metricKey => $label) {
+            $value = $performance[$metricKey]['value'] ?? null;
+            if ($value !== null) {
+                $lighthouse[] = ['label' => $label, 'score' => (int) round($value), 'rating' => $this->rating((int) round($value))];
+            }
+        }
 
         return [
             'has_data' => $current !== [],
-            'summary' => $this->summary($current, $score),
+            'summary' => $this->summary($current, $performance['performance.score']['value'] ?? null),
             'tiles' => $tiles,
             'timeseries' => $snapshot['timeseries'] ?? [],
             'status_days' => $this->statusDays($snapshot['timeseries'] ?? []),
             'incidents' => array_slice($snapshot['incidents'] ?? [], 0, $limit),
-            'performance_score' => $score === null ? null : (int) round($score),
-            'performance_rating' => $score === null ? null : $this->rating((int) round($score)),
+            'lighthouse' => $lighthouse,
         ];
     }
 

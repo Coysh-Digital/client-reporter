@@ -14,7 +14,8 @@
 - Fixed queued data collection failing on PHP 8.4+: the collection job's property name collided with the queue trait's, which is a fatal error on newer PHP. Scheduled/queued collection now runs.
 - Added a per-integration snapshot to the site page: each connected service shows when it was last collected, its latest metrics, and a small Chart.js chart of its headline metric across periods.
 - Fixed Uptime Kuma reporting zeros for uptime and response time. It now reads Kuma's own uptime-ratio and average-response-time aggregates (preferring the 30-day window), so figures match the Kuma dashboard from the first collection instead of slowly building from samples.
-- Added two consolidated report components used in the default template: "Site traffic" (headline metrics, a visitors trend, and top pages/referrers/countries/devices in one panel) and "Uptime & performance" (availability metrics, a daily uptime strip, the Lighthouse performance score and incidents). The previous separate analytics and uptime blocks remain available in the builder.
+- Added two consolidated report components used in the default template: "Site traffic" (headline metrics, a visitors trend, and top pages/referrers/countries/devices in one panel) and "Uptime & performance" (availability metrics, a daily uptime strip, Lighthouse scores and incidents). The previous separate analytics and uptime blocks remain available in the builder.
+- Collected all four Lighthouse scores (performance, accessibility, best practices, SEO) from PageSpeed, and TLS certificate-expiry alerts from Uptime Kuma — both surfaced in the Uptime & performance report component. The visitors trend now reads as a filled area chart.
 
 ## 0.1.0-alpha.1 - 2026-09-04
 

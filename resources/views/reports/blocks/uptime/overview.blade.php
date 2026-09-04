@@ -66,19 +66,20 @@
         </p>
     @endif
 
-    {{-- Lighthouse performance --}}
-    @if (($data['performance_score'] ?? null) !== null)
-        @php $rc = $ratingColors[$data['performance_rating']] ?? '#8b857a'; @endphp
-        <div class="mini-bars-title" style="margin-top:26px;">Lighthouse</div>
-        <table style="border-collapse:collapse;margin-top:10px;"><tr>
-            <td style="vertical-align:middle;">
-                <span class="gauge-ring" style="border-color:{{ $rc }};"><span class="gauge-value" style="color:{{ $rc }};">{{ $data['performance_score'] }}</span></span>
-            </td>
-            <td style="vertical-align:middle;padding-left:16px;">
-                <div class="metric-label">Performance</div>
-                <div class="muted" style="font-size:12.5px;margin-top:2px;">Google Lighthouse score (0–100)</div>
-            </td>
-        </tr></table>
+    {{-- Lighthouse scores --}}
+    @if (! empty($data['lighthouse']))
+        <div class="mini-bars-title" style="margin-top:26px;">Lighthouse scores</div>
+        <table style="width:100%;border-collapse:collapse;table-layout:fixed;margin-top:12px;">
+            <tr>
+                @foreach ($data['lighthouse'] as $score)
+                    @php $rc = $ratingColors[$score['rating']] ?? '#8b857a'; @endphp
+                    <td style="width:25%;text-align:center;vertical-align:top;padding:0 8px;">
+                        <span class="gauge-ring" style="border-color:{{ $rc }};"><span class="gauge-value" style="color:{{ $rc }};">{{ $score['score'] }}</span></span>
+                        <div class="metric-label" style="margin-top:8px;">{{ $score['label'] }}</div>
+                    </td>
+                @endforeach
+            </tr>
+        </table>
     @endif
 
     {{-- Incidents --}}

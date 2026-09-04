@@ -31,7 +31,7 @@ class UptimeKumaClient
      * windows — which are read here (null on older versions that don't).
      *
      * @param  array<int, string>  $onlyNames
-     * @return array<int, array{name: string, url: ?string, status: int, response_time_ms: ?float, uptime_ratio: ?float, avg_response_ms: ?int}>
+     * @return array<int, array{name: string, url: ?string, status: int, response_time_ms: ?float, uptime_ratio: ?float, avg_response_ms: ?int, cert_days: ?int}>
      */
     public function monitors(array $onlyNames = []): array
     {
@@ -57,6 +57,7 @@ class UptimeKumaClient
                 'response_time_ms' => null,
                 'uptime_ratio' => null,
                 'avg_response_ms' => null,
+                'cert_days' => null,
             ];
         }
 
@@ -67,6 +68,16 @@ class UptimeKumaClient
             }
 
             $byName[$name]['response_time_ms'] = $row['value'];
+        }
+
+        // TLS certificate days remaining, for cert-expiry alerts.
+        foreach ($metrics['monitor_cert_days_remaining'] ?? [] as $row) {
+            $name = $row['labels']['monitor_name'] ?? null;
+            if ($name === null || ! isset($byName[$name])) {
+                continue;
+            }
+
+            $byName[$name]['cert_days'] = (int) $row['value'];
         }
 
         // Kuma's own uptime ratio (0..1) and average response time (seconds),

@@ -41,6 +41,8 @@ class MonitorsCollector extends AbstractCollector
 
     private const MAX_LOG_AGE_DAYS = 400;
 
+    private const CERT_ALERT_DAYS = 14;
+
     public function key(): string
     {
         return 'monitors';
@@ -142,6 +144,7 @@ class MonitorsCollector extends AbstractCollector
             // from the very first collection.
             'uptime_ratio' => $m['uptime_ratio'] ?? null,
             'avg_response_ms' => $m['avg_response_ms'] ?? null,
+            'cert_days' => $m['cert_days'] ?? null,
         ], $monitors);
 
         return $log;
@@ -244,12 +247,25 @@ class MonitorsCollector extends AbstractCollector
             ? (int) round((1 - $avgRatio) * $this->elapsedSeconds($range))
             : $observedDowntime;
 
-        return CollectorResult::make()
+        $result = CollectorResult::make()
             ->metric('uptime.percentage', $percentage, '%')
             ->metric('uptime.incidents', count($incidentsInRange))
             ->metric('uptime.downtime_seconds', $downtimeSeconds, 'seconds')
             ->metric('uptime.response_time_ms', $responseMs, 'ms')
-            ->metric('uptime.monitors', count($log['monitors']))
+            ->metric('uptime.monitors', count($log['monitors']));
+
+        // TLS certificate expiry, where the provider reports it (Uptime Kuma).
+        $certDays = array_values(array_filter(
+            array_map(fn (array $m) => $m['cert_days'] ?? null, $log['monitors']),
+            fn ($v) => $v !== null,
+        ));
+        if ($certDays !== []) {
+            $alerts = count(array_filter($certDays, fn ($d) => $d >= 0 && $d < self::CERT_ALERT_DAYS));
+            $result->metric('uptime.cert_alerts', $alerts)
+                ->metric('uptime.cert_days_min', min($certDays), 'days');
+        }
+
+        return $result
             ->snapshot([
                 'monitors' => array_map(fn (array $m): array => [
                     'id' => $m['name'],
