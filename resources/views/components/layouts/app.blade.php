@@ -25,6 +25,7 @@
             ]],
             ['heading' => 'Setup', 'items' => [
                 ['label' => 'Integrations', 'route' => 'integrations.index', 'match' => 'integrations', 'icon' => 'plug'],
+                ['label' => 'Activity', 'route' => 'activity.index', 'match' => 'activity', 'icon' => 'bolt'],
                 ['label' => 'Branding', 'route' => 'branding.edit', 'match' => 'branding', 'icon' => 'palette'],
             ]],
             ['heading' => 'Workspace', 'items' => [

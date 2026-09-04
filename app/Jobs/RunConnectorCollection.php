@@ -23,13 +23,13 @@ class RunConnectorCollection implements ShouldQueue
     public int $tries = 1;
 
     public function __construct(
-        public SiteIntegration $connection,
+        public SiteIntegration $siteIntegration,
         public string $periodStart,
         public string $periodEnd,
     ) {}
 
     public function handle(CollectorRunner $runner): void
     {
-        $runner->collectAll($this->connection, new DateRange($this->periodStart, $this->periodEnd));
+        $runner->collectAll($this->siteIntegration, new DateRange($this->periodStart, $this->periodEnd));
     }
 }
