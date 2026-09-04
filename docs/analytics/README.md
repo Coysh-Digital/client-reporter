@@ -1,10 +1,10 @@
 # Analytics integrations
 
-The analytics integrations pull traffic and audience data into Client Reporter so it can appear in your client reports.
+The analytics integrations pull traffic and audience data into Client Reporter so it can show up in your client reports.
 
-Client Reporter bundles integrations for **six** analytics providers: **Google Analytics 4**, **Google Ads**, **Plausible**, **Fathom**, **Matomo** and **Umami**. Each connects using the provider's own API and authentication method, then collects the metrics that power the analytics blocks in a report.
+Client Reporter bundles **six** analytics providers: **Google Analytics 4**, **Google Ads**, **Plausible**, **Fathom**, **Matomo** and **Umami**. Each one connects using the provider's own API and authentication method, then collects the metrics that feed the analytics blocks in a report.
 
-The two Google providers authenticate with **Google OAuth**; the four privacy-focused providers use an **API key or token** (plus an instance URL for self-hosted Matomo and Umami). All of them can be [connected once for the whole workspace](../integrations/README.md#workspace-connections-connect-once) and auto-matched to your sites, or connected individually per site.
+The two Google providers log in with **Google OAuth**; the four privacy-focused ones use an **API key or token** (plus an instance URL for self-hosted Matomo and Umami). Any of them can be [connected once for the whole workspace](../integrations/README.md#workspace-connections-connect-once) and auto-matched to your sites, or you can connect them one at a time per site.
 
 ## Google Analytics 4
 
@@ -16,9 +16,9 @@ Connecting per site:
 1. In Google Analytics, open **Admin → Property Settings** and copy the **Property ID** (a number like `123456789`).
 2. Paste it into the connection form and press **Save**.
 3. Click **Connect Google account** and sign in with an account that can view this property.
-4. You return connected.
+4. You come back connected.
 
-In the workspace flow, you connect the Google account first, then click **Find sites** to list every GA4 property on the account — each is auto-matched to a site by its web stream URL where possible, and you confirm the mapping. (Properties with no web data stream are skipped, since they can't be matched to a site's URL.)
+In the workspace flow, you connect the Google account first, then click **Find sites** to list every GA4 property on the account — each one is auto-matched to a site by its web stream URL where it can be, and you confirm the mapping. (Properties with no web data stream get skipped, since there's no URL to match them to a site.)
 
 ## Google Ads
 
@@ -30,7 +30,7 @@ Connecting:
 1. In Google Ads, copy the account's **Customer ID** and paste it into the form.
 2. Under **Tools & Settings → API Center**, copy your **Developer token** and paste it in.
 3. Click **Connect Google account** and sign in with an account that can access this Google Ads account.
-4. You return connected.
+4. You come back connected.
 
 Google Ads feeds the **Ads summary** block (spend, clicks, impressions and conversions) rather than the general analytics blocks.
 
@@ -82,11 +82,11 @@ Connecting:
 
 ## Search Console is separate
 
-Google's *search* data (clicks, impressions, click-through rate, average position and top queries) comes from **Google Search Console**, which is a distinct integration in the **Search** category, not one of the analytics providers above. It also uses Google OAuth and is matched to a verified property (a URL like `https://example.com/` or a domain property like `sc-domain:example.com`). It feeds the **Search performance** report block.
+Google's *search* data (clicks, impressions, click-through rate, average position and top queries) comes from **Google Search Console**, which is its own integration in the **Search** category — not one of the analytics providers above. It also uses Google OAuth and is matched to a verified property (a URL like `https://example.com/` or a domain property like `sc-domain:example.com`). It feeds the **Search performance** report block.
 
 ## Which report blocks analytics feeds
 
-The metrics these integrations collect power the analytics blocks in the report builder:
+The metrics these integrations collect are what power the analytics blocks in the report builder:
 
 - **Analytics summary** — headline visitors, sessions and page views.
 - **Analytics chart** — the trend over the reporting period.

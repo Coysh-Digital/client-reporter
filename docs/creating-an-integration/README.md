@@ -1,12 +1,12 @@
 # Creating an integration
 
-Client Reporter can be extended with your own integrations. This section describes the Integration SDK — how an integration is structured, how it is discovered, and how to build and test one. The same SDK powers every one of the bundled integrations, so the best reference is the `app/Integrations/*` directory in the core application.
+Missing a service you use? You can add it yourself. This is the guide to the Integration SDK — how an integration hangs together, how Client Reporter finds it, and how to build and test one. Every bundled integration uses this exact same SDK, so honestly the best reference of all is the `app/Integrations/*` folder in the core app — copy whichever one is closest to what you're building.
 
 ## How integrations are distributed and discovered
 
-Integrations are plain PHP classes that extend `App\Integrations\Contracts\Integration`. The bundled ones are registered in the `integrations` array of `config/client-reporter.php`.
+An integration is just a plain PHP class that extends `App\Integrations\Contracts\Integration`. The ones that ship with Client Reporter are listed in the `integrations` array of `config/client-reporter.php`.
 
-Third-party integrations ship as installable Composer packages. A package advertises the integration classes it provides through the `extra.client-reporter.integrations` key in its `composer.json`, and Client Reporter's `IntegrationRegistry` merges them in at boot:
+Your own integrations can ship as Composer packages. A package points at the integration classes it provides with the `extra.client-reporter.integrations` key in its `composer.json`, and Client Reporter's `IntegrationRegistry` picks them up at boot:
 
 ```json
 {
@@ -20,21 +20,21 @@ Third-party integrations ship as installable Composer packages. A package advert
 }
 ```
 
-Installing an integration is then as simple as `composer require`-ing its package.
+Then anyone can install it with a plain `composer require` — no marketplace, no registration, nothing to approve.
 
 ## Scaffolding an integration
 
-The generator scaffolds a new integration, taking the name as an argument:
+Don't start from a blank file — let the generator write the skeleton for you. Just give it a name:
 
 ```bash
 php artisan client-reporter:make-integration "Matomo"
 ```
 
-This writes a skeleton under `app/Integrations/<Name>/` — the integration class (manifest, config fields, `verify()`), an API client and a collector — ready for you to fill in. Register the new class in `config/client-reporter.php`.
+That drops a skeleton into `app/Integrations/<Name>/` — the integration class (manifest, config fields, `verify()`), an API client and a collector — for you to fill in. Don't forget to register the new class in `config/client-reporter.php` so Client Reporter knows about it.
 
-## The shape of an Integration
+## The shape of an integration
 
-An integration extends `App\Integrations\Contracts\Integration` and implements three required methods — `manifest()`, `configFields()` and `verify()` — plus optional hooks for collectors, report blocks, setup guidance and workspace-scoped connections.
+There are only three methods you *have* to write — `manifest()`, `configFields()` and `verify()` — and then a handful of optional hooks (collectors, report blocks, setup steps, workspace connections) you reach for when you need them. Here's each piece.
 
 ### Manifest
 
@@ -131,10 +131,14 @@ See `WorkspaceSetup` and the analytics/billing integrations for the full pattern
 
 ## Testing your integration
 
-Contract test helpers verify your integration conforms to the SDK's expectations — the manifest, configuration, authentication and collector behaviour. Extend `App\Integrations\Testing\IntegrationContractAssertions` in your test (see `tests/Feature/Integrations/IntegrationContractComplianceTest.php` for how the bundled integrations use it). Mock the provider's HTTP calls with Laravel's `Http::fake()` and assert your collector writes the metrics and snapshot you expect.
+You don't have to write the boilerplate checks yourself — there are contract test helpers that make sure your integration behaves the way the SDK expects (the manifest, config, auth and collector all line up). Extend `App\Integrations\Testing\IntegrationContractAssertions` in your test, and peek at `tests/Feature/Integrations/IntegrationContractComplianceTest.php` to see how the bundled ones do it. For the data side, fake the provider's HTTP calls with Laravel's `Http::fake()` and assert your collector writes the metrics and snapshot you expect — no real network needed.
 
 ## Publishing your integration
 
-1. Put your integration class in a Composer package.
-2. Advertise it under `extra.client-reporter.integrations` in the package's `composer.json` (see above).
-3. Publish the package; users install it with `composer require`, and it appears in the integrations catalog automatically.
+Once it works, sharing it is easy:
+
+1. Drop your integration class into a Composer package.
+2. Point at it with `extra.client-reporter.integrations` in that package's `composer.json` (see above).
+3. Publish the package. Anyone who `composer require`s it gets your integration in their catalog automatically — that's the whole distribution story.
+
+If you build something useful, I'd love to hear about it.

@@ -4,68 +4,67 @@
 ![Laravel 13](https://img.shields.io/badge/Laravel-13-FF2D20.svg)
 ![PHP 8.3+](https://img.shields.io/badge/PHP-8.3%2B-777BB4.svg)
 
-**Open-source, self-hosted client reporting for web agencies.**
+**Free, self-hosted client reporting for web agencies and freelancers.**
 
-Client Reporter connects your clients' websites, analytics, ecommerce and uptime services and turns the data into beautifully branded reports.
+Client Reporter plugs into the services your clients' sites already run on — their CMS, analytics, shop, uptime monitor — pulls the numbers in on a schedule, and turns them into a clean, branded report you can hand over with your name on it.
 
-## What is Client Reporter?
+![The Client Reporter dashboard](docs/images/dashboard.png)
 
-Client Reporter is a self-hosted Laravel application that connects the services your clients' websites already run on — their CMS, analytics, ecommerce platform and uptime monitoring — collects data from them on a schedule, and turns that data into attractive, fully white-labelled client reports.
+## Why this exists
 
-It is MIT licensed, free, and has no paid tiers and no licence keys. One installation belongs to one agency; it is not a multi-tenant SaaS.
+I got tired of paying a monthly fee, per client, to a SaaS just to send people a tidy monthly report — and of the data living on someone else's server. So I built the thing I wanted: you host it, you own the data, and it's free. No seats, no per-client pricing, no licence keys, nothing to phone home.
 
-Client Reporter is deliberately narrow. It does one job — client reporting — and aims to do it well.
+One install is for one agency. It's not a multi-tenant SaaS, and it's not trying to be everything — it does client reporting and tries to do that one thing really well.
 
-## Who is it for?
+Heads up: it's early. Client Reporter is at v0.1.0 and under active development, so expect a few rough edges and do give it a test run before you point real clients at it.
 
-- **Web agencies** that maintain a portfolio of client websites and want a consistent, professional reporting story.
-- **Freelance web developers** who want to give clients a branded, self-hosted report without paying a monthly SaaS fee.
+## Is it for you?
 
-## What it does
+Probably, if you're:
 
-- Organises your work around a simple model: **Client → Sites → Integrations → collected Data → Reports**.
-- Connects to the CMS, analytics, ecommerce and monitoring services behind each site through bundled integrations.
-- Collects data on a schedule using Laravel's scheduler — no persistent processes required on shared hosting.
-- Produces **fully white-labelled** client reports that can be branded entirely as your agency, with no Client Reporter references.
-- Supports staff roles — **Administrator**, **Manager** and **Viewer** — plus a restricted **Client portal** role for the people you report to.
+- a **web agency** looking after a bunch of client sites who wants a consistent, professional report to send each month, or
+- a **freelancer** who'd rather give clients a proper branded report than pay a SaaS subscription for the privilege.
 
-## What Client Reporter deliberately does not do
+## What you get
 
-Client Reporter is intentionally focused. It does **not** provide, and is not intended to provide:
+- A simple way to organise everything: **Client → Sites → Integrations → Data → Reports**.
+- Connections to the CMS, analytics, ecommerce, monitoring and more behind each site (20 integrations so far — see below).
+- Data collected on a schedule by Laravel's scheduler, so there's nothing to babysit — it's happy on cheap shared hosting.
+- **Fully white-label** reports: your logo, your colours, your name. Your clients never see a Client Reporter logo anywhere.
+- Sensible roles for your team — **Administrator**, **Manager**, **Viewer** — plus a locked-down **client portal** for the people you report to.
 
-- GitHub integration
-- Deployment tracking
-- Server monitoring
-- SSH or remote command execution
-- Backups
-- Malware or vulnerability scanning
-- Remote CMS updates or plugin installation
-- Uptime monitoring infrastructure (it integrates with services like UptimeRobot, Uptime Kuma and BetterUptime instead)
-- AI- or LLM-generated commentary (report summaries are generated deterministically from your own numbers, so there is nothing to hallucinate)
-- Being your invoicing or accounting system (it keeps a lightweight invoice ledger and can sync invoices from FreeAgent or Xero purely so they can appear in reports — it is not a billing product)
-- CRM
-- Project management
-- An integration marketplace
+![A finished client report](docs/images/report-example.png)
 
-The companion plugins are **read-only**. Client Reporter never performs remote updates to your clients' sites.
+## What it deliberately doesn't do
 
-## Requirements
+Keeping the scope tight is a feature, not laziness. On purpose, Client Reporter is **not**:
+
+- a deployment tracker, server monitor, or anything that SSHes into boxes
+- a backup, malware-scanning, or "update all the plugins for me" tool (the companion plugins are **read-only** — it never changes your clients' sites)
+- its own uptime monitor (it plugs into UptimeRobot, Uptime Kuma or Better Uptime instead)
+- an AI commentary generator — the plain-English summaries are worked out straight from your numbers, so there's nothing to hallucinate
+- your invoicing or accounting system (it keeps a light invoice ledger and can pull invoices in from FreeAgent or Xero *just* so they can show up in a report — that's it)
+- a CRM, a project manager, or an integration marketplace
+
+If you need one of those, there are great dedicated tools for it — this happily stays in its lane.
+
+## What you'll need
 
 - PHP 8.3+
 - Composer
-- Node.js and npm (for building front-end assets)
-- One of: SQLite (default, easiest), MySQL/MariaDB, or PostgreSQL
-- A web server able to serve the `public/` directory
+- Node.js and npm (to build the front-end assets)
+- A database — SQLite (the easy default), MySQL/MariaDB, or PostgreSQL
+- A web server that can serve the `public/` folder
 
-No Docker is required. On shared hosting, a single cron entry drives everything:
+No Docker, no Redis, nothing exotic. On shared hosting a single cron line runs the whole show:
 
 ```
 * * * * * php /path/to/artisan schedule:run
 ```
 
-On a VPS you may optionally run a persistent queue worker. By default Client Reporter uses the database cache, session and queue drivers, so Redis is not required. PDF rendering is pluggable: dompdf is used by default (no binaries, shared-host-safe), with Browsershot available as an option on a VPS.
+On a VPS you *can* run a persistent queue worker if you like, but you don't have to. PDFs render with dompdf out of the box (no binaries, shared-host friendly), and you can switch to Browsershot on a VPS if you want pixel-perfect output.
 
-## Installation
+## Getting it running
 
 ```bash
 git clone https://github.com/coysh-digital/client-reporter.git
@@ -74,13 +73,15 @@ composer install
 npm install && npm run build
 ```
 
-Then point your web server's document root at the `public/` directory and open the site in your browser to run the install wizard.
+Then point your web root at `public/`, open the site in your browser, and the install wizard walks you through the rest.
 
-For full step-by-step instructions, see [docs/installation](docs/installation/README.md).
+![The install wizard](docs/images/install-wizard.png)
+
+There's a full step-by-step guide in [docs/installation](docs/installation/README.md) if you'd like more detail.
 
 ## Integrations
 
-Bundled integrations, grouped by category:
+Here's everything that's bundled in so far, by category:
 
 | Category      | Integrations                                                          |
 | ------------- | --------------------------------------------------------------------- |
@@ -89,40 +90,54 @@ Bundled integrations, grouped by category:
 | Search        | Google Search Console                                                  |
 | Ecommerce     | WooCommerce, Craft Commerce, Shopify, Stripe                          |
 | Forms & Leads | Mailchimp                                                              |
-| Monitoring    | UptimeRobot, Uptime Kuma, BetterUptime                                |
+| Monitoring    | UptimeRobot, Uptime Kuma, Better Uptime                               |
 | Performance   | PageSpeed Insights                                                     |
 | Billing       | FreeAgent, Xero                                                        |
 
-Analytics- and billing-style integrations can be connected **once for the whole workspace** (a single API key or OAuth login) and auto-matched to your sites and clients by URL or email, or connected individually per site. The WordPress and Craft CMS integrations connect through companion plugins that live in separate repositories — [coysh-digital/client-reporter-wordpress](https://github.com/coysh-digital/client-reporter-wordpress) and [coysh-digital/client-reporter-craft](https://github.com/coysh-digital/client-reporter-craft). They expose **read-only** data over HMAC-signed requests.
+![The integrations catalog](docs/images/integrations.png)
 
-Already using another tool to manage your sites? You can **bulk-import** them from MainWP, ManageWP or WPMgr.
+Most of these you can connect **once for the whole workspace** — one API key or one Google login — and Client Reporter will match them up to your sites and clients automatically, or you can wire them up per site if you prefer.
+
+WordPress and Craft connect through small companion plugins that live in their own repos — [client-reporter-wordpress](https://github.com/coysh-digital/client-reporter-wordpress) and [client-reporter-craft](https://github.com/coysh-digital/client-reporter-craft). They only ever hand back **read-only** data, over HMAC-signed requests.
+
+Already managing your sites somewhere else? You can **bulk-import** them from MainWP, ManageWP or WPMgr so you're not typing them all in by hand.
 
 ## White-labelling
 
-White-labelling is a headline feature. Client-facing reports can be fully branded as your agency — your logo, your colours, your name — with no Client Reporter references anywhere your clients can see. Your clients experience the report as yours.
+This is the bit I most wanted to nail. Client-facing reports can be branded completely as your agency — your logo, your colours, your name — with zero Client Reporter references anywhere a client can see. As far as they're concerned, the report is yours.
 
-See [docs/branding](docs/branding/README.md) for details.
+![Branding and white-label settings](docs/images/branding.png)
 
-## Updating
+Branding cascades from global → per-client → per-site, so you can set a house style once and tweak it for individual clients. There's more in [docs/branding](docs/branding/README.md).
 
-Client Reporter is updated by pulling the latest code and running the update steps. See [docs/updating](docs/updating/README.md).
+## Keeping it updated
 
-## Extending with integrations
+Updating is just pulling the latest code and running a couple of steps — full details in [docs/updating](docs/updating/README.md). Client Reporter also checks GitHub for new releases and gives you a heads-up in the admin when one's out.
 
-Client Reporter has an Integration SDK. Third-party integrations are installable Composer packages, discovered via `extra.client-reporter.integrations` in their `composer.json`. A generator, `php artisan client-reporter:make-integration`, scaffolds a new integration for you.
+## Writing your own integration
 
-See [docs/creating-an-integration](docs/creating-an-integration/README.md) to get started.
+Missing a service you use? You can add it. Client Reporter has a small Integration SDK, and integrations are just Composer packages discovered via `extra.client-reporter.integrations`. There's a generator to scaffold one for you:
 
-## Contributing
+```bash
+php artisan client-reporter:make-integration "Your Service"
+```
 
-Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) for the development setup, coding standards and pull request process, and our [Code of Conduct](CODE_OF_CONDUCT.md).
+The [creating an integration](docs/creating-an-integration/README.md) guide walks through the whole thing.
 
-## Security
+## Documentation
 
-If you discover a security vulnerability, please follow the responsible disclosure process in [SECURITY.md](SECURITY.md). Please do not open public issues for security problems.
+The full docs live in [docs/](docs/README.md) — installation, configuration, shared hosting, the reporting and branding guides, every integration, the security model, and how to build your own integration.
 
-## License
+## Want to help?
 
-Client Reporter is open-source software licensed under the [MIT license](LICENSE).
+Contributions are genuinely welcome — code, docs, bug reports, or just telling me what's confusing. Have a read of [CONTRIBUTING.md](CONTRIBUTING.md) for how to get set up and the coding standards, and the [Code of Conduct](CODE_OF_CONDUCT.md) while you're at it.
+
+## Found a security issue?
+
+Please don't open a public issue for it. Instead, use GitHub's private vulnerability reporting — the details are in [SECURITY.md](SECURITY.md). Thank you for reporting responsibly.
+
+## Licence
+
+Client Reporter is open source under the [MIT licence](LICENSE) — use it, fork it, ship it, whatever you need.
 
 Copyright (c) 2026 Tim Coysh

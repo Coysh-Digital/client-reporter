@@ -1,8 +1,8 @@
 # UptimeRobot integration
 
-The UptimeRobot integration brings uptime and monitoring data into Client Reporter so it can appear in your client reports.
+The UptimeRobot integration brings uptime and monitoring data into Client Reporter so it can show up in your client reports.
 
-Client Reporter does not run its own uptime monitoring infrastructure — it integrates with [UptimeRobot](https://uptimerobot.com/) instead. You connect your UptimeRobot account with an API key, map monitors to your Sites, and the integration collects uptime and response data for reporting.
+Client Reporter doesn't run its own uptime monitoring — it plugs into [UptimeRobot](https://uptimerobot.com/) instead. You connect your UptimeRobot account with an API key, map monitors to your Sites, and the integration collects the uptime and response data for your reports.
 
 ## Connecting your UptimeRobot account
 
@@ -13,11 +13,11 @@ UptimeRobot authenticates with an **API key**.
 3. Paste it into the connection form. Optionally list specific **monitor IDs** to include — leave this blank to include every monitor on the account.
 4. Press **Connect & verify**.
 
-On verify, Client Reporter lists the monitors the key can see and reports how many it found, confirming the key works before the connection is saved.
+When you verify, Client Reporter lists the monitors the key can see and tells you how many it found, so you know the key works before the connection is saved.
 
 ## Mapping monitors to Sites
 
-The **Monitor IDs** field is a per-site setting. You can:
+The **Monitor IDs** field is a per-site setting. You can either:
 
 - **Leave it blank** to include all monitors on the account for that site, or
 - **List specific monitor IDs** (comma-separated, e.g. `779035, 781394`) to report only those monitors.
@@ -34,7 +34,7 @@ The monitors collector turns raw monitor logs into client-friendly metrics for t
 - **Response time** — the average response time, in milliseconds.
 - **Monitor count** — how many monitors are included.
 
-Alongside the metrics it stores a snapshot with a per-monitor breakdown (name, URL, current status, uptime and average response) and an incident list (which monitor went down, when, for how long, and the reason).
+Alongside the metrics it keeps a snapshot with a per-monitor breakdown (name, URL, current status, uptime and average response) and an incident list (which monitor went down, when, for how long, and why).
 
 ## Uptime report blocks
 
@@ -47,9 +47,9 @@ See [Reports](../reports/README.md) for adding these blocks.
 
 ## Also: Uptime Kuma and Better Uptime
 
-UptimeRobot is one of three monitoring providers Client Reporter bundles in the **Monitoring** category. The uptime blocks are **generic across monitoring providers** — no provider registers its own blocks, so the same **Uptime summary** and **Incidents** blocks work whichever you connect:
+UptimeRobot is one of three monitoring providers Client Reporter bundles in the **Monitoring** category. The uptime blocks are **generic across monitoring providers** — no provider registers its own blocks, so the same **Uptime summary** and **Incidents** blocks work whichever one you connect:
 
-- **[Uptime Kuma](https://github.com/louislam/uptime-kuma)** — for a self-hosted Uptime Kuma instance. Needs the instance's public URL plus an API key (**Settings → API Keys**); monitors are selected by **name** rather than ID.
-- **Better Uptime (Better Stack)** — needs an API token from **Better Stack → Settings → API tokens**; monitors are selected by ID, or left blank for the whole account.
+- **[Uptime Kuma](https://github.com/louislam/uptime-kuma)** — for a self-hosted Uptime Kuma instance. Needs the instance's public URL plus an API key (**Settings → API Keys**); monitors are picked by **name** rather than ID.
+- **Better Uptime (Better Stack)** — needs an API token from **Better Stack → Settings → API tokens**; monitors are picked by ID, or left blank for the whole account.
 
-All three support per-site and workspace-scoped connections, and all collect the same uptime/incident/response metrics, so you can pick whichever monitoring service you already use without changing how the reports look.
+All three support per-site and workspace-scoped connections, and all collect the same uptime/incident/response metrics, so you can just use whichever monitoring service you're already on without the reports looking any different.

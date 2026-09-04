@@ -1,24 +1,24 @@
 # Configuration
 
-This section covers configuring Client Reporter after installation.
+Here's how to configure Client Reporter once it's installed.
 
-Most configuration follows standard Laravel conventions through your `.env` file. The choices most relevant to Client Reporter are your database, the cache/session/queue drivers, and the PDF renderer. The defaults are chosen to work on shared hosting with no extra services: SQLite for the database, the database drivers for cache/session/queue, and dompdf for PDF rendering.
+Most of it is just standard Laravel, done through your `.env` file. The bits that matter most here are your database, the cache/session/queue drivers, and the PDF renderer. I've picked defaults that work on shared hosting without any extra services: SQLite for the database, the database drivers for cache/session/queue, and dompdf for PDFs. So on a fresh install you can leave all of it alone and it'll just work.
 
-A few Client Reporter-specific options live in `config/client-reporter.php`, and a handful of operational settings are editable at runtime from the admin **Settings** page (they override the config defaults). Everything else is standard Laravel.
+There are a few Client Reporter-specific options in `config/client-reporter.php`, and a handful of operational settings you can change at runtime from the admin **Settings** page (those override the config defaults). Everything else is plain Laravel.
 
 ## Database
 
-The install wizard writes your database settings, but you can also set them directly in `.env`. Client Reporter supports SQLite, MySQL/MariaDB and PostgreSQL.
+The install wizard writes your database settings for you, but you can also set them directly in `.env`. Client Reporter works with SQLite, MySQL/MariaDB and PostgreSQL.
 
 ### SQLite (default)
 
-The default and simplest option — no server to provision. The database is a single file at `database/database.sqlite`:
+The simplest option, and the default — there's no server to set up. The database is just a single file at `database/database.sqlite`:
 
 ```dotenv
 DB_CONNECTION=sqlite
 ```
 
-Create the file if it does not exist (`touch database/database.sqlite`), then run migrations. SQLite is well suited to shared hosting and small-to-medium agencies.
+Create the file if it isn't there yet (`touch database/database.sqlite`), then run migrations. SQLite is a great fit for shared hosting and small-to-medium agencies.
 
 ### MySQL / MariaDB
 
@@ -42,11 +42,11 @@ DB_USERNAME=your_user
 DB_PASSWORD=your_password
 ```
 
-After changing the connection, run `php artisan migrate`. When switching databases on an existing install, migrate the schema into the new database first (Client Reporter does not move existing data between database engines for you).
+After you change the connection, run `php artisan migrate`. If you're switching databases on an install that already has data, migrate the schema into the new database first — heads up, Client Reporter won't move your existing data between database engines for you.
 
 ## Cache, session and queue drivers
 
-Out of the box these all use the **database** driver, so a fresh install needs no Redis, Memcached or extra services:
+Out of the box these all use the **database** driver, so a fresh install doesn't need Redis, Memcached or anything else:
 
 ```dotenv
 CACHE_STORE=database
@@ -54,7 +54,7 @@ SESSION_DRIVER=database
 QUEUE_CONNECTION=database
 ```
 
-This is what makes the single-cron shared-hosting model work. On a VPS you can point any of these at Redis for lower latency:
+This is what makes the single-cron shared-hosting model work. If you're on a VPS you can point any of these at Redis for lower latency:
 
 ```dotenv
 CACHE_STORE=redis
@@ -64,20 +64,20 @@ REDIS_HOST=127.0.0.1
 REDIS_PORT=6379
 ```
 
-Redis is entirely optional — the database drivers are fully supported in production.
+Redis is completely optional — the database drivers are fully supported in production, so don't feel you're missing out by not running it.
 
 ## Queue processing
 
-Data collection and other background work run through Laravel's queue. There are two ways to process it:
+Data collection and the other background work run through Laravel's queue. There are two ways to process it:
 
-- **Scheduler-driven (default, shared-hosting friendly).** The scheduler runs `queue:work --stop-when-empty --max-time=55` every minute, draining the database queue on each tick. This needs only the single `schedule:run` cron entry and no long-running process. This is the recommended model on shared hosting.
-- **Persistent worker (VPS).** Run a long-lived `php artisan queue:work` (managed by systemd/supervisor, or Laravel Horizon with Redis) for lower latency. If you do this, you can remove the `queue:work` line from `routes/console.php` so jobs are not processed twice.
+- **Scheduler-driven (default, shared-hosting friendly).** The scheduler runs `queue:work --stop-when-empty --max-time=55` every minute, draining the database queue on each tick. All it needs is the single `schedule:run` cron entry — no long-running process. This is the one I'd recommend on shared hosting.
+- **Persistent worker (VPS).** Run a long-lived `php artisan queue:work` (managed by systemd/supervisor, or Laravel Horizon with Redis) for lower latency. If you go this route, remove the `queue:work` line from `routes/console.php` so jobs aren't processed twice.
 
 See [Shared hosting](../shared-hosting/README.md) for the cron setup and [when to move to a VPS](../shared-hosting/README.md#when-to-move-to-a-vps).
 
 ## PDF rendering
 
-Reports can be exported to PDF with one of two drivers:
+You can export reports to PDF with one of two drivers:
 
 | Driver | Requirements | Best for |
 | --- | --- | --- |
@@ -92,11 +92,11 @@ CLIENT_REPORTER_PDF_DRIVER=dompdf
 LARAVEL_PDF_DOMPDF_REMOTE_ENABLED=true
 ```
 
-You can also switch the driver at runtime from the admin **Settings** page (`pdf_driver`, options `dompdf` or `browsershot`). The saved setting overrides the config default, so on a VPS you can flip to Browsershot without editing files. Report views are written to render correctly under dompdf; see the [Development](../development/README.md#dompdf-safe-report-views) notes if you author your own report blocks.
+You can also switch the driver at runtime from the admin **Settings** page (`pdf_driver`, options `dompdf` or `browsershot`). The saved setting wins over the config default, so on a VPS you can flip to Browsershot without editing any files. The report views are written to render correctly under dompdf — if you're writing your own report blocks, have a look at the [Development](../development/README.md#dompdf-safe-report-views) notes.
 
 ## Mail
 
-Reports and password resets are sent by email, so configure a mailer in `.env`. The default is `log` (messages are written to the log rather than sent), which is fine for evaluation but not for delivering reports:
+Reports and password resets go out by email, so you'll want to configure a mailer in `.env`. The default is `log` (messages get written to the log instead of actually sent), which is fine while you're kicking the tyres but no good for delivering real reports:
 
 ```dotenv
 MAIL_MAILER=smtp
@@ -109,11 +109,11 @@ MAIL_FROM_ADDRESS="reports@your-agency.com"
 MAIL_FROM_NAME="${APP_NAME}"
 ```
 
-Use whatever transport your host supports (SMTP, a transactional-mail API, etc.). The from-name defaults to the application name; client-facing report emails are branded separately through the branding system.
+Use whatever transport your host supports (SMTP, a transactional-mail API, whatever). The from-name defaults to the application name; client-facing report emails are branded separately through the branding system.
 
 ## Client Reporter options (`config/client-reporter.php`)
 
-A few product-specific settings live in `config/client-reporter.php`. Most have sensible defaults and are also exposed on the admin Settings page.
+A few product-specific settings live in `config/client-reporter.php`. Most have sensible defaults, and the important ones are also on the admin Settings page.
 
 - **`version` / `repository`** — product identity, used by the admin UI and the GitHub update checker. Keep `version` in sync with tagged releases.
 - **`integrations`** — the first-party integration classes bundled with the app. Third-party integrations are discovered automatically from installed Composer packages, so you rarely edit this.
@@ -135,7 +135,9 @@ CLIENT_REPORTER_UPDATE_CHECK=true
 
 ## Admin Settings page
 
-Log in as an Administrator and open **Settings** (`/settings`, requires the `manage-settings` permission) to change these at runtime without touching config files. Saved values override the config defaults:
+Log in as an Administrator and open **Settings** (`/settings`, requires the `manage-settings` permission) to change these at runtime without touching any config files. Whatever you save here overrides the config defaults:
+
+![Settings](../images/settings.png)
 
 | Setting | Meaning | Range / options |
 | --- | --- | --- |
@@ -145,8 +147,8 @@ Log in as an Administrator and open **Settings** (`/settings`, requires the `man
 | **Retention** (`collection_retention_days`) | Days of collected metrics/snapshots to keep before pruning | 1–3650, or blank for keep-forever |
 | **Share-link expiry** (`default_share_expiry_days`) | Default expiry applied to new public report share links | 1–3650 days, or blank for no default expiry |
 
-The Settings page also shows the current version, the installation date, and the latest release information from the update checker.
+The Settings page also shows your current version, the installation date, and the latest release info from the update checker.
 
 ## Storing integration credentials
 
-Integration credentials (API keys, OAuth tokens, connector secrets) are stored encrypted in the database using your `APP_KEY`. Keep `APP_KEY` secret and back it up — losing it makes stored credentials unrecoverable. See [Security](../security/README.md) for details.
+Integration credentials (API keys, OAuth tokens, connector secrets) are stored encrypted in the database using your `APP_KEY`. Keep `APP_KEY` secret and back it up — if you lose it, your stored credentials can't be recovered. See [Security](../security/README.md) for the details.

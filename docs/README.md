@@ -1,6 +1,8 @@
 # Client Reporter documentation
 
-Welcome to the Client Reporter documentation. Client Reporter is open-source, self-hosted client reporting for web agencies — it connects your clients' websites, analytics, ecommerce and uptime services and turns the data into beautifully branded reports.
+Hello, and welcome to the docs. Client Reporter is open-source, self-hosted client reporting for web agencies — you point it at the services behind your clients' sites (their CMS, analytics, shop, uptime monitor) and it turns the numbers into clean, branded reports you can hand over with your name on them.
+
+![The Client Reporter dashboard](images/dashboard.png)
 
 ## Getting started
 
@@ -16,7 +18,7 @@ Welcome to the Client Reporter documentation. Client Reporter is open-source, se
 
 ## Integrations
 
-Client Reporter connects to the services behind your clients' sites across eight categories — CMS, Analytics, Search, Ecommerce, Forms & Leads, Monitoring, Performance and Billing.
+Client Reporter talks to the services behind your clients' sites, spread across eight categories — CMS, Analytics, Search, Ecommerce, Forms & Leads, Monitoring, Performance and Billing.
 
 - [Integrations overview](integrations/README.md) — how integrations work, the auth methods, workspace ("connect once") connections, encrypted credentials, and the full bundled set.
 - [WordPress](wordpress/README.md) — the WordPress companion plugin integration (read-only, HMAC-signed).
