@@ -25,6 +25,7 @@ use App\Reporting\Blocks\Ads\AdsSummaryBlock;
 use App\Reporting\Blocks\Analytics\AnalyticsChartBlock;
 use App\Reporting\Blocks\Analytics\AnalyticsSummaryBlock;
 use App\Reporting\Blocks\Analytics\CustomEventsBlock;
+use App\Reporting\Blocks\Analytics\SiteTrafficBlock;
 use App\Reporting\Blocks\Analytics\TopCountriesBlock;
 use App\Reporting\Blocks\Analytics\TopDevicesBlock;
 use App\Reporting\Blocks\Analytics\TopPagesBlock;
@@ -39,6 +40,7 @@ use App\Reporting\Blocks\Performance\PerformanceSummaryBlock;
 use App\Reporting\Blocks\Search\SearchPerformanceBlock;
 use App\Reporting\Blocks\TextBlock;
 use App\Reporting\Blocks\Uptime\IncidentsBlock;
+use App\Reporting\Blocks\Uptime\UptimeOverviewBlock;
 use App\Reporting\Blocks\Uptime\UptimeSummaryBlock;
 use App\Reporting\Blocks\WebsiteOverviewBlock;
 
@@ -129,6 +131,7 @@ return [
         ContentsBlock::class,
         TextBlock::class,
         WebsiteOverviewBlock::class,
+        SiteTrafficBlock::class,
         AnalyticsSummaryBlock::class,
         AdsSummaryBlock::class,
         AnalyticsChartBlock::class,
@@ -140,6 +143,7 @@ return [
         SearchPerformanceBlock::class,
         EcommerceBlock::class,
         LeadsSummaryBlock::class,
+        UptimeOverviewBlock::class,
         UptimeSummaryBlock::class,
         IncidentsBlock::class,
         PerformanceSummaryBlock::class,
