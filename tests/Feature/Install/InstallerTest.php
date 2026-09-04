@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace Tests\Feature\Install;
 
 use App\Enums\UserRole;
+use App\Http\Middleware\EnsureInstalled;
 use App\Livewire\Install\Wizard;
 use App\Support\Settings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -63,6 +66,21 @@ class InstallerTest extends TestCase
         $this->assertTrue(app(Settings::class)->isInstalled());
 
         @unlink($dir.'/'.$file);
+    }
+
+    public function test_livewire_endpoints_are_not_gated_by_the_installer(): void
+    {
+        // Livewire's update route runs in the web group. Before installation it
+        // must reach Livewire rather than being redirected back to the wizard,
+        // which would make every wizard interaction reload the same step.
+        $this->markNotInstalled();
+
+        $middleware = app(EnsureInstalled::class);
+        $request = Request::create('/livewire/update', 'POST');
+
+        $response = $middleware->handle($request, fn () => new Response('reached'));
+
+        $this->assertSame('reached', $response->getContent());
     }
 
     public function test_requirements_are_reported(): void

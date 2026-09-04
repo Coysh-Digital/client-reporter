@@ -22,6 +22,14 @@ class EnsureInstalled
 
     public function handle(Request $request, Closure $next): Response
     {
+        // Livewire's own endpoints (e.g. the component update route) run in the
+        // web group too. They must always pass so the wizard can make component
+        // updates without being redirected back to itself, which would look like
+        // the page simply reloading on every interaction.
+        if ($request->is('livewire/*')) {
+            return $next($request);
+        }
+
         $installed = $this->isInstalled();
         $onInstaller = $request->is('install', 'install/*');
 
