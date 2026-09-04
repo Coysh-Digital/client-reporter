@@ -10,6 +10,7 @@ use App\Http\Controllers\PublicReportController;
 use App\Http\Controllers\ReportPdfController;
 use App\Http\Controllers\ReportPreviewController;
 use App\Http\Controllers\XeroOAuthController;
+use App\Livewire\Activity;
 use App\Livewire\Auth\ForgotPassword;
 use App\Livewire\Auth\Login;
 use App\Livewire\Auth\ResetPassword;
@@ -94,6 +95,9 @@ Route::middleware(['auth', 'active', 'can:access-admin'])->group(function () {
         Route::get('/templates/create', Templates\Form::class)->name('templates.create');
         Route::get('/templates/{template}/edit', Templates\Form::class)->name('templates.edit');
     });
+
+    // Background collection activity
+    Route::get('/activity', Activity\Index::class)->middleware('can:manage-integrations')->name('activity.index');
 
     // Integrations
     Route::get('/integrations', Integrations\Catalog::class)->name('integrations.index');

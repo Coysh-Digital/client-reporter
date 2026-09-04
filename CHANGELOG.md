@@ -10,6 +10,8 @@
 - Fixed the installation wizard reloading the same step instead of advancing: the "not installed" gate was redirecting Livewire's own (hash-prefixed) update requests back to the wizard. Sessions and cache also now default to file storage so they work before the database is set up.
 - Fixed the FreeAgent contact import stopping at the first 25 contacts; it now pages through every contact. When mapping, each contact can be imported as a new client (individually or all unmapped at once), not just matched or skipped.
 - Added recurring invoice schedules from FreeAgent so you can see what's coming up for a client. They appear as an "Upcoming (recurring)" list on the client's billing panel and are deliberately kept out of reports.
+- Added an Activity page (under Setup) showing background data collection live — queued, running, recently finished and failed runs, with durations, record counts and error messages. "Collect now" on a site now runs in the background instead of blocking the page.
+- Fixed queued data collection failing on PHP 8.4+: the collection job's property name collided with the queue trait's, which is a fatal error on newer PHP. Scheduled/queued collection now runs.
 
 ## 0.1.0-alpha.1 - 2026-09-04
 

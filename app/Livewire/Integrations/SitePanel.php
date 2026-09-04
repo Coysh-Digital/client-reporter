@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Livewire\Integrations;
 
-use App\Integrations\CollectorRunner;
 use App\Integrations\IntegrationRegistry;
+use App\Jobs\RunConnectorCollection;
 use App\Models\Site;
 use App\Support\AuditLogger;
 use App\Support\DateRange;
@@ -31,14 +31,19 @@ class SitePanel extends Component
         $this->site->load('integrations');
     }
 
-    public function collectNow(int $connectionId, CollectorRunner $runner): void
+    public function collectNow(int $connectionId): void
     {
         $this->authorize('manage-integrations');
 
         $connection = $this->site->integrations()->findOrFail($connectionId);
-        $runner->collectAll($connection, DateRange::thisMonth());
+        $range = DateRange::thisMonth();
 
-        session()->flash('panel_status', 'Collection run complete.');
+        // Queue it rather than collecting in-request — some providers (e.g. GA4)
+        // are slow, and blocking makes the page look frozen. Progress shows on
+        // the Activity page.
+        RunConnectorCollection::dispatch($connection, $range->start->toDateString(), $range->end->toDateString());
+
+        session()->flash('panel_status', 'Collection queued — running in the background. See Activity for progress.');
     }
 
     public function disconnect(int $connectionId, AuditLogger $audit): void
