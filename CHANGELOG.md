@@ -23,6 +23,7 @@
 - Made the scheduled queue worker resilient to being out-of-memory-killed: it recycles on a memory ceiling and no longer wedges the queue on a stale lock if the host kills it.
 - The site "Connect a service" list now hides services already connected here, connected once for the whole workspace, or that are workspace-only.
 - The Activity page now lists jobs currently on the queue (waiting and running), and a live queue monitor in the sidebar shows at a glance whether background jobs are idle, queued or running.
+- Reorganised the Activity page into Recent runs / Queued / Failed jobs tabs. Failed jobs can be retried or dismissed (individually or all at once), and a stuck queue can be cleared.
 
 ## 0.1.0-alpha.1 - 2026-09-04
 
