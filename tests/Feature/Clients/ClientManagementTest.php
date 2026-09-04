@@ -7,6 +7,7 @@ namespace Tests\Feature\Clients;
 use App\Livewire\Clients\Form;
 use App\Livewire\Clients\Index;
 use App\Models\Client;
+use App\Models\Report;
 use App\Models\Site;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -67,6 +68,27 @@ class ClientManagementTest extends TestCase
 
         $this->assertDatabaseMissing('clients', ['id' => $client->id]);
         $this->assertDatabaseMissing('sites', ['id' => $site->id]);
+    }
+
+    public function test_the_client_page_shows_report_history_and_a_site_summary(): void
+    {
+        $viewer = User::factory()->viewer()->create();
+        $client = Client::factory()->create();
+        $site = Site::factory()->for($client)->create(['name' => 'Northwind Site']);
+
+        // A generated + sent report, and a draft.
+        $sent = Report::factory()->for($site)->create(['status' => 'final', 'generated_at' => now()]);
+        $sent->shares()->create(['token_hash' => hash('sha256', 'tok'), 'created_by' => null]);
+        Report::factory()->for($site)->create(['status' => 'draft', 'generated_at' => null]);
+
+        $this->actingAs($viewer)
+            ->get(route('clients.show', $client))
+            ->assertOk()
+            ->assertSee('Report history')
+            ->assertSee('Northwind Site')
+            ->assertSee('Reports generated')
+            ->assertSee('Sent')
+            ->assertSee('Draft');
     }
 
     public function test_search_filters_the_client_list(): void
