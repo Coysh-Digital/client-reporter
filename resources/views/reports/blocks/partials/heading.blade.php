@@ -12,9 +12,13 @@
     </td>
     <td class="{{ $isTitle ? 'block-title-cell' : 'block-heading-title-cell' }}">{{ $text }}</td>
     @if (! $isTitle && ! empty($suffix ?? null))
+        @php $sourceLogo = \App\Support\ProviderLogos::dataUri($suffix); @endphp
         <td class="block-heading-source">
-            <span class="block-heading-source-label">Source</span>
-            <span class="block-heading-source-badge">{{ $suffix }}</span>
+            @if ($sourceLogo)
+                <img class="block-heading-source-logo" src="{{ $sourceLogo }}" alt="{{ $suffix }}" title="{{ $suffix }}">
+            @else
+                <span class="block-heading-source-badge">{{ $suffix }}</span>
+            @endif
         </td>
     @endif
 </tr></table>

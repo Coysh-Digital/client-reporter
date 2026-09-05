@@ -57,14 +57,14 @@
         .block:target { box-shadow: inset 3px 0 0 var(--brand-primary); }
         /* Section header: a brand icon chip + title, laid out as a table (no
            floats) so it survives PDF page breaks. Shared by every block. */
-        .block-heading-row { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
-        .block-heading-chip-cell { width: 30px; padding: 0; vertical-align: middle; }
-        .block-heading-chip { display: block; width: 30px; height: 30px; border-radius: 8px; background: var(--brand-primary); padding: 5px; }
-        .block-heading-title-cell { padding: 0 0 0 12px; vertical-align: middle; font-family: {!! $branding->headingFont !!}; font-size: 16px; font-weight: 600; letter-spacing: -0.01em; color: #201e1a; }
-        .block-title-cell { padding: 0 0 0 12px; vertical-align: middle; font-family: {!! $branding->headingFont !!}; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; color: #201e1a; }
-        .block-heading-source { width: 1%; white-space: nowrap; text-align: right; vertical-align: middle; padding-left: 14px; }
-        .block-heading-source-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: #98938a; }
-        .block-heading-source-badge { display: inline-block; margin-left: 6px; padding: 3px 11px; border-radius: 999px; background: #f3ecdf; font-size: 11px; font-weight: 600; color: #4a463d; }
+        .block-heading-row { width: 100%; border-collapse: collapse; margin-bottom: 20px; border-bottom: 1px solid #e7ded0; }
+        .block-heading-chip-cell { width: 32px; padding: 0 0 13px 0; vertical-align: middle; }
+        .block-heading-chip { display: block; width: 32px; height: 32px; border-radius: 8px; background: var(--brand-primary); padding: 6px; }
+        .block-heading-title-cell { padding: 0 0 13px 12px; vertical-align: middle; font-family: {!! $branding->headingFont !!}; font-size: 17.5px; font-weight: 600; letter-spacing: -0.01em; color: #201e1a; }
+        .block-title-cell { padding: 0 0 13px 12px; vertical-align: middle; font-family: {!! $branding->headingFont !!}; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; color: #201e1a; }
+        .block-heading-source { width: 1%; white-space: nowrap; text-align: right; vertical-align: middle; padding: 0 0 13px 14px; }
+        .block-heading-source-badge { display: inline-block; padding: 3px 11px; border-radius: 999px; background: #f3ecdf; font-size: 11px; font-weight: 600; color: #4a463d; }
+        .block-heading-source-logo { display: inline-block; height: 18px; max-width: 108px; vertical-align: middle; }
         .table-scroll { overflow-x: auto; }
         /* Callouts: an editorial accent bar in a brand colour. */
         .insight { background: #faf7ef; border: 1px solid #efe7d3; border-left: 3px solid var(--brand-secondary); border-radius: 7px; padding: 12px 16px 12px 18px; margin: 0 0 20px; font-size: 13.5px; line-height: 1.6; color: #4a4638; }
@@ -104,7 +104,7 @@
         .status-strip { width: 100%; border-collapse: collapse; table-layout: fixed; margin-top: 12px; }
         .status-strip td { padding: 0 1px; }
         .status-cell { display: block; height: 20px; border-radius: 3px; font-size: 0; line-height: 0; }
-        .gauge-ring-img { display: block; width: 92px; height: 92px; margin: 0 auto; }
+        .gauge-ring-img { display: block; width: 110px; height: 110px; margin: 0 auto; }
         .report-footer { text-align: center; color: #9a9384; font-size: 12.5px; margin-top: 22px; line-height: 1.7; }
         .report-footer .footer-name { font-family: {!! $branding->headingFont !!}; font-size: 15px; font-weight: 600; color: #4a463d; display: block; margin-bottom: 4px; }
         a { color: var(--brand-primary); text-decoration: none; }
