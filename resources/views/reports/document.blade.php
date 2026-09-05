@@ -104,9 +104,7 @@
         .status-strip { width: 100%; border-collapse: collapse; table-layout: fixed; margin-top: 12px; }
         .status-strip td { padding: 0 1px; }
         .status-cell { display: block; height: 20px; border-radius: 3px; font-size: 0; line-height: 0; }
-        .gauge { position: relative; display: inline-block; width: 64px; height: 64px; }
-        .gauge-ring-img { display: block; width: 64px; height: 64px; }
-        .gauge-value { position: absolute; top: 0; left: 0; width: 64px; height: 64px; text-align: center; line-height: 64px; font-family: {!! $branding->headingFont !!}; font-size: 19px; font-variant-numeric: tabular-nums; }
+        .gauge-ring-img { display: block; width: 92px; height: 92px; margin: 0 auto; }
         .report-footer { text-align: center; color: #9a9384; font-size: 12.5px; margin-top: 22px; line-height: 1.7; }
         .report-footer .footer-name { font-family: {!! $branding->headingFont !!}; font-size: 15px; font-weight: 600; color: #4a463d; display: block; margin-bottom: 4px; }
         a { color: var(--brand-primary); text-decoration: none; }
