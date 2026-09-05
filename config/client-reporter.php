@@ -9,6 +9,7 @@ use App\Integrations\FreeAgent\FreeAgentIntegration;
 use App\Integrations\GoogleAds\GoogleAdsIntegration;
 use App\Integrations\GoogleAnalytics\GoogleAnalyticsIntegration;
 use App\Integrations\GoogleSearchConsole\GoogleSearchConsoleIntegration;
+use App\Integrations\HonestAnalytics\HonestAnalyticsIntegration;
 use App\Integrations\Mailchimp\MailchimpIntegration;
 use App\Integrations\Matomo\MatomoIntegration;
 use App\Integrations\PageSpeed\PageSpeedIntegration;
@@ -100,6 +101,7 @@ return [
         GoogleAnalyticsIntegration::class,
         GoogleAdsIntegration::class,
         PlausibleIntegration::class,
+        HonestAnalyticsIntegration::class,
         FathomIntegration::class,
         MatomoIntegration::class,
         UmamiIntegration::class,
