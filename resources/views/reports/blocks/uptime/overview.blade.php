@@ -78,7 +78,10 @@
                 @foreach ($data['lighthouse'] as $score)
                     @php $rc = $ratingColors[$score['rating']] ?? '#8b857a'; @endphp
                     <td style="width:25%;text-align:center;vertical-align:top;padding:0 8px;">
-                        <span class="gauge-ring" style="border-color:{{ $rc }};"><span class="gauge-value" style="color:{{ $rc }};">{{ $score['score'] }}</span></span>
+                        <div class="gauge">
+                            <img class="gauge-ring-img" src="{{ \App\Support\SvgChart::gaugeDataUri((int) $score['score'], $rc) }}" width="64" height="64" alt="">
+                            <span class="gauge-value" style="color:{{ $rc }};">{{ $score['score'] }}</span>
+                        </div>
                         <div class="metric-label" style="margin-top:8px;">{{ $score['label'] }}</div>
                     </td>
                 @endforeach

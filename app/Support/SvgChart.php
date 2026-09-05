@@ -115,6 +115,27 @@ class SvgChart
     }
 
     /**
+     * A donut gauge (0–100) as a data-URI `<img>`: a light track ring with a
+     * coloured arc whose length is the score. The number is overlaid in HTML by
+     * the caller, so this draws the ring only.
+     */
+    public static function gaugeDataUri(int $score, string $color, int $size = 64): string
+    {
+        $score = max(0, min(100, $score));
+        $color = self::safeColor($color);
+        // r chosen so the circumference is ~100, making the dash length == score.
+        $r = 15.915;
+
+        $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="'.$size.'" height="'.$size.'">'
+            .'<circle cx="18" cy="18" r="'.$r.'" fill="none" stroke="#ece5d6" stroke-width="3.2"/>'
+            .'<circle cx="18" cy="18" r="'.$r.'" fill="none" stroke="'.$color.'" stroke-width="3.2" stroke-linecap="round" '
+            .'stroke-dasharray="'.$score.' 100" transform="rotate(-90 18 18)"/>'
+            .'</svg>';
+
+        return 'data:image/svg+xml;base64,'.base64_encode($svg);
+    }
+
+    /**
      * Only allow a #hex colour into the SVG; fall back to a neutral otherwise.
      */
     private static function safeColor(string $color): string
