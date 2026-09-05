@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Livewire\Settings;
 
 use App\Support\AuditLogger;
+use App\Support\QrCode;
 use App\Support\Settings;
 use App\Support\TwoFactor as Totp;
 use Illuminate\Support\Facades\Auth;
@@ -65,6 +66,14 @@ class TwoFactor extends Component
     public function cancelSetup(): void
     {
         $this->reset(['secret', 'otpauthUri', 'confirmCode']);
+    }
+
+    /**
+     * The setup QR code as an inline SVG (empty until setup begins).
+     */
+    public function qrSvg(): string
+    {
+        return $this->otpauthUri !== '' ? QrCode::svg($this->otpauthUri, 190) : '';
     }
 
     /**

@@ -117,6 +117,8 @@ class TwoFactorTest extends TestCase
 
         $secret = $component->get('secret');
         $this->assertNotEmpty($secret);
+        // The setup step renders a scannable QR code.
+        $component->assertSee('<svg', false);
 
         $component->set('confirmCode', TwoFactor::codeAt($secret))
             ->call('confirm')

@@ -27,13 +27,17 @@
         <div class="px-5 py-5">
             @if ($secret !== '')
                 {{-- Setup in progress --}}
-                <p class="text-sm text-muted">In your authenticator app, add a new account using this setup key, then enter the 6-digit code it shows to confirm.</p>
+                <p class="text-sm text-muted">Scan this QR code with your authenticator app (Google Authenticator, 1Password, Authy…), then enter the 6-digit code it shows to confirm. Can’t scan? Use the setup key below.</p>
+
+                <div class="mt-4 inline-block rounded-lg border border-line bg-white p-3">
+                    {!! $this->qrSvg() !!}
+                </div>
 
                 <div class="mt-4 max-w-md">
                     <label class="cr-label">Setup key</label>
                     <input type="text" readonly value="{{ $secret }}" onfocus="this.select()"
                            class="cr-input font-mono tracking-widest">
-                    <p class="mt-1 text-[11px] text-faint">Most apps also accept the full setup URI: <span class="break-all">{{ $otpauthUri }}</span></p>
+                    <p class="mt-1 text-[11px] text-faint">Enter this manually if you can’t scan the code.</p>
                 </div>
 
                 <form wire:submit="confirm" class="mt-4 max-w-md space-y-3">
