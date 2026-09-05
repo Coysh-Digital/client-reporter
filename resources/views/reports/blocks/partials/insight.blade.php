@@ -5,7 +5,7 @@
 --}}
 @if (! empty($insight))
     <div class="insight">
-        <span class="insight-label">Summary</span>
+        <span class="insight-label">{{ \App\Support\ReportLang::get('common.summary_label') }}</span>
         {{ $insight }}
     </div>
 @endif

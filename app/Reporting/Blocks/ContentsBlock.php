@@ -7,6 +7,7 @@ namespace App\Reporting\Blocks;
 use App\Reporting\BlockTypeRegistry;
 use App\Reporting\Contracts\BlockType;
 use App\Reporting\Support\BlockContext;
+use App\Support\ReportLang;
 
 /**
  * A jump-to list of every other section in the report, with an icon per
@@ -27,7 +28,7 @@ class ContentsBlock extends BlockType
 
     public function label(): string
     {
-        return 'Contents';
+        return ReportLang::get('contents.heading');
     }
 
     public function description(): string

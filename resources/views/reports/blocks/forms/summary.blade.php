@@ -1,7 +1,7 @@
-@include('reports.blocks.partials.heading', ['text' => $heading ?: 'Leads & signups', 'icon' => $icon ?? 'chart', 'suffix' => $data['provider'] ?? null])
+@include('reports.blocks.partials.heading', ['text' => $heading ?: \App\Support\ReportLang::get('leads.heading'), 'icon' => $icon ?? 'chart', 'suffix' => $data['provider'] ?? null])
 
 @if (! ($data['has_data'] ?? false) || empty($data['metrics']))
-    <p class="muted">No leads data was collected for this period yet.</p>
+    <p class="muted">{{ \App\Support\ReportLang::get('leads.empty') }}</p>
 @else
     @include('reports.blocks.partials.insight', ['insight' => empty($data['ai_summary']) ? ($data['insight'] ?? null) : null])
     @include('reports.blocks.partials.ai-summary', ['aiSummary' => $data['ai_summary'] ?? null])

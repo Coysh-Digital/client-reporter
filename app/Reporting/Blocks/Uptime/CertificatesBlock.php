@@ -8,6 +8,7 @@ use App\Integrations\Support\IntegrationCategory;
 use App\Reporting\Contracts\BlockType;
 use App\Reporting\Support\BlockContext;
 use App\Reporting\Support\BlockOption;
+use App\Support\ReportLang;
 
 /**
  * TLS/SSL certificate expiry for the site's monitored endpoints, where the
@@ -23,7 +24,7 @@ class CertificatesBlock extends BlockType
 
     public function label(): string
     {
-        return 'SSL certificates';
+        return ReportLang::get('certificates.heading');
     }
 
     public function description(): string

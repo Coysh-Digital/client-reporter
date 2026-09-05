@@ -5,5 +5,5 @@
 @if ($commentary)
     <div style="color: #33302b; font-size: 15px;">{!! nl2br(e($commentary)) !!}</div>
 @else
-    <p class="muted">Add your commentary for this section.</p>
+    <p class="muted">{{ \App\Support\ReportLang::get('text.empty') }}</p>
 @endif

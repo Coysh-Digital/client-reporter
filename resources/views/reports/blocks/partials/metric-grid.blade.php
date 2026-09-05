@@ -4,7 +4,7 @@
       $currency (optional) for 'money' formatting
     A null 'previous' hides the delta (per-block comparison off, or no data).
 --}}
-@php use App\Support\Format; @endphp
+@php use App\Support\Format; use App\Support\ReportLang; @endphp
 <table class="metric-grid">
     <tr>
         @foreach ($metrics as $m)
@@ -23,9 +23,9 @@
                 <div class="metric-label">{{ $m['label'] }}</div>
                 <div class="metric-value">{{ $value }}</div>
                 @if ($previous !== null && $change['percent'] !== null)
-                    <div class="delta {{ $deltaClass }}">{{ $arrow }}{{ Format::number(abs($change['percent']), 1) }}% vs prev.</div>
+                    <div class="delta {{ $deltaClass }}">{{ ReportLang::get('common.vs_prev', ['delta' => $arrow.Format::number(abs($change['percent']), 1)]) }}</div>
                 @elseif ($previous !== null)
-                    <div class="delta delta-flat">No change</div>
+                    <div class="delta delta-flat">{{ ReportLang::get('common.no_change') }}</div>
                 @endif
             </td>
         @endforeach

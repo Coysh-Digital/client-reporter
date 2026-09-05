@@ -8,6 +8,7 @@ use App\Integrations\Support\IntegrationCategory;
 use App\Reporting\Contracts\BlockType;
 use App\Reporting\Support\BlockContext;
 use App\Reporting\Support\BlockOption;
+use App\Support\ReportLang;
 
 class TopCountriesBlock extends BlockType
 {
@@ -18,7 +19,7 @@ class TopCountriesBlock extends BlockType
 
     public function label(): string
     {
-        return 'Top countries';
+        return ReportLang::get('countries.heading');
     }
 
     public function description(): string

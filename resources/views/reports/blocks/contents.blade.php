@@ -1,9 +1,9 @@
 @php $rows = array_chunk($data['items'] ?? [], 3); @endphp
 
-@include('reports.blocks.partials.heading', ['text' => $heading ?: 'Contents', 'icon' => $icon ?? 'document'])
+@include('reports.blocks.partials.heading', ['text' => $heading ?: \App\Support\ReportLang::get('contents.heading'), 'icon' => $icon ?? 'document'])
 
 @if (empty($data['items']))
-    <p class="muted">Add other sections to this report to see them listed here.</p>
+    <p class="muted">{{ \App\Support\ReportLang::get('contents.empty') }}</p>
 @else
     <table class="contents-grid">
         @foreach ($rows as $row)

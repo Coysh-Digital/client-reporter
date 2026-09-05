@@ -5,13 +5,14 @@
 --}}
 @php
     use App\Support\Format;
+    use App\Support\ReportLang;
     $items = $items ?? [];
     $unit = $unit ?? '';
     $total = array_sum(array_map(fn ($i) => (float) ($i['value'] ?? 0), $items));
 @endphp
 <div class="mini-bars-title">{{ $title }}</div>
 @if (empty($items))
-    <p class="muted" style="font-size:12px;margin:6px 0 0;">No data</p>
+    <p class="muted" style="font-size:12px;margin:6px 0 0;">{{ ReportLang::get('common.no_data') }}</p>
 @else
     <table style="width:100%;border-collapse:collapse;margin-top:8px;">
         @foreach ($items as $i)
@@ -21,7 +22,7 @@
             @endphp
             <tr>
                 <td style="padding:0;font-size:12.5px;color:#211f1b;">
-                    {{ $i['label'] !== '' ? $i['label'] : 'Direct' }}
+                    {{ $i['label'] !== '' ? $i['label'] : ReportLang::get('common.direct') }}
                     <span style="float:right;color:#57534a;font-variant-numeric:tabular-nums;">{{ Format::number($v) }}{{ $unit ? ' '.$unit : '' }}</span>
                 </td>
             </tr>

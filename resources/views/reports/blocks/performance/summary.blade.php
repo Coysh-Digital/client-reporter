@@ -1,17 +1,18 @@
 @php
+    use App\Support\ReportLang;
     $ratingStyle = [
         'good' => 'background:#eaf3ec;color:#3f7d54;',
         'needs-improvement' => 'background:#f7efe1;color:#a4712a;',
         'poor' => 'background:#f6e9e7;color:#a13b32;',
     ];
-    $ratingLabel = ['good' => 'Good', 'needs-improvement' => 'Needs work', 'poor' => 'Poor'];
-    $sourceLabel = ($data['source'] ?? 'field') === 'field' ? 'real-user data' : 'lab test';
+    $ratingLabel = ['good' => ReportLang::get('performance.rating.good'), 'needs-improvement' => ReportLang::get('performance.rating.needs_work'), 'poor' => ReportLang::get('performance.rating.poor')];
+    $sourceLabel = ($data['source'] ?? 'field') === 'field' ? ReportLang::get('performance.source.field') : ReportLang::get('performance.source.lab');
 @endphp
 
-@include('reports.blocks.partials.heading', ['text' => $heading ?: 'Core Web Vitals', 'icon' => $icon ?? 'pulse', 'suffix' => ucfirst($data['strategy'] ?? 'mobile').' · '.$sourceLabel])
+@include('reports.blocks.partials.heading', ['text' => $heading ?: ReportLang::get('performance.heading'), 'icon' => $icon ?? 'pulse', 'suffix' => ucfirst($data['strategy'] ?? 'mobile').' · '.$sourceLabel])
 
 @if (! ($data['has_data'] ?? false))
-    <p class="muted">No performance data was collected for this period yet.</p>
+    <p class="muted">{{ ReportLang::get('performance.empty') }}</p>
 @else
     @include('reports.blocks.partials.insight', ['insight' => empty($data['ai_summary']) ? ($data['insight'] ?? null) : null])
     @include('reports.blocks.partials.ai-summary', ['aiSummary' => $data['ai_summary'] ?? null])
@@ -19,8 +20,8 @@
         <tr>
             @if (($data['show_score'] ?? true) && $data['score'] !== null)
                 <td style="width:25%;padding:4px 14px 4px 0;vertical-align:top;">
-                    <div class="metric-label">Performance</div>
-                    <div class="metric-value">{{ $data['score'] }}<span style="font-size:15px;color:#98938a;">/100</span></div>
+                    <div class="metric-label">{{ ReportLang::get('performance.score_label') }}</div>
+                    <div class="metric-value">{{ $data['score'] }}<span style="font-size:15px;color:#98938a;">{{ ReportLang::get('performance.score_suffix') }}</span></div>
                     @if ($data['score_rating'])
                         <span class="pill" style="{{ $ratingStyle[$data['score_rating']] }}margin-top:4px;">{{ $ratingLabel[$data['score_rating']] }}</span>
                     @endif

@@ -1,5 +1,6 @@
 @php
     use App\Support\Format;
+    use App\Support\ReportLang;
     $statusColors = [
         'healthy' => '#3f7d54',
         'partial' => '#a4712a',
@@ -9,10 +10,10 @@
     $ratingColors = ['good' => '#3f7d54', 'needs-improvement' => '#a4712a', 'poor' => '#a13b32'];
     $days = $data['status_days'] ?? [];
 @endphp
-@include('reports.blocks.partials.heading', ['text' => $heading ?: 'Uptime & performance', 'icon' => $icon ?? 'pulse'])
+@include('reports.blocks.partials.heading', ['text' => $heading ?: ReportLang::get('uptime_overview.heading'), 'icon' => $icon ?? 'pulse'])
 
 @if (! ($data['has_data'] ?? false) || empty($data['tiles']))
-    <p class="muted">No uptime data was collected for this period yet.</p>
+    <p class="muted">{{ ReportLang::get('common.empty.uptime') }}</p>
 @else
     @include('reports.blocks.partials.insight', ['insight' => empty($data['ai_summary']) ? ($data['summary'] ?? null) : null])
     @include('reports.blocks.partials.ai-summary', ['aiSummary' => $data['ai_summary'] ?? null])
@@ -46,7 +47,7 @@
 
     {{-- Daily uptime: a % trend line above a per-day health strip --}}
     @if (! empty($days))
-        <div class="mini-bars-title" style="margin-top:24px;">Daily uptime</div>
+        <div class="mini-bars-title" style="margin-top:24px;">{{ ReportLang::get('uptime_overview.daily_uptime') }}</div>
         @if (! empty($data['timeseries']))
             @include('reports.blocks.partials.line-chart', ['series' => $data['timeseries'], 'color' => $branding->primaryColor, 'chartHeight' => 120, 'zeroBased' => false])
         @endif
@@ -64,7 +65,7 @@
             </tr>
         </table>
         <p style="margin:8px 0 0;font-size:11px;color:#8b857a;">
-            @foreach (['healthy' => 'Healthy', 'partial' => 'Partial', 'below' => 'Below 99.5%', 'none' => 'No check'] as $key => $label)
+            @foreach (['healthy' => ReportLang::get('uptime.legend.healthy'), 'partial' => ReportLang::get('uptime.legend.partial'), 'below' => ReportLang::get('uptime.legend.below'), 'none' => ReportLang::get('uptime.legend.none')] as $key => $label)
                 <span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:{{ $statusColors[$key] }};margin:0 4px 0 12px;">&nbsp;</span>{{ $label }}
             @endforeach
         </p>
@@ -72,7 +73,7 @@
 
     {{-- Lighthouse scores --}}
     @if (! empty($data['lighthouse']))
-        <div class="mini-bars-title" style="margin-top:26px;">Lighthouse scores</div>
+        <div class="mini-bars-title" style="margin-top:26px;">{{ ReportLang::get('uptime_overview.lighthouse_scores') }}</div>
         <table class="gauge-grid" style="width:100%;border-collapse:collapse;table-layout:fixed;margin-top:12px;">
             <tr>
                 @foreach ($data['lighthouse'] as $score)
@@ -85,26 +86,26 @@
             </tr>
         </table>
         @if (! empty($data['lighthouse_history']))
-            <div class="mini-bars-title" style="margin-top:18px;">Performance score over time</div>
+            <div class="mini-bars-title" style="margin-top:18px;">{{ ReportLang::get('uptime_overview.performance_over_time') }}</div>
             @include('reports.blocks.partials.line-chart', ['series' => $data['lighthouse_history'], 'color' => $branding->primaryColor, 'chartHeight' => 110, 'zeroBased' => false])
         @endif
     @endif
 
     {{-- Incidents --}}
-    <div class="mini-bars-title" style="margin-top:26px;">Incidents this period</div>
+    <div class="mini-bars-title" style="margin-top:26px;">{{ ReportLang::get('uptime_overview.incidents_heading') }}</div>
     @if (empty($data['incidents']))
-        <p style="margin:8px 0 0;font-size:13.5px;color:#3f7d54;">No outages detected during this period. 🎉</p>
+        <p style="margin:8px 0 0;font-size:13.5px;color:#3f7d54;">{{ ReportLang::get('uptime_overview.no_outages') }}</p>
     @else
         <div class="table-scroll">
             <table class="data">
-                <thead><tr><th>Service</th><th>Started</th><th style="text-align:right;">Duration</th><th>Reason</th></tr></thead>
+                <thead><tr><th>{{ ReportLang::get('common.incidents_col.service') }}</th><th>{{ ReportLang::get('common.incidents_col.started') }}</th><th style="text-align:right;">{{ ReportLang::get('common.incidents_col.duration') }}</th><th>{{ ReportLang::get('common.incidents_col.reason') }}</th></tr></thead>
                 <tbody>
                     @foreach ($data['incidents'] as $incident)
                         <tr>
                             <td>{{ $incident['monitor'] ?? '—' }}</td>
                             <td>{{ isset($incident['started_at']) ? \Illuminate\Support\Carbon::parse($incident['started_at'])->format('d M, H:i') : '—' }}</td>
                             <td style="text-align:right;">{{ Format::duration($incident['duration_seconds'] ?? 0) }}</td>
-                            <td>{{ $incident['reason'] ?? 'Down' }}</td>
+                            <td>{{ $incident['reason'] ?? ReportLang::get('common.incident_reason_down') }}</td>
                         </tr>
                     @endforeach
                 </tbody>

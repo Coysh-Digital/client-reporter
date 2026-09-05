@@ -6,6 +6,7 @@ namespace App\Reporting\Blocks;
 
 use App\Reporting\Contracts\BlockType;
 use App\Reporting\Support\BlockContext;
+use App\Support\ReportLang;
 
 class WebsiteOverviewBlock extends BlockType
 {
@@ -16,7 +17,7 @@ class WebsiteOverviewBlock extends BlockType
 
     public function label(): string
     {
-        return 'Website overview';
+        return ReportLang::get('website_overview.heading');
     }
 
     public function description(): string

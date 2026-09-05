@@ -9,6 +9,7 @@ use App\Reporting\Contracts\BlockType;
 use App\Reporting\Support\BlockContext;
 use App\Reporting\Support\BlockOption;
 use App\Support\Format;
+use App\Support\ReportLang;
 
 /**
  * A consolidated uptime & performance component: headline availability metrics,
@@ -19,13 +20,21 @@ use App\Support\Format;
  */
 class UptimeOverviewBlock extends BlockType
 {
-    /** Lighthouse category metric key => label, in display order. */
-    private const LIGHTHOUSE = [
-        'performance.score' => 'Performance',
-        'performance.accessibility' => 'Accessibility',
-        'performance.best_practices' => 'Best practices',
-        'performance.seo' => 'SEO',
-    ];
+    /**
+     * Lighthouse category metric key => label, in display order. A method rather
+     * than a const so the labels resolve through the report language dictionary.
+     *
+     * @return array<string, string>
+     */
+    private static function lighthouse(): array
+    {
+        return [
+            'performance.score' => ReportLang::get('lighthouse.performance'),
+            'performance.accessibility' => ReportLang::get('lighthouse.accessibility'),
+            'performance.best_practices' => ReportLang::get('lighthouse.best_practices'),
+            'performance.seo' => ReportLang::get('lighthouse.seo'),
+        ];
+    }
 
     public function type(): string
     {
@@ -34,7 +43,7 @@ class UptimeOverviewBlock extends BlockType
 
     public function label(): string
     {
-        return 'Uptime & performance';
+        return ReportLang::get('uptime_overview.heading');
     }
 
     public function description(): string
@@ -123,16 +132,16 @@ class UptimeOverviewBlock extends BlockType
         ];
 
         $tiles = [
-            $tile('uptime.percentage', 'Uptime', 'uptime', true),
-            $tile('uptime.response_time_ms', 'Response', 'ms', false),
-            $tile('uptime.incidents', 'Incidents', 'number', false),
-            $tile('uptime.downtime_seconds', 'Downtime', 'duration', false),
+            $tile('uptime.percentage', ReportLang::get('uptime.tile.uptime'), 'uptime', true),
+            $tile('uptime.response_time_ms', ReportLang::get('uptime.tile.response'), 'ms', false),
+            $tile('uptime.incidents', ReportLang::get('uptime.tile.incidents'), 'number', false),
+            $tile('uptime.downtime_seconds', ReportLang::get('uptime.tile.downtime'), 'duration', false),
         ];
         // A cert-alerts tile where the provider reports certificate expiry
         // (Uptime Kuma); otherwise fall back to the monitor count.
         $tiles[] = isset($current['uptime.cert_alerts'])
-            ? $tile('uptime.cert_alerts', 'Cert alerts', 'number', false)
-            : $tile('uptime.monitors', 'Monitors', 'number', true);
+            ? $tile('uptime.cert_alerts', ReportLang::get('uptime.tile.cert_alerts'), 'number', false)
+            : $tile('uptime.monitors', ReportLang::get('uptime.tile.monitors'), 'number', true);
 
         $limit = (int) $context->block->configValue('incident_limit', 10);
 
@@ -140,7 +149,7 @@ class UptimeOverviewBlock extends BlockType
         // integration collected (accessibility/best-practices/SEO are lab-only).
         $performance = $context->reader->metricsForCategory($context->site, IntegrationCategory::Performance, $context->range);
         $lighthouse = [];
-        foreach (self::LIGHTHOUSE as $metricKey => $label) {
+        foreach (self::lighthouse() as $metricKey => $label) {
             $value = $performance[$metricKey]['value'] ?? null;
             if ($value !== null) {
                 $lighthouse[] = ['label' => $label, 'score' => (int) round($value), 'rating' => $this->rating((int) round($value))];
@@ -202,22 +211,25 @@ class UptimeOverviewBlock extends BlockType
             return null;
         }
 
-        $sentence = 'The site held '.Format::percent($uptime, 2).' uptime';
+        $sentence = ReportLang::get('uptime.summary.base', ['uptime' => Format::percent($uptime, 2)]);
 
         $response = $current['uptime.response_time_ms']['value'] ?? null;
         if ($response !== null) {
-            $sentence .= ' with an average response time of '.Format::forType($response, 'ms').'.';
+            $sentence .= ReportLang::get('uptime.summary.response', ['response' => Format::forType($response, 'ms')]);
         } else {
-            $sentence .= ' this period.';
+            $sentence .= ReportLang::get('uptime.summary.no_response');
         }
 
         $incidents = (int) ($current['uptime.incidents']['value'] ?? 0);
         if ($incidents > 0) {
-            $sentence .= ' '.$incidents.' '.($incidents === 1 ? 'incident was' : 'incidents were').' detected during the period.';
+            $sentence .= ReportLang::get(
+                $incidents === 1 ? 'uptime.summary.incident_singular' : 'uptime.summary.incident_plural',
+                ['count' => $incidents],
+            );
         }
 
         if ($score !== null) {
-            $sentence .= ' Lighthouse performance sits at '.(int) round($score).'.';
+            $sentence .= ReportLang::get('uptime.summary.lighthouse', ['score' => (int) round($score)]);
         }
 
         return $sentence;

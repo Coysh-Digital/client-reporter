@@ -1,7 +1,7 @@
-@include('reports.blocks.partials.heading', ['text' => $heading ?: 'Visitors per day', 'icon' => $icon ?? 'chart', 'suffix' => $data['provider'] ?? null])
+@include('reports.blocks.partials.heading', ['text' => $heading ?: \App\Support\ReportLang::get('analytics_chart.heading'), 'icon' => $icon ?? 'chart', 'suffix' => $data['provider'] ?? null])
 
 @if (empty($data['timeseries']))
-    <p class="muted">No daily data for this period.</p>
+    <p class="muted">{{ \App\Support\ReportLang::get('analytics_chart.empty') }}</p>
 @else
     @include('reports.blocks.partials.line-chart', ['series' => $data['timeseries'], 'compareSeries' => $data['timeseries_previous'] ?? [], 'color' => $branding->primaryColor, 'chartHeight' => 130])
 @endif

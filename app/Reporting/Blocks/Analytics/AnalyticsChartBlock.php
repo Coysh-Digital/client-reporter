@@ -8,6 +8,7 @@ use App\Integrations\Support\IntegrationCategory;
 use App\Reporting\Contracts\BlockType;
 use App\Reporting\Support\BlockContext;
 use App\Reporting\Support\BlockOption;
+use App\Support\ReportLang;
 
 class AnalyticsChartBlock extends BlockType
 {
@@ -18,7 +19,7 @@ class AnalyticsChartBlock extends BlockType
 
     public function label(): string
     {
-        return 'Visitors chart';
+        return ReportLang::get('analytics_chart.label');
     }
 
     public function description(): string

@@ -63,9 +63,23 @@ This is a working application, not a package: the app roots are `app/`, `config/
 - Client-facing report views are rendered by dompdf by default, which in this
   install **does not render `flex`, `grid`, or inline `<svg>` at all**. Report
   Blade (`resources/views/reports/**`) must use plain block/table/float layout.
-- Charts and icons in reports are pure HTML/CSS, never SVG — see `App\Support\SvgChart`
-  (unused), the table-based bar chart, and `App\Support\ReportIcons` (icons are
-  fixed HTML/CSS, not user-configurable).
+- Charts and icons render as **SVG embedded as a data-URI `<img>`** — dompdf
+  rasterises those through php-svg-lib, but never inline `<svg>`. See
+  `App\Support\SvgChart` (line/area charts + donut gauges) and
+  `App\Support\ReportIcons` / `App\Support\ProviderLogos`. In an SVG's `<text>`,
+  use a single `font-family` (e.g. `sans-serif`) — php-svg-lib doesn't parse a
+  comma-separated font stack and falls back to serif — and give the SVG a
+  `viewBox` that matches its pixel `width`/`height` or dompdf mis-scales it.
+- **Report wording is not hard-coded.** Every fixed, client-facing word or
+  phrase in a report resolves through `App\Support\ReportLang::get('dotted.key')`,
+  backed by the defaults in `config/report-language.php` (deep-merged over an
+  agency's git-ignored `config/report-language.local.php`). When you add or change
+  any client-facing report string — in `resources/views/reports/**` or a block
+  class's `label()`/metric labels/auto-summary — add its key + English default to
+  `config/report-language.php` and resolve it via `ReportLang`, rather than writing
+  the literal in the view or class. Placeholders are `:name`. Block labels/summaries
+  are frozen into the render at generation time; view chrome resolves at display.
+  Number/unit formatting stays in `App\Support\Format` (not translated).
 - Generating a report **freezes** a `ReportRender` snapshot (resolved block data +
   branding + range). Every client-facing surface reads the frozen render, never
   live data. Don't call `ReportGenerator::generate()` from read paths — it collects

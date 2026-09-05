@@ -10,6 +10,7 @@ use App\Reporting\MetricReader;
 use App\Reporting\Support\BlockContext;
 use App\Reporting\Support\BlockOption;
 use App\Support\Format;
+use App\Support\ReportLang;
 
 /**
  * A provider-agnostic store block. Reads ecommerce metrics from whichever
@@ -19,13 +20,21 @@ use App\Support\Format;
  */
 class EcommerceBlock extends BlockType
 {
-    /** key => [metric_key, label, fmt, goodUp] */
-    private const METRICS = [
-        'revenue' => ['ecommerce.revenue', 'Revenue', 'money', true],
-        'orders' => ['ecommerce.orders', 'Orders', 'number', true],
-        'aov' => ['ecommerce.aov', 'Avg order', 'money', true],
-        'items_sold' => ['ecommerce.items_sold', 'Items sold', 'number', true],
-    ];
+    /**
+     * key => [metric_key, label, fmt, goodUp]. A method rather than a const so
+     * the labels resolve through the report language dictionary.
+     *
+     * @return array<string, array{0: string, 1: string, 2: string, 3: bool}>
+     */
+    private static function metrics(): array
+    {
+        return [
+            'revenue' => ['ecommerce.revenue', ReportLang::get('ecommerce.metric.revenue'), 'money', true],
+            'orders' => ['ecommerce.orders', ReportLang::get('ecommerce.metric.orders'), 'number', true],
+            'aov' => ['ecommerce.aov', ReportLang::get('ecommerce.metric.aov'), 'money', true],
+            'items_sold' => ['ecommerce.items_sold', ReportLang::get('ecommerce.metric.items_sold'), 'number', true],
+        ];
+    }
 
     public function type(): string
     {
@@ -35,7 +44,7 @@ class EcommerceBlock extends BlockType
 
     public function label(): string
     {
-        return 'Store performance';
+        return ReportLang::get('ecommerce.heading');
     }
 
     public function description(): string
@@ -128,7 +137,7 @@ class EcommerceBlock extends BlockType
         $reader = $context->reader;
         $key = $source['integration_key'];
         $compare = (bool) $context->block->configValue('compare', true);
-        $selected = (array) $context->block->configValue('metrics', array_keys(self::METRICS));
+        $selected = (array) $context->block->configValue('metrics', array_keys(self::metrics()));
 
         $current = $reader->metrics($context->site, $key, $context->range);
         $previous = $compare && $context->comparison ? $reader->metrics($context->site, $key, $context->comparison) : [];
@@ -137,11 +146,12 @@ class EcommerceBlock extends BlockType
         $currency = $snapshot['currency'] ?? ($current['ecommerce.revenue']['unit'] ?? null);
 
         $metrics = [];
+        $definitions = self::metrics();
         foreach ($selected as $metricKey) {
-            if (! isset(self::METRICS[$metricKey])) {
+            if (! isset($definitions[$metricKey])) {
                 continue;
             }
-            [$key2, $label, $fmt, $goodUp] = self::METRICS[$metricKey];
+            [$key2, $label, $fmt, $goodUp] = $definitions[$metricKey];
             $metrics[] = [
                 'label' => $label,
                 'fmt' => $fmt,
@@ -181,19 +191,25 @@ class EcommerceBlock extends BlockType
             return null;
         }
 
-        $sentence = 'The store processed '.Format::number($orders).' '.($orders === 1.0 ? 'order' : 'orders')
-            .' totalling '.Format::money($revenue, $currency).' in net revenue';
+        $sentence = ReportLang::get('ecommerce.insight.base', [
+            'count' => Format::number($orders),
+            'noun' => ReportLang::get($orders === 1.0 ? 'ecommerce.insight.order' : 'ecommerce.insight.orders'),
+            'revenue' => Format::money($revenue, $currency),
+        ]);
 
         $change = Format::change($revenue, $previous['ecommerce.revenue']['value'] ?? null);
         if ($change['percent'] === null) {
-            return $sentence.' this period.';
+            return $sentence.ReportLang::get('ecommerce.insight.no_compare');
         }
 
         if ($change['direction'] === 'flat') {
-            return $sentence.', unchanged from the prior period.';
+            return $sentence.ReportLang::get('ecommerce.insight.unchanged');
         }
 
-        return $sentence.', '.$change['direction'].' '.Format::number(abs($change['percent']), 1).'% from the prior period.';
+        return $sentence.ReportLang::get('ecommerce.insight.changed', [
+            'direction' => ReportLang::get('common.direction.'.$change['direction']),
+            'percent' => Format::number(abs($change['percent']), 1),
+        ]);
     }
 
     public function icon(): string

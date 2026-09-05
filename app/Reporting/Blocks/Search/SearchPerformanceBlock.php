@@ -9,6 +9,7 @@ use App\Reporting\Contracts\BlockType;
 use App\Reporting\Support\BlockContext;
 use App\Reporting\Support\BlockOption;
 use App\Reporting\Support\Insight;
+use App\Support\ReportLang;
 
 /**
  * Search performance from a connected search integration (Google Search
@@ -16,13 +17,20 @@ use App\Reporting\Support\Insight;
  */
 class SearchPerformanceBlock extends BlockType
 {
-    /** key => [metric_key, label, fmt, goodUp] */
-    private const METRICS = [
-        'clicks' => ['search.clicks', 'Clicks', 'number', true],
-        'impressions' => ['search.impressions', 'Impressions', 'number', true],
-        'ctr' => ['search.ctr', 'CTR', 'percent1', true],
-        'position' => ['search.position', 'Avg position', 'decimal1', false],
-    ];
+    /**
+     * key => [metric_key, label, fmt, goodUp]
+     *
+     * @return array<string, array{0: string, 1: string, 2: string, 3: bool}>
+     */
+    private static function metrics(): array
+    {
+        return [
+            'clicks' => ['search.clicks', ReportLang::get('search.metric.clicks'), 'number', true],
+            'impressions' => ['search.impressions', ReportLang::get('search.metric.impressions'), 'number', true],
+            'ctr' => ['search.ctr', ReportLang::get('search.metric.ctr'), 'percent1', true],
+            'position' => ['search.position', ReportLang::get('search.metric.avg_position'), 'decimal1', false],
+        ];
+    }
 
     public function type(): string
     {
@@ -31,7 +39,7 @@ class SearchPerformanceBlock extends BlockType
 
     public function label(): string
     {
-        return 'Search performance';
+        return ReportLang::get('search.heading');
     }
 
     public function description(): string
@@ -107,7 +115,7 @@ class SearchPerformanceBlock extends BlockType
     public function resolve(BlockContext $context): array
     {
         $compare = (bool) $context->block->configValue('compare', true);
-        $selected = (array) $context->block->configValue('metrics', array_keys(self::METRICS));
+        $selected = (array) $context->block->configValue('metrics', array_keys(self::metrics()));
 
         $current = $context->reader->metricsForCategory($context->site, IntegrationCategory::Search, $context->range);
         $previous = $compare && $context->comparison
@@ -116,11 +124,12 @@ class SearchPerformanceBlock extends BlockType
         $snapshot = $context->reader->snapshotForCategory($context->site, IntegrationCategory::Search, 'search', $context->range) ?? [];
 
         $metrics = [];
+        $definitions = self::metrics();
         foreach ($selected as $key) {
-            if (! isset(self::METRICS[$key])) {
+            if (! isset($definitions[$key])) {
                 continue;
             }
-            [$metricKey, $label, $fmt, $goodUp] = self::METRICS[$key];
+            [$metricKey, $label, $fmt, $goodUp] = $definitions[$key];
             $metrics[] = [
                 'label' => $label,
                 'fmt' => $fmt,
@@ -149,7 +158,7 @@ class SearchPerformanceBlock extends BlockType
             'pages' => $pages,
             'timeseries' => (bool) $context->block->configValue('show_chart', true) ? ($snapshot['timeseries'] ?? []) : [],
             'insight' => Insight::headline(
-                'clicks from Google search',
+                ReportLang::get('search.insight_noun'),
                 $current['search.clicks']['value'] ?? null,
                 $previous['search.clicks']['value'] ?? null,
             ),

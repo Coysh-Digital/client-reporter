@@ -9,7 +9,7 @@ use App\Reporting\Contracts\BlockType;
 use App\Reporting\Support\BlockContext;
 use App\Reporting\Support\BlockOption;
 use App\Support\Format;
-use Illuminate\Support\Str;
+use App\Support\ReportLang;
 
 /**
  * A single, consolidated analytics component: headline metrics, a visitors
@@ -26,7 +26,7 @@ class SiteTrafficBlock extends BlockType
 
     public function label(): string
     {
-        return 'Site traffic';
+        return ReportLang::get('traffic.heading');
     }
 
     public function description(): string
@@ -121,10 +121,10 @@ class SiteTrafficBlock extends BlockType
             'provider' => $snapshot['provider'] ?? null,
             'summary' => $this->summary($current, $previous, $snapshot),
             'tiles' => [
-                $tile('analytics.visitors', 'Visitors', 'number', true),
-                $tile('analytics.visits', 'Visits', 'number', true),
-                $tile('analytics.pageviews', 'Pageviews', 'number', true),
-                $tile('analytics.visit_duration', 'Avg. duration', 'duration', true),
+                $tile('analytics.visitors', ReportLang::get('traffic.tile.visitors'), 'number', true),
+                $tile('analytics.visits', ReportLang::get('traffic.tile.visits'), 'number', true),
+                $tile('analytics.pageviews', ReportLang::get('traffic.tile.pageviews'), 'number', true),
+                $tile('analytics.visit_duration', ReportLang::get('traffic.tile.avg_duration'), 'duration', true),
             ],
             'bounce_rate' => $current['analytics.bounce_rate']['value'] ?? null,
             'timeseries' => $snapshot['timeseries'] ?? [],
@@ -152,19 +152,27 @@ class SiteTrafficBlock extends BlockType
             return null;
         }
 
-        $sentence = Format::number($visitors).' '.Str::plural('visitor', (int) $visitors).' this period';
+        $noun = (int) $visitors === 1
+            ? ReportLang::get('traffic.summary.visitor')
+            : ReportLang::get('traffic.summary.visitors');
+        $sentence = ReportLang::get('traffic.summary.base', ['count' => Format::number($visitors), 'noun' => $noun]);
         $change = Format::change($visitors, $previous['analytics.visitors']['value'] ?? null);
         if ($change['percent'] !== null && $change['direction'] !== 'flat') {
-            $sentence .= ', '.$change['direction'].' '.Format::number(abs($change['percent']), 1).'% on the previous period';
+            $sentence .= ReportLang::get('traffic.summary.growth', [
+                'direction' => ReportLang::get('common.direction.'.$change['direction']),
+                'percent' => Format::number(abs($change['percent']), 1),
+            ]);
         }
         $sentence .= '.';
 
         $topSource = $snapshot['sources'][0]['label'] ?? null;
         $topDevice = $snapshot['devices'][0]['label'] ?? null;
         if ($topSource !== null) {
-            $extra = ($topSource !== '' ? $topSource : 'Direct').' was the largest source';
+            $extra = ReportLang::get('traffic.summary.source', [
+                'source' => $topSource !== '' ? $topSource : ReportLang::get('common.direct'),
+            ]);
             if ($topDevice) {
-                $extra .= ', with '.strtolower((string) $topDevice).' the most common device';
+                $extra .= ReportLang::get('traffic.summary.device', ['device' => strtolower((string) $topDevice)]);
             }
             $sentence .= ' '.$extra.'.';
         }

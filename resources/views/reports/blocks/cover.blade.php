@@ -8,6 +8,7 @@
     $contact = $data['contact'] ?? null;
     $preparedOn = $data['prepared_on'] ?? null;
     $intro = $commentary ?: $branding->tagline;
+    use App\Support\ReportLang;
 @endphp
 
 @if ($minimal)
@@ -19,7 +20,7 @@
         @else
             <div style="font-family:{!! $branding->headingFont !!};font-size:19px;font-weight:600;color:var(--brand-primary);">{{ $branding->agencyName }}</div>
         @endif
-        <div class="metric-label" style="margin-top:30px;">Website report</div>
+        <div class="metric-label" style="margin-top:30px;">{{ ReportLang::get('cover.eyebrow') }}</div>
         <h1 style="font-size:40px;line-height:1.04;margin-top:8px;color:#211f1b;">{{ $client }}</h1>
         <div class="muted" style="margin-top:8px;font-size:16px;font-variant-numeric:tabular-nums;">{{ $site }} &middot; {{ $period }}</div>
         @if ($intro)
@@ -38,7 +39,7 @@
                 @endif
             </td>
             <td style="vertical-align:middle;text-align:right;">
-                <span style="display:inline-block;padding:4px 12px;border:1px solid rgba(255,255,255,.28);border-radius:999px;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#e7eaf5;">Website report</span>
+                <span style="display:inline-block;padding:4px 12px;border:1px solid rgba(255,255,255,.28);border-radius:999px;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#e7eaf5;">{{ ReportLang::get('cover.eyebrow') }}</span>
             </td>
         </tr></table>
 
@@ -53,7 +54,7 @@
                 <td style="vertical-align:top;padding-top:20px;max-width:440px;font-size:14.5px;line-height:1.6;color:#d7dbe8;">{{ $intro }}</td>
                 @if ($contact || $preparedOn)
                     <td style="vertical-align:top;padding-top:20px;text-align:right;font-size:12.5px;color:#a9b0cd;line-height:1.7;white-space:nowrap;">
-                        @if ($contact) Prepared for<br><span style="color:#fff;font-weight:600;">{{ $contact }}</span><br>@endif
+                        @if ($contact) {{ ReportLang::get('cover.prepared_for') }}<br><span style="color:#fff;font-weight:600;">{{ $contact }}</span><br>@endif
                         {{ $preparedOn }}
                     </td>
                 @endif

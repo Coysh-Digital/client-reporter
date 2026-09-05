@@ -9,6 +9,7 @@ use App\Integrations\Support\IntegrationCategory;
 use App\Reporting\Contracts\BlockType;
 use App\Reporting\Support\BlockContext;
 use App\Reporting\Support\BlockOption;
+use App\Support\ReportLang;
 
 /**
  * Provider-agnostic leads/signups summary. Reads from whichever Forms & Leads
@@ -17,11 +18,19 @@ use App\Reporting\Support\BlockOption;
  */
 class LeadsSummaryBlock extends BlockType
 {
-    /** key => [metric_key, label, fmt, goodUp] */
-    private const METRICS = [
-        'new_leads' => ['leads.new', 'New leads', 'number', true],
-        'total' => ['leads.total', 'Total audience', 'number', true],
-    ];
+    /**
+     * key => [metric_key, label, fmt, goodUp]. A method rather than a const so
+     * the labels resolve through the report language dictionary.
+     *
+     * @return array<string, array{0: string, 1: string, 2: string, 3: bool}>
+     */
+    private static function metrics(): array
+    {
+        return [
+            'new_leads' => ['leads.new', ReportLang::get('leads.metric.new_leads'), 'number', true],
+            'total' => ['leads.total', ReportLang::get('leads.metric.total_audience'), 'number', true],
+        ];
+    }
 
     public function type(): string
     {
@@ -30,7 +39,7 @@ class LeadsSummaryBlock extends BlockType
 
     public function label(): string
     {
-        return 'Leads & signups';
+        return ReportLang::get('leads.heading');
     }
 
     public function description(): string
@@ -102,7 +111,7 @@ class LeadsSummaryBlock extends BlockType
     public function resolve(BlockContext $context): array
     {
         $compare = (bool) $context->block->configValue('compare', true);
-        $selected = (array) $context->block->configValue('metrics', array_keys(self::METRICS));
+        $selected = (array) $context->block->configValue('metrics', array_keys(self::metrics()));
 
         $current = $context->reader->metricsForCategory($context->site, IntegrationCategory::Forms, $context->range);
         $previous = $compare && $context->comparison
@@ -115,11 +124,12 @@ class LeadsSummaryBlock extends BlockType
             : null;
 
         $metrics = [];
+        $definitions = self::metrics();
         foreach ($selected as $key) {
-            if (! isset(self::METRICS[$key])) {
+            if (! isset($definitions[$key])) {
                 continue;
             }
-            [$metricKey, $label, $fmt, $goodUp] = self::METRICS[$key];
+            [$metricKey, $label, $fmt, $goodUp] = $definitions[$key];
             $metrics[] = [
                 'label' => $label,
                 'fmt' => $fmt,
@@ -149,7 +159,10 @@ class LeadsSummaryBlock extends BlockType
 
         $count = (int) $new;
 
-        return $count.' new '.($count === 1 ? 'lead was' : 'leads were').' captured this period.';
+        return ReportLang::get(
+            $count === 1 ? 'leads.insight.singular' : 'leads.insight.plural',
+            ['count' => $count],
+        );
     }
 
     public function icon(): string

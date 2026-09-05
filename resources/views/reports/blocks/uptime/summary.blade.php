@@ -1,7 +1,7 @@
-@include('reports.blocks.partials.heading', ['text' => $heading ?: 'Uptime & availability', 'icon' => $icon ?? 'pulse'])
+@include('reports.blocks.partials.heading', ['text' => $heading ?: \App\Support\ReportLang::get('uptime_summary.heading'), 'icon' => $icon ?? 'pulse'])
 
 @if (! ($data['has_data'] ?? false) || empty($data['metrics']))
-    <p class="muted">No uptime data was collected for this period yet.</p>
+    <p class="muted">{{ \App\Support\ReportLang::get('common.empty.uptime') }}</p>
 @else
     @include('reports.blocks.partials.insight', ['insight' => empty($data['ai_summary']) ? ($data['insight'] ?? null) : null])
     @include('reports.blocks.partials.ai-summary', ['aiSummary' => $data['ai_summary'] ?? null])

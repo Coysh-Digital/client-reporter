@@ -8,6 +8,7 @@ use App\Integrations\Support\IntegrationCategory;
 use App\Reporting\Contracts\BlockType;
 use App\Reporting\Support\BlockContext;
 use App\Reporting\Support\BlockOption;
+use App\Support\ReportLang;
 
 /**
  * Custom event counts (goals, conversions, tracked interactions) for the
@@ -24,7 +25,7 @@ class CustomEventsBlock extends BlockType
 
     public function label(): string
     {
-        return 'Custom events';
+        return ReportLang::get('events.heading');
     }
 
     public function description(): string
