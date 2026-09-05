@@ -66,8 +66,8 @@ class HonestAnalyticsIntegration extends Integration
     {
         return [
             'In WordPress, make sure the <strong>Honest Analytics</strong> plugin is installed and active.',
-            'Open <strong>Honest Analytics → Settings → Client Reporter</strong>.',
-            'Copy the <strong>connection code</strong> shown below into that settings page and save.',
+            'Open <strong>Analytics → Reporting API</strong> in WordPress.',
+            'Copy the <strong>connection code</strong> shown below into the field there and save.',
             'Come back here and press <strong>Connect &amp; verify</strong>.',
         ];
     }
