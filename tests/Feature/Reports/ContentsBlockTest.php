@@ -30,24 +30,31 @@ class ContentsBlockTest extends TestCase
         $this->assertNotNull(app(BlockTypeRegistry::class)->find('contents'));
     }
 
-    public function test_report_icons_returns_the_built_in_css_icon(): void
+    public function test_report_icons_returns_a_data_uri_svg_image(): void
     {
-        // No <svg> at all — dompdf does not render inline SVG in this
-        // install (confirmed directly: even a single bare <rect> renders
-        // nothing), so every icon is fixed, built-in HTML/CSS.
+        // dompdf won't render an inline <svg>, but it renders SVG through its
+        // image pipeline, so icons are monoline vectors embedded as a data-URI
+        // <img> (the same technique the report charts use).
         $html = ReportIcons::html('chart');
 
-        $this->assertStringNotContainsString('<svg', $html);
-        $this->assertStringContainsString('<div', $html);
-        $this->assertStringContainsString('#8a6a2c', $html);
+        $this->assertStringContainsString('<img', $html);
+        $this->assertStringContainsString('data:image/svg+xml;base64,', $html);
+        $this->assertStringContainsString('#8a6a2c', $this->decodeIcon($html));
     }
 
     public function test_report_icons_accepts_a_custom_colour(): void
     {
-        $html = ReportIcons::html('chart', '#33406b');
+        $svg = $this->decodeIcon(ReportIcons::html('chart', '#33406b'));
 
-        $this->assertStringContainsString('#33406b', $html);
-        $this->assertStringNotContainsString('#8a6a2c', $html);
+        $this->assertStringContainsString('stroke="#33406b"', $svg);
+        $this->assertStringNotContainsString('#8a6a2c', $svg);
+    }
+
+    private function decodeIcon(string $html): string
+    {
+        preg_match('/base64,([^"]+)/', $html, $m);
+
+        return base64_decode($m[1] ?? '');
     }
 
     public function test_report_icons_falls_back_to_document_for_an_unknown_key(): void

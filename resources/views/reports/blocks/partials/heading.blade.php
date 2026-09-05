@@ -2,25 +2,19 @@
     Shared block heading: a brand-coloured icon chip + section title, with an
     optional right-aligned "Source: X" badge (which provider produced this
     block's data). $variant 'title' is the larger free-form-block style
-    (text/closing); default is the section-header style used by every data block.
-    Icons render in the brand primary's contrast colour inside the chip.
+    (text/closing). Laid out as a table (no floats) so the chip and title never
+    collide across a PDF page break. Icons render in the chip's contrast colour.
 --}}
-@if (($variant ?? 'eyebrow') === 'title')
-    <h2 class="block-title">
+@php $isTitle = ($variant ?? 'eyebrow') === 'title'; @endphp
+<table class="block-heading-row"><tr>
+    <td class="block-heading-chip-cell">
         <span class="block-heading-chip">@include('reports.blocks.partials.icon', ['key' => $icon ?? 'document', 'color' => '#ffffff'])</span>
-        <span class="block-title-body">{{ $text }}</span>
-    </h2>
-@else
-    <table class="block-heading-row"><tr>
-        <td class="block-heading">
-            <span class="block-heading-chip">@include('reports.blocks.partials.icon', ['key' => $icon ?? 'document', 'color' => '#ffffff'])</span>
-            <span class="block-heading-title">{{ $text }}</span>
+    </td>
+    <td class="{{ $isTitle ? 'block-title-cell' : 'block-heading-title-cell' }}">{{ $text }}</td>
+    @if (! $isTitle && ! empty($suffix ?? null))
+        <td class="block-heading-source">
+            <span class="block-heading-source-label">Source</span>
+            <span class="block-heading-source-badge">{{ $suffix }}</span>
         </td>
-        @if (! empty($suffix ?? null))
-            <td class="block-heading-source">
-                <span class="block-heading-source-label">Source</span>
-                <span class="block-heading-source-badge">{{ $suffix }}</span>
-            </td>
-        @endif
-    </tr></table>
-@endif
+    @endif
+</tr></table>

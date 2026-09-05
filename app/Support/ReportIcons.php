@@ -5,66 +5,46 @@ declare(strict_types=1);
 namespace App\Support;
 
 /**
- * Fixed icons shown in a report's Contents section. Built from plain
- * HTML/CSS (borders, border-radius, background — no SVG) because dompdf does
- * not render inline `<svg>` at all in this install (confirmed: even a single
- * bare `<rect>` renders nothing), which is also why the analytics chart uses
- * table-based bars rather than an SVG sparkline. Each icon is calibrated to a
- * fixed 20×20 canvas — the size every caller uses — with only the colour
- * substituted at render time; there is no per-agency override.
+ * The icons shown on report section headers and the Contents section. dompdf
+ * won't render an inline `<svg>` here, but it renders SVG through its image
+ * pipeline, so each icon is a small monoline vector embedded as a data-URI
+ * `<img>` (the same technique the report charts use). Clean and crisp on both
+ * the web and the PDF, with the stroke colour substituted at render time.
  */
 class ReportIcons
 {
     /** @var array<int, string> */
-    public const KEYS = ['chart', 'cart', 'search', 'pulse', 'wrench', 'receipt', 'globe', 'document'];
+    public const KEYS = ['chart', 'cart', 'search', 'pulse', 'wrench', 'receipt', 'globe', 'document', 'download'];
 
-    /** 20×20 HTML/CSS icons; `{c}` is substituted with the render colour. */
-    private const DEFAULTS = [
-        'chart' => '<div style="position:relative;width:20px;height:20px;"><table style="border-collapse:collapse;border:0;position:absolute;left:1px;bottom:1px;"><tr>
-            <td style="border:0;vertical-align:bottom;padding:0 1px;"><div style="width:4px;height:7px;background:{c};">&nbsp;</div></td>
-            <td style="border:0;vertical-align:bottom;padding:0 1px;"><div style="width:4px;height:12px;background:{c};">&nbsp;</div></td>
-            <td style="border:0;vertical-align:bottom;padding:0 1px;"><div style="width:4px;height:17px;background:{c};">&nbsp;</div></td>
-        </tr></table></div>',
-        'cart' => '<div style="position:relative;width:20px;height:20px;">
-            <div style="position:absolute;left:4px;top:9px;width:12px;height:9px;background:{c};border-radius:0 0 2px 2px;"></div>
-            <div style="position:absolute;left:7px;top:3px;width:7px;height:7px;border:2px solid {c};border-bottom:none;border-radius:50% 50% 0 0;"></div>
-        </div>',
-        'search' => '<div style="position:relative;width:20px;height:20px;">
-            <div style="position:absolute;left:1px;top:1px;width:11px;height:11px;border:2px solid {c};border-radius:50%;"></div>
-            <div style="position:absolute;left:11px;top:11px;width:8px;height:2px;background:{c};transform:rotate(45deg);"></div>
-        </div>',
-        'pulse' => '<div style="position:relative;width:20px;height:20px;">
-            <div style="position:absolute;left:2px;top:6px;width:16px;height:8px;border:2px solid {c};border-bottom:none;border-radius:16px 16px 0 0;"></div>
-            <div style="position:absolute;left:9px;top:6px;width:2px;height:8px;background:{c};transform:rotate(25deg);transform-origin:bottom;"></div>
-        </div>',
-        'wrench' => '<div style="position:relative;width:20px;height:20px;">
-            <div style="position:absolute;left:3px;top:3px;width:14px;height:14px;border:2px solid {c};border-top-color:transparent;border-radius:50%;transform:rotate(45deg);"></div>
-        </div>',
-        'receipt' => '<div style="position:relative;width:20px;height:20px;">
-            <div style="position:absolute;left:4px;top:2px;width:12px;height:16px;border:1.5px solid {c};border-radius:1px;"></div>
-            <div style="position:absolute;left:6px;top:7px;width:8px;height:1.5px;background:{c};"></div>
-            <div style="position:absolute;left:6px;top:11px;width:8px;height:1.5px;background:{c};"></div>
-        </div>',
-        'globe' => '<div style="position:relative;width:20px;height:20px;">
-            <div style="position:absolute;left:2px;top:2px;width:16px;height:16px;border:1.5px solid {c};border-radius:50%;"></div>
-            <div style="position:absolute;left:6px;top:2px;width:8px;height:16px;border:1.5px solid {c};border-radius:50%;"></div>
-            <div style="position:absolute;left:2px;top:9.5px;width:16px;height:1.5px;background:{c};"></div>
-        </div>',
-        'document' => '<div style="position:relative;width:20px;height:20px;">
-            <div style="position:absolute;left:3px;top:5px;width:14px;height:1.5px;background:{c};"></div>
-            <div style="position:absolute;left:3px;top:9px;width:14px;height:1.5px;background:{c};"></div>
-            <div style="position:absolute;left:3px;top:13px;width:9px;height:1.5px;background:{c};"></div>
-        </div>',
+    /**
+     * Inner SVG for each icon, on a 24×24 canvas. Every shape is stroked with
+     * the render colour (no fills), so one colour drives the whole glyph.
+     *
+     * @var array<string, string>
+     */
+    private const ICONS = [
+        'document' => '<path d="M13.5 3.5H6.75A1.25 1.25 0 0 0 5.5 4.75v14.5a1.25 1.25 0 0 0 1.25 1.25h10.5a1.25 1.25 0 0 0 1.25-1.25V8.5Z"/><path d="M13.5 3.5V8.5H18.5"/><path d="M8.75 12.75h6.5"/><path d="M8.75 16h4.5"/>',
+        'chart' => '<path d="M4 20.25h16"/><path d="M7 20.25v-5.5"/><path d="M12 20.25V8.5"/><path d="M17 20.25v-8.5"/>',
+        'search' => '<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.6-4.6"/>',
+        'pulse' => '<path d="M3.5 12.5h3.4l2-5.5 3.6 11 2.3-6.5 1.4 3.4h4.3"/>',
+        'cart' => '<path d="M3 4.5h2l2.1 10.4a1 1 0 0 0 1 .8h7.8a1 1 0 0 0 1-.78L19.5 8H6.2"/><circle cx="9" cy="19" r="1.35"/><circle cx="17" cy="19" r="1.35"/>',
+        'globe' => '<circle cx="12" cy="12" r="8.5"/><path d="M3.6 12h16.8"/><path d="M12 3.6c3.1 2.4 3.1 14.4 0 16.8M12 3.6c-3.1 2.4-3.1 14.4 0 16.8"/>',
+        'wrench' => '<path d="M20 12a8 8 0 0 1-13.66 5.66L4 15.5"/><path d="M4 20v-4.5h4.5"/><path d="M4 12A8 8 0 0 1 17.66 6.34L20 8.5"/><path d="M20 4v4.5h-4.5"/>',
+        'receipt' => '<path d="M6.5 3.5h11v17l-1.8-1.3-1.8 1.3-1.9-1.3-1.8 1.3-1.9-1.3-1.8 1.3z"/><path d="M9.5 8.5h5"/><path d="M9.5 12h5"/>',
+        'download' => '<path d="M12 4v10.5"/><path d="M8 11l4 4 4-4"/><path d="M5 20h14"/>',
     ];
 
     /**
-     * The HTML for an icon key, coloured. Falls back to the 'document' icon
-     * for an unrecognised key.
+     * A coloured icon as a data-URI `<img>`, sized to fill its container. Falls
+     * back to the document icon for an unknown key.
      */
     public static function html(string $key, string $color = '#8a6a2c'): string
     {
-        $template = self::DEFAULTS[$key] ?? self::DEFAULTS['document'];
+        $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" '
+            .'stroke="'.$color.'" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'
+            .(self::ICONS[$key] ?? self::ICONS['document'])
+            .'</svg>';
 
-        return str_replace('{c}', $color, $template);
+        return '<img src="data:image/svg+xml;base64,'.base64_encode($svg).'" alt="" style="display:block;width:100%;height:auto;">';
     }
 }
