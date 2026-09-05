@@ -109,6 +109,57 @@ class WordPressConnectorTest extends TestCase
         $this->assertSame('6.6', $result->snapshotPayload()['wordpress_version']);
     }
 
+    public function test_site_status_collector_records_applied_updates_from_the_log(): void
+    {
+        Http::fake([
+            'wp.test/wp-json/client-reporter/v1/updates*' => Http::response([
+                'total' => 2, 'core' => 1, 'plugins' => 1, 'themes' => 0,
+                'entries' => [
+                    ['type' => 'core', 'name' => 'WordPress core', 'version' => '6.7', 'date' => '2026-08-10T09:00:00+00:00'],
+                    ['type' => 'plugin', 'name' => 'Yoast SEO', 'version' => '22.0', 'date' => '2026-08-12T09:00:00+00:00'],
+                ],
+            ]),
+            'wp.test/*' => Http::response(['wordpress_version' => '6.7', 'plugin_updates' => 0, 'theme_updates' => 0]),
+        ]);
+
+        $result = (new SiteStatusCollector)->collect($this->wpConnection(), new DateRange('2026-08-01', '2026-08-31'));
+
+        $metrics = collect($result->metrics())->keyBy('key');
+        $this->assertSame(2, (int) $metrics['cms.updates_applied']->value);
+
+        $snapshot = $result->snapshotPayload();
+        $this->assertSame('log', $snapshot['updates_applied_source']);
+        $this->assertCount(2, $snapshot['updates_applied']);
+        $this->assertSame('Yoast SEO', $snapshot['updates_applied'][1]['name']);
+    }
+
+    public function test_site_status_collector_infers_a_core_update_when_the_log_is_unavailable(): void
+    {
+        // An older connector: /site works, but /updates 404s.
+        Http::fake([
+            'wp.test/wp-json/client-reporter/v1/updates*' => Http::response(['error' => 'not found'], 404),
+            'wp.test/*' => Http::response(['wordpress_version' => '6.7']),
+        ]);
+
+        $connection = $this->wpConnection();
+        // A previously collected snapshot on an older core version.
+        $connection->snapshots()->create([
+            'collector_key' => 'site',
+            'period_start' => '2026-08-01', 'period_end' => '2026-08-31',
+            'granularity' => 'point',
+            'payload' => ['wordpress_version' => '6.6'],
+            'captured_at' => now()->subDay(),
+        ]);
+
+        $result = (new SiteStatusCollector)->collect($connection, new DateRange('2026-08-01', '2026-08-31'));
+
+        $snapshot = $result->snapshotPayload();
+        $this->assertSame('inferred', $snapshot['updates_applied_source']);
+        $this->assertCount(1, $snapshot['updates_applied']);
+        $this->assertSame('core', $snapshot['updates_applied'][0]['type']);
+        $this->assertSame('6.7', $snapshot['updates_applied'][0]['version']);
+    }
+
     public function test_woocommerce_collector_reads_sales_when_active(): void
     {
         Http::fake(['wp.test/*' => Http::response([

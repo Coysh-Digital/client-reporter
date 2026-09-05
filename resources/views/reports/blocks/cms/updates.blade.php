@@ -6,19 +6,43 @@
     $themeCount = (int) ($data['theme_updates'] ?? 0);
     $total = ($core ? 1 : 0) + $pluginCount + $themeCount;
 
-    $parts = [];
-    if ($core) $parts[] = 'a core update';
-    if ($pluginCount > 0) $parts[] = $pluginCount.' plugin '.($pluginCount === 1 ? 'update' : 'updates');
-    if ($themeCount > 0) $parts[] = $themeCount.' theme '.($themeCount === 1 ? 'update' : 'updates');
+    $applied = $data['applied'] ?? [];
+    $appliedTotal = (int) ($data['applied_total'] ?? 0);
 
-    $insight = $total === 0
-        ? 'Everything is up to date — no pending core, plugin or theme updates.'
-        : ucfirst(count($parts) > 1
-            ? implode(', ', array_slice($parts, 0, -1)).' and '.end($parts)
-            : $parts[0]).' currently pending.';
+    // Lead with the maintenance story: what we applied this period.
+    if ($appliedTotal > 0) {
+        $insight = 'We applied '.$appliedTotal.' '.($appliedTotal === 1 ? 'update' : 'updates').' this period to keep the site current and secure.';
+    } elseif ($total === 0) {
+        $insight = 'No updates were needed this period — the site is fully up to date.';
+    } else {
+        $insight = 'No updates were applied this period. '.$total.' '.($total === 1 ? 'update is' : 'updates are').' currently pending.';
+    }
 @endphp
 
 @include('reports.blocks.partials.insight', ['insight' => $insight])
+
+@if ($appliedTotal > 0)
+    <div class="mini-bars-title" style="margin-top:18px;">Applied this period</div>
+    <div class="table-scroll">
+        <table class="data" style="margin-top:8px;">
+            <thead><tr><th>Item</th><th>Type</th><th>Version</th><th>Date</th></tr></thead>
+            <tbody>
+                @foreach ($applied as $item)
+                    <tr>
+                        <td>{{ $item['name'] ?? '—' }}</td>
+                        <td class="muted">{{ ucfirst($item['type'] ?? '') }}</td>
+                        <td class="muted">{{ $item['version'] ?? '—' }}</td>
+                        <td class="muted">{{ ! empty($item['date']) ? \Illuminate\Support\Carbon::parse($item['date'])->format('j M Y') : '—' }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+@endif
+
+@if ($total > 0)
+    <div class="mini-bars-title" style="margin-top:18px;">Currently pending</div>
+@endif
 
 @if ($total > 0)
     <p style="margin-bottom:10px;">
