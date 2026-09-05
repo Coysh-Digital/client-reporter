@@ -130,6 +130,7 @@ class SvgChart
             .'<circle cx="18" cy="18" r="'.$r.'" fill="none" stroke="#ece5d6" stroke-width="3.2"/>'
             .'<circle cx="18" cy="18" r="'.$r.'" fill="none" stroke="'.$color.'" stroke-width="3.2" stroke-linecap="round" '
             .'stroke-dasharray="'.$score.' 100" transform="rotate(-90 18 18)"/>'
+            .'<text x="18" y="21.6" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="600" fill="'.$color.'">'.$score.'</text>'
             .'</svg>';
 
         return 'data:image/svg+xml;base64,'.base64_encode($svg);
