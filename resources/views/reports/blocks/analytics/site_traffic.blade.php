@@ -18,7 +18,7 @@
                     $isGood = in_array($ch['direction'], ['flat', 'none'], true)
                         ? null
                         : (($ch['direction'] === 'up') === ($t['goodUp'] ?? true));
-                    $arrow = ['up' => '▲', 'down' => '▼', 'flat' => '■', 'none' => ''][$ch['direction']];
+                    $arrow = ['up' => '+', 'down' => '-', 'flat' => '', 'none' => ''][$ch['direction']];
                     $deltaClass = $isGood === null ? 'delta-flat' : ($isGood ? 'delta-up' : 'delta-down');
                 @endphp
                 <td style="width:25%;padding:0 12px 0 0;vertical-align:top;">
@@ -26,7 +26,7 @@
                         <div class="metric-label">{{ $t['label'] }}</div>
                         <div class="metric-value" style="font-size:23px;margin-top:5px;">{{ Format::forType($cur, $t['fmt'] ?? 'number') }}</div>
                         @if ($prev !== null && $ch['percent'] !== null)
-                            <div class="delta {{ $deltaClass }}" style="margin-top:4px;">{{ $arrow }} {{ Format::number(abs($ch['percent']), 1) }}%</div>
+                            <div class="delta {{ $deltaClass }}" style="margin-top:4px;">{{ $arrow }}{{ Format::number(abs($ch['percent']), 1) }}%</div>
                         @endif
                     </div>
                 </td>

@@ -28,7 +28,7 @@
                     $isGood = in_array($ch['direction'], ['flat', 'none'], true)
                         ? null
                         : (($ch['direction'] === 'up') === ($t['goodUp'] ?? true));
-                    $arrow = ['up' => '▲', 'down' => '▼', 'flat' => '■', 'none' => ''][$ch['direction']];
+                    $arrow = ['up' => '+', 'down' => '-', 'flat' => '', 'none' => ''][$ch['direction']];
                     $deltaClass = $isGood === null ? 'delta-flat' : ($isGood ? 'delta-up' : 'delta-down');
                 @endphp
                 <td style="width:20%;padding:0 10px 0 0;vertical-align:top;">
@@ -36,7 +36,7 @@
                         <div class="metric-label">{{ $t['label'] }}</div>
                         <div class="metric-value" style="font-size:21px;margin-top:5px;">{{ Format::forType($cur, $t['fmt'] ?? 'number') }}</div>
                         @if ($prev !== null && $ch['percent'] !== null)
-                            <div class="delta {{ $deltaClass }}" style="margin-top:4px;">{{ $arrow }} {{ Format::number(abs($ch['percent']), 1) }}%</div>
+                            <div class="delta {{ $deltaClass }}" style="margin-top:4px;">{{ $arrow }}{{ Format::number(abs($ch['percent']), 1) }}%</div>
                         @endif
                     </div>
                 </td>
@@ -78,7 +78,7 @@
                 @foreach ($data['lighthouse'] as $score)
                     @php $rc = $ratingColors[$score['rating']] ?? '#8b857a'; @endphp
                     <td style="width:25%;text-align:center;vertical-align:top;padding:0 8px;">
-                        <img class="gauge-ring-img" src="{{ \App\Support\SvgChart::gaugeDataUri((int) $score['score'], $rc, 110) }}" width="110" height="110" alt="{{ $score['score'] }}">
+                        <img class="gauge-ring-img" src="{{ \App\Support\SvgChart::gaugeDataUri((int) $score['score'], $rc, 130) }}" width="130" height="130" alt="{{ $score['score'] }}">
                         <div class="metric-label" style="margin-top:6px;">{{ $score['label'] }}</div>
                     </td>
                 @endforeach

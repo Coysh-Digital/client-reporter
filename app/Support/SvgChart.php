@@ -92,7 +92,7 @@ class SvgChart
                 $ty = $frac === 0.0 ? $gy + 9 : ($frac === 1.0 ? $gy - 3 : $gy + 3);
                 // A tight range (e.g. uptime %) needs a decimal so the labels
                 // don't collapse to the same rounded number.
-                $labels .= '<text x="'.($left - 8).'" y="'.$ty.'" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#98938a">'.self::compact($val, $range < 3 ? 1 : 0).'</text>';
+                $labels .= '<text x="'.($left - 8).'" y="'.$ty.'" text-anchor="end" font-family="sans-serif" font-size="11" fill="#98938a">'.self::compact($val, $range < 3 ? 1 : 0).'</text>';
             }
         }
 
@@ -146,8 +146,14 @@ class SvgChart
 
     /**
      * A donut gauge (0–100) as a data-URI `<img>`: a light track ring with a
-     * coloured arc whose length is the score. The number is overlaid in HTML by
-     * the caller, so this draws the ring only.
+     * coloured arc whose length is the score, and the score in the centre.
+     *
+     * The ring is drawn in a 36-unit space (r chosen so the circumference is
+     * ~100, making the dash length == score) but the SVG's viewBox and width
+     * match $size exactly, with the drawing scaled up to fill it. dompdf's SVG
+     * pipeline rasterises off the viewBox, so a viewBox that matches the pixel
+     * size is the only way it renders the gauge at the intended size rather than
+     * shrinking it inside a reserved box.
      */
     public static function gaugeDataUri(int $score, string $color, int $size = 64): string
     {
@@ -155,12 +161,15 @@ class SvgChart
         $color = self::safeColor($color);
         // r chosen so the circumference is ~100, making the dash length == score.
         $r = 15.915;
+        $scale = round($size / 36, 4);
 
-        $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="'.$size.'" height="'.$size.'">'
+        $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '.$size.' '.$size.'" width="'.$size.'" height="'.$size.'">'
+            .'<g transform="scale('.$scale.')">'
             .'<circle cx="18" cy="18" r="'.$r.'" fill="none" stroke="#ece5d6" stroke-width="3.2"/>'
             .'<circle cx="18" cy="18" r="'.$r.'" fill="none" stroke="'.$color.'" stroke-width="3.2" stroke-linecap="round" '
             .'stroke-dasharray="'.$score.' 100" transform="rotate(-90 18 18)"/>'
-            .'<text x="18" y="21.3" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="'.$color.'">'.$score.'</text>'
+            .'<text x="18" y="21.2" text-anchor="middle" font-family="sans-serif" font-size="9" fill="'.$color.'">'.$score.'</text>'
+            .'</g>'
             .'</svg>';
 
         return 'data:image/svg+xml;base64,'.base64_encode($svg);

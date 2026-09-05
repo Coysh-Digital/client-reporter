@@ -14,6 +14,7 @@
     @if (! $isTitle && ! empty($suffix ?? null))
         @php $sourceLogo = \App\Support\ProviderLogos::dataUri($suffix); @endphp
         <td class="block-heading-source">
+            <span class="block-heading-source-label">Source</span>
             @if ($sourceLogo)
                 <img class="block-heading-source-logo" src="{{ $sourceLogo }}" alt="{{ $suffix }}" title="{{ $suffix }}">
             @else

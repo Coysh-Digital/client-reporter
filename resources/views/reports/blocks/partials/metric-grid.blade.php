@@ -15,7 +15,7 @@
                 $isGood = in_array($change['direction'], ['flat', 'none'], true)
                     ? null
                     : (($change['direction'] === 'up') === ($m['goodUp'] ?? true));
-                $arrow = ['up' => '▲', 'down' => '▼', 'flat' => '■', 'none' => ''][$change['direction']];
+                $arrow = ['up' => '+', 'down' => '-', 'flat' => '', 'none' => ''][$change['direction']];
                 $deltaClass = $isGood === null ? 'delta-flat' : ($isGood ? 'delta-up' : 'delta-down');
                 $value = Format::forType($current, $m['fmt'] ?? 'number', $currency ?? null);
             @endphp
@@ -23,7 +23,7 @@
                 <div class="metric-label">{{ $m['label'] }}</div>
                 <div class="metric-value">{{ $value }}</div>
                 @if ($previous !== null && $change['percent'] !== null)
-                    <div class="delta {{ $deltaClass }}">{{ $arrow }} {{ Format::number(abs($change['percent']), 1) }}% vs prev.</div>
+                    <div class="delta {{ $deltaClass }}">{{ $arrow }}{{ Format::number(abs($change['percent']), 1) }}% vs prev.</div>
                 @elseif ($previous !== null)
                     <div class="delta delta-flat">No change</div>
                 @endif
