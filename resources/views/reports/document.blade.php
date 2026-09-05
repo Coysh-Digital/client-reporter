@@ -63,7 +63,8 @@
         .block-heading-title-cell { padding: 0 0 13px 12px; vertical-align: middle; font-family: {!! $branding->headingFont !!}; font-size: 17.5px; font-weight: 600; letter-spacing: -0.01em; color: #201e1a; }
         .block-title-cell { padding: 0 0 13px 12px; vertical-align: middle; font-family: {!! $branding->headingFont !!}; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; color: #201e1a; }
         .block-heading-source { width: 1%; white-space: nowrap; text-align: right; vertical-align: middle; padding: 0 0 13px 14px; }
-        .block-heading-source-badge { display: inline-block; padding: 3px 11px; border-radius: 999px; background: #f3ecdf; font-size: 11px; font-weight: 600; color: #4a463d; }
+        .block-heading-source-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: #98938a; margin-right: 8px; vertical-align: middle; }
+        .block-heading-source-badge { display: inline-block; padding: 3px 11px; border-radius: 999px; background: #f3ecdf; font-size: 11px; font-weight: 600; color: #4a463d; vertical-align: middle; }
         .block-heading-source-logo { display: inline-block; height: 18px; max-width: 108px; vertical-align: middle; }
         .table-scroll { overflow-x: auto; }
         /* Callouts: an editorial accent bar in a brand colour. */
@@ -104,7 +105,7 @@
         .status-strip { width: 100%; border-collapse: collapse; table-layout: fixed; margin-top: 12px; }
         .status-strip td { padding: 0 1px; }
         .status-cell { display: block; height: 20px; border-radius: 3px; font-size: 0; line-height: 0; }
-        .gauge-ring-img { display: block; width: 110px; height: 110px; margin: 0 auto; }
+        .gauge-ring-img { display: block; margin: 0 auto; }
         .report-footer { text-align: center; color: #9a9384; font-size: 12.5px; margin-top: 22px; line-height: 1.7; }
         .report-footer .footer-name { font-family: {!! $branding->headingFont !!}; font-size: 15px; font-weight: 600; color: #4a463d; display: block; margin-bottom: 4px; }
         a { color: var(--brand-primary); text-decoration: none; }
