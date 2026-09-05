@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Livewire\Auth;
 
+use App\Models\User;
 use App\Support\AuditLogger;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Support\Facades\Auth;
@@ -31,9 +32,14 @@ class Login extends Component
         $this->validate();
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt(['email' => $this->email, 'password' => $this->password], $this->remember)) {
-            RateLimiter::hit($this->throttleKey());
+        // Verify the credentials without logging in yet, so a 2FA-protected
+        // account can be diverted to its second-factor challenge first.
+        $credentials = ['email' => $this->email, 'password' => $this->password];
+        $provider = Auth::getProvider();
+        $user = $provider->retrieveByCredentials($credentials);
 
+        if ($user === null || ! $provider->validateCredentials($user, $credentials)) {
+            RateLimiter::hit($this->throttleKey());
             $audit->log('auth.login.failed', metadata: ['email' => $this->email]);
 
             throw ValidationException::withMessages([
@@ -41,11 +47,9 @@ class Login extends Component
             ]);
         }
 
-        $user = Auth::user();
-
+        /** @var User $user */
         // A deactivated account may still have valid credentials; refuse it.
-        if ($user !== null && ! $user->is_active) {
-            Auth::logout();
+        if (! $user->is_active) {
             $audit->log('auth.login.blocked', $user, metadata: ['reason' => 'inactive']);
 
             throw ValidationException::withMessages([
@@ -54,11 +58,22 @@ class Login extends Component
         }
 
         RateLimiter::clear($this->throttleKey());
+
+        // Second factor required: hand off to the challenge, holding only the
+        // pending user id (never the password) and the remember choice.
+        if ($user->hasTwoFactorEnabled()) {
+            session()->put('auth.two_factor.pending_id', $user->id);
+            session()->put('auth.two_factor.remember', $this->remember);
+
+            return $this->redirectRoute('two-factor.challenge', navigate: true);
+        }
+
+        Auth::login($user, $this->remember);
         session()->regenerate();
 
         $audit->log('auth.login.success', $user);
 
-        $default = $user !== null && $user->isClient()
+        $default = $user->isClient()
             ? route('portal.dashboard', absolute: false)
             : route('dashboard', absolute: false);
 

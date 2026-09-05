@@ -133,6 +133,14 @@
                             </form>
                         @endif
                     </div>
+                    <a href="{{ route('settings.two-factor') }}" wire:navigate
+                       class="mt-1 flex items-center gap-1.5 px-1.5 text-[11.5px] text-muted hover:text-ink">
+                        <x-icon name="shield-check" class="h-3 w-3" />
+                        Security
+                        @if (auth()->user()->hasTwoFactorEnabled())
+                            <span class="ml-auto inline-flex h-1.5 w-1.5 rounded-full" style="background:var(--color-ok);" title="Two-factor enabled"></span>
+                        @endif
+                    </a>
                 </div>
             @endauth
         </aside>
