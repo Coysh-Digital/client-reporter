@@ -4,6 +4,7 @@ declare(strict_types=1);
 use App\Integrations\BetterUptime\BetterUptimeIntegration;
 use App\Integrations\Craft\CraftCommerceIntegration;
 use App\Integrations\Craft\CraftIntegration;
+use App\Integrations\CraftAnalytics\CraftAnalyticsIntegration;
 use App\Integrations\Fathom\FathomIntegration;
 use App\Integrations\FreeAgent\FreeAgentIntegration;
 use App\Integrations\GoogleAds\GoogleAdsIntegration;
@@ -102,6 +103,7 @@ return [
         GoogleAdsIntegration::class,
         PlausibleIntegration::class,
         HonestAnalyticsIntegration::class,
+        CraftAnalyticsIntegration::class,
         FathomIntegration::class,
         MatomoIntegration::class,
         UmamiIntegration::class,
