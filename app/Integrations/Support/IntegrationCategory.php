@@ -13,6 +13,7 @@ enum IntegrationCategory: string
     case Forms = 'forms';
     case Monitoring = 'monitoring';
     case Performance = 'performance';
+    case Downloads = 'downloads';
     case Billing = 'billing';
 
     public function label(): string
@@ -25,6 +26,7 @@ enum IntegrationCategory: string
             self::Forms => 'Forms & Leads',
             self::Monitoring => 'Monitoring',
             self::Performance => 'Performance',
+            self::Downloads => 'Downloads',
             self::Billing => 'Billing',
         };
     }
@@ -36,6 +38,6 @@ enum IntegrationCategory: string
      */
     public static function ordered(): array
     {
-        return [self::Cms, self::Analytics, self::Search, self::Ecommerce, self::Forms, self::Monitoring, self::Performance, self::Billing];
+        return [self::Cms, self::Analytics, self::Search, self::Ecommerce, self::Forms, self::Monitoring, self::Performance, self::Downloads, self::Billing];
     }
 }

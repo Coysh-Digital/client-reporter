@@ -5,6 +5,7 @@ use App\Integrations\BetterUptime\BetterUptimeIntegration;
 use App\Integrations\Craft\CraftCommerceIntegration;
 use App\Integrations\Craft\CraftIntegration;
 use App\Integrations\CraftAnalytics\CraftAnalyticsIntegration;
+use App\Integrations\DownloadTracker\DownloadTrackerIntegration;
 use App\Integrations\Fathom\FathomIntegration;
 use App\Integrations\FreeAgent\FreeAgentIntegration;
 use App\Integrations\GoogleAds\GoogleAdsIntegration;
@@ -110,6 +111,7 @@ return [
         GoogleSearchConsoleIntegration::class,
         WooCommerceIntegration::class,
         CraftCommerceIntegration::class,
+        DownloadTrackerIntegration::class,
         ShopifyIntegration::class,
         StripeIntegration::class,
         FreeAgentIntegration::class,
