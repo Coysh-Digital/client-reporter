@@ -77,9 +77,9 @@
         .metric-tile .metric-label { min-height: 15px; }
         .contents-grid { width: 100%; border-collapse: collapse; margin-top: 4px; table-layout: fixed; }
         .contents-grid td { width: 33.33%; padding: 0 10px 12px 0; vertical-align: top; }
-        .contents-item { display: block; padding: 13px 14px; border: 1px solid #ece5d6; border-radius: 9px; overflow: hidden; }
+        .contents-item { display: block; padding: 12px 14px; border: 1px solid #ece5d6; border-radius: 9px; overflow: hidden; }
         .contents-chip { display: block; float: left; width: 26px; height: 26px; border-radius: 7px; background: var(--brand-primary); padding: 5px; }
-        .contents-label { display: block; margin-left: 36px; padding-top: 4px; font-size: 13.5px; font-weight: 600; color: #211f1b; }
+        .contents-label { display: block; margin-left: 40px; min-height: 26px; padding-top: 4px; font-size: 13.5px; font-weight: 600; line-height: 1.35; color: #211f1b; }
         .commentary { margin-top: 16px; color: #57534a; font-size: 14.5px; line-height: 1.65; }
         .muted { color: #8b857a; }
         .metric-grid { width: 100%; border-collapse: collapse; margin-top: 4px; }
