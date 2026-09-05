@@ -1,12 +1,13 @@
 @php
     use App\Support\Format;
+    use App\Support\ReportLang;
     $countries = $data['countries'] ?? [];
     $total = array_sum(array_map(fn ($c) => (float) ($c['visitors'] ?? 0), $countries));
 @endphp
-@include('reports.blocks.partials.heading', ['text' => $heading ?: 'Top countries', 'icon' => $icon ?? 'globe', 'suffix' => $data['provider'] ?? null])
+@include('reports.blocks.partials.heading', ['text' => $heading ?: ReportLang::get('countries.heading'), 'icon' => $icon ?? 'globe', 'suffix' => $data['provider'] ?? null])
 
 @if (empty($countries))
-    <p class="muted">No country data for this period.</p>
+    <p class="muted">{{ ReportLang::get('countries.empty') }}</p>
 @else
     <table class="bars">
         <tbody>
@@ -16,7 +17,7 @@
                     $pct = $total > 0 ? round($visitors / $total * 100) : 0;
                 @endphp
                 <tr>
-                    <td style="width:34%;color:#211f1b;">{{ $country['label'] ?: 'Unknown' }}</td>
+                    <td style="width:34%;color:#211f1b;">{{ $country['label'] ?: ReportLang::get('common.unknown') }}</td>
                     <td style="padding-left:14px;padding-right:14px;">
                         <span class="bar-track"><span class="bar-fill" style="width:{{ $pct }}%;"></span></span>
                     </td>

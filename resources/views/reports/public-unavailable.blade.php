@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Report unavailable</title>
+    <title>{{ \App\Support\ReportLang::get('public.unavailable.title') }}</title>
     <style>
         body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
             background: #faf9f6; color: #1b1a18; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; }
@@ -14,8 +14,8 @@
 </head>
 <body>
     <div class="box">
-        <h1>This report link is no longer available</h1>
-        <p>The link may have expired or been revoked. Please contact the sender for an up-to-date link.</p>
+        <h1>{{ \App\Support\ReportLang::get('public.unavailable.heading') }}</h1>
+        <p>{{ \App\Support\ReportLang::get('public.unavailable.body') }}</p>
     </div>
 </body>
 </html>

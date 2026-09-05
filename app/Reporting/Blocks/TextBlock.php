@@ -6,6 +6,7 @@ namespace App\Reporting\Blocks;
 
 use App\Reporting\Contracts\BlockType;
 use App\Reporting\Support\BlockContext;
+use App\Support\ReportLang;
 
 class TextBlock extends BlockType
 {
@@ -16,7 +17,7 @@ class TextBlock extends BlockType
 
     public function label(): string
     {
-        return 'Text & commentary';
+        return ReportLang::get('text.label');
     }
 
     public function description(): string

@@ -59,6 +59,54 @@ All three use the same editor, scoped to whichever level you opened it at.
 
 The branding editor shows a **live report-cover preview** that updates as you type — logo, colours, chosen fonts and the selected cover style all show up straight away, so you can see how a client's report cover will look before you save.
 
+## Report wording and translation
+
+Branding covers the *look* of a report; the report's **wording** is editable too. Every fixed word or phrase your clients see on a report — section headings, metric labels, table headers, chart titles, the uptime legend, the auto-written summary sentences, even the "protected report" gateway page — comes from a language file, so you can reword any of it to suit your voice, or translate the whole report into another language, without touching any core file.
+
+### How it works
+
+There are two layers:
+
+- **The shipped defaults** live in `config/report-language.php`. This file is part of Client Reporter and I keep it up to date — **don't edit it to customise wording**, because an update will overwrite your changes. Open it to see every phrase you can change and the key it lives under.
+- **Your overrides** live in `config/report-language.local.php`. This file is **git-ignored**, so it survives updates — it's yours to maintain. It's deep-merged over the defaults: you only put in the keys you actually want to change, and everything else falls back to the shipped wording.
+
+That fallback is the important part: if a future update adds new report text, your override file doesn't go stale. The new text simply shows in the shipped language until you choose to translate it. (The flip side — and this is your responsibility — is that when you *do* want new phrases translated, you'll need to add them to your override file yourself.)
+
+### Setting it up
+
+There's an example to copy:
+
+```bash
+cp config/report-language.local.php.example config/report-language.local.php
+```
+
+Then open `config/report-language.local.php` and add just the keys you want to change, matching the structure in `config/report-language.php`. For example:
+
+```php
+return [
+    'common' => [
+        'source' => 'Data source',
+        'this_period' => 'This month',
+    ],
+    'traffic' => [
+        'heading' => 'Website visitors',
+        'tile' => [
+            'visitors' => 'Unique visitors',
+        ],
+    ],
+    'uptime' => [
+        'legend' => ['below' => 'Below target'],
+    ],
+];
+```
+
+Some phrases contain a `:name` placeholder where a live value is dropped in — for example `":count visitors this period"`. Keep the placeholder in your wording (you can move it around) or the value won't appear.
+
+Edits are read on every render, so they take effect immediately — there's no cache to clear. A couple of things worth knowing:
+
+- **Number and date formatting** (things like `210 ms`, `5m 20s` or `1,240`) isn't part of the language file — that's numeric formatting, not wording.
+- The auto-written **summary sentences** and a handful of metric labels are captured into a report when it's **generated** (the same way branding is frozen — see below). So a wording change shows on reports you generate from then on; regenerate an older report if you want it to pick up the new wording. On-screen section headings and table text update straight away.
+
 ## How branding is frozen into a render
 
 Branding is resolved for a Site by cascading global → client → site, exactly as above. When you **generate** a report, the resolver works out the effective branding and the generator **freezes it into the report render** alongside the block data (see [Reports](../reports/README.md#generation-and-the-frozen-render)).

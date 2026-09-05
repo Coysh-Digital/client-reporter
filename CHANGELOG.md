@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added an editable report language file: every fixed word and phrase on a client-facing report is now customisable (and translatable) via a git-ignored `config/report-language.local.php` that survives updates, deep-merged over the shipped `config/report-language.php` defaults. See [Branding → Report wording and translation](docs/branding/README.md#report-wording-and-translation).
+- Enlarged the Lighthouse score gauges and rendered the gauge and chart-axis numbers in a sans-serif face; report metric deltas now show as `+`/`-` prefixes.
 - Added opt-in weekly, monthly and quarterly report scheduling; `client-reporter:generate-scheduled` auto-generates each scheduled site's report once its period closes, ready to review and send.
 - Added a report-history list and per-site summaries (health, connected integrations, report count, schedule, latest report) plus a reporting totals card to the client page.
 - Added update-safe custom integrations: the git-ignored `extensions/` directory is autoloaded and auto-discovered, and an optional git-ignored `config/client-reporter.local.php` can register classes explicitly.

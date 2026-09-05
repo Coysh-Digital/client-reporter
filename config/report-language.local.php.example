@@ -1,0 +1,51 @@
+<?php
+
+declare(strict_types=1);
+
+/*
+|--------------------------------------------------------------------------
+| Report language override
+|--------------------------------------------------------------------------
+|
+| Copy this file to `config/report-language.local.php` (which is git-ignored)
+| to reword or translate the text that appears on client-facing reports —
+| section headings, metric labels, chart titles, legend text, empty-state
+| sentences — WITHOUT editing any file tracked by the core repository, so your
+| wording survives updates.
+|
+| You only need the keys you want to change. Anything you leave out — including
+| strings added by future updates — falls back to the shipped default in
+| `config/report-language.php`. Open that file to see every available key and
+| its default wording; copy the ones you want to change into the array below.
+|
+| Dynamic values are injected where you see a `:name` placeholder. Keep the
+| placeholder in your wording (you may move it around) or the value will not
+| appear. Example: ":count visitors this period".
+|
+| These changes are read on every render, so edits take effect immediately —
+| no cache to clear.
+|
+*/
+
+return [
+
+    // A few illustrative overrides — delete these and add your own.
+
+    // 'common' => [
+    //     'source' => 'Data source',
+    //     'this_period' => 'This month',
+    //     'previous_period' => 'Last month',
+    // ],
+
+    // 'traffic' => [
+    //     'heading' => 'Website visitors',
+    //     'tile' => [
+    //         'visitors' => 'Unique visitors',
+    //     ],
+    // ],
+
+    // 'uptime' => [
+    //     'incidents_none' => 'No downtime this period.',
+    // ],
+
+];

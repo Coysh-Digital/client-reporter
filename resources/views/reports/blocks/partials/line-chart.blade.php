@@ -25,10 +25,10 @@
                 @if ($hasCompare)
                     <td style="text-align:center;white-space:nowrap;">
                         <span style="display:inline-block;width:14px;border-top:2.5px solid {{ $color }};vertical-align:middle;"></span>
-                        This period
+                        {{ \App\Support\ReportLang::get('common.this_period') }}
                         &nbsp;&nbsp;
                         <span style="display:inline-block;width:14px;border-top:1.75px dashed {{ $color }};opacity:0.45;vertical-align:middle;"></span>
-                        Previous period
+                        {{ \App\Support\ReportLang::get('common.previous_period') }}
                     </td>
                 @endif
                 <td style="text-align:right;">{{ $lastDate }}</td>

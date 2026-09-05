@@ -6,6 +6,7 @@ namespace App\Reporting\Blocks;
 
 use App\Reporting\Contracts\BlockType;
 use App\Reporting\Support\BlockContext;
+use App\Support\ReportLang;
 
 class ClosingBlock extends BlockType
 {
@@ -16,7 +17,7 @@ class ClosingBlock extends BlockType
 
     public function label(): string
     {
-        return 'Closing message';
+        return ReportLang::get('closing.label');
     }
 
     public function description(): string

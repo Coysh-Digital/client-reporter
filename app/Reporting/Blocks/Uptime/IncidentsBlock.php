@@ -8,6 +8,7 @@ use App\Integrations\Support\IntegrationCategory;
 use App\Reporting\Contracts\BlockType;
 use App\Reporting\Support\BlockContext;
 use App\Reporting\Support\BlockOption;
+use App\Support\ReportLang;
 
 /**
  * A client-friendly list of outages during the period, from whichever
@@ -22,7 +23,7 @@ class IncidentsBlock extends BlockType
 
     public function label(): string
     {
-        return 'Incidents';
+        return ReportLang::get('incidents.heading');
     }
 
     public function description(): string

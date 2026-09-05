@@ -6,7 +6,7 @@
 --}}
 @if (! empty($aiSummary))
     <div class="ai-summary">
-        <span class="ai-summary-label">{{ $branding->aiSummaryLabel ?? 'AI summary' }}</span>
+        <span class="ai-summary-label">{{ $branding->aiSummaryLabel ?? \App\Support\ReportLang::get('common.ai_summary_label') }}</span>
         {{ $aiSummary }}
     </div>
 @endif

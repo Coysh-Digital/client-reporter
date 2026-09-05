@@ -9,6 +9,7 @@ use App\Reporting\Contracts\BlockType;
 use App\Reporting\Support\BlockContext;
 use App\Reporting\Support\BlockOption;
 use App\Support\Format;
+use App\Support\ReportLang;
 
 /**
  * Provider-agnostic uptime summary. Reads from whichever monitoring integration
@@ -17,13 +18,21 @@ use App\Support\Format;
  */
 class UptimeSummaryBlock extends BlockType
 {
-    /** key => [metric_key, label, fmt, goodUp] */
-    private const METRICS = [
-        'uptime' => ['uptime.percentage', 'Uptime', 'uptime', true],
-        'incidents' => ['uptime.incidents', 'Incidents', 'number', false],
-        'downtime' => ['uptime.downtime_seconds', 'Downtime', 'duration', false],
-        'response_time' => ['uptime.response_time_ms', 'Avg response', 'ms', false],
-    ];
+    /**
+     * key => [metric_key, label, fmt, goodUp]. A method rather than a const so
+     * the labels can be resolved through the report language dictionary.
+     *
+     * @return array<string, array{0: string, 1: string, 2: string, 3: bool}>
+     */
+    private static function metrics(): array
+    {
+        return [
+            'uptime' => ['uptime.percentage', ReportLang::get('uptime.metric.uptime'), 'uptime', true],
+            'incidents' => ['uptime.incidents', ReportLang::get('uptime.metric.incidents'), 'number', false],
+            'downtime' => ['uptime.downtime_seconds', ReportLang::get('uptime.metric.downtime'), 'duration', false],
+            'response_time' => ['uptime.response_time_ms', ReportLang::get('uptime.metric.avg_response'), 'ms', false],
+        ];
+    }
 
     public function type(): string
     {
@@ -32,7 +41,7 @@ class UptimeSummaryBlock extends BlockType
 
     public function label(): string
     {
-        return 'Uptime summary';
+        return ReportLang::get('uptime_summary.label');
     }
 
     public function description(): string
@@ -103,7 +112,7 @@ class UptimeSummaryBlock extends BlockType
     public function resolve(BlockContext $context): array
     {
         $compare = (bool) $context->block->configValue('compare', true);
-        $selected = (array) $context->block->configValue('metrics', array_keys(self::METRICS));
+        $selected = (array) $context->block->configValue('metrics', array_keys(self::metrics()));
 
         $current = $context->reader->metricsForCategory($context->site, IntegrationCategory::Monitoring, $context->range);
         $previous = $compare && $context->comparison
@@ -116,11 +125,12 @@ class UptimeSummaryBlock extends BlockType
             : [];
 
         $metrics = [];
+        $definitions = self::metrics();
         foreach ($selected as $key) {
-            if (! isset(self::METRICS[$key])) {
+            if (! isset($definitions[$key])) {
                 continue;
             }
-            [$metricKey, $label, $fmt, $goodUp] = self::METRICS[$key];
+            [$metricKey, $label, $fmt, $goodUp] = $definitions[$key];
             $metrics[] = [
                 'label' => $label,
                 'fmt' => $fmt,
@@ -148,18 +158,21 @@ class UptimeSummaryBlock extends BlockType
             return null;
         }
 
-        $sentence = 'The site held '.Format::percent($uptime, 2).' uptime';
+        $sentence = ReportLang::get('uptime.summary.base', ['uptime' => Format::percent($uptime, 2)]);
 
         $response = $current['uptime.response_time_ms']['value'] ?? null;
         if ($response !== null) {
-            $sentence .= ' with an average response time of '.Format::forType($response, 'ms').'.';
+            $sentence .= ReportLang::get('uptime.summary.response', ['response' => Format::forType($response, 'ms')]);
         } else {
-            $sentence .= ' this period.';
+            $sentence .= ReportLang::get('uptime.summary.no_response');
         }
 
         $incidents = (int) ($current['uptime.incidents']['value'] ?? 0);
         if ($incidents > 0) {
-            $sentence .= ' '.$incidents.' '.($incidents === 1 ? 'incident was' : 'incidents were').' detected during the period.';
+            $sentence .= ReportLang::get(
+                $incidents === 1 ? 'uptime.summary.incident_singular' : 'uptime.summary.incident_plural',
+                ['count' => $incidents],
+            );
         }
 
         return $sentence;

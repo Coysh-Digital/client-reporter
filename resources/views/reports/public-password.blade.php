@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Protected report</title>
+    <title>{{ \App\Support\ReportLang::get('public.password.title') }}</title>
     <style>
         body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
             background: #faf9f6; color: #1b1a18; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -18,12 +18,12 @@
 <body>
     <form class="card" method="POST" action="{{ route('public-report.unlock', ['token' => $token]) }}">
         @csrf
-        <h1>This report is protected</h1>
-        <p>Enter the password you were given to view it.</p>
-        <input type="password" name="password" placeholder="Password" autofocus required>
-        <button type="submit">View report</button>
+        <h1>{{ \App\Support\ReportLang::get('public.password.heading') }}</h1>
+        <p>{{ \App\Support\ReportLang::get('public.password.body') }}</p>
+        <input type="password" name="password" placeholder="{{ \App\Support\ReportLang::get('public.password.placeholder') }}" autofocus required>
+        <button type="submit">{{ \App\Support\ReportLang::get('public.password.button') }}</button>
         @if ($failed)
-            <p class="err">That password was not correct.</p>
+            <p class="err">{{ \App\Support\ReportLang::get('public.password.error') }}</p>
         @endif
     </form>
 </body>

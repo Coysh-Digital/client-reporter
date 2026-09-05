@@ -6,6 +6,7 @@ namespace App\Reporting\Blocks\Ai;
 
 use App\Reporting\Contracts\BlockType;
 use App\Reporting\Support\BlockContext;
+use App\Support\ReportLang;
 
 /**
  * A report-level "month in review" roundup, written by AI from the figures of
@@ -25,7 +26,7 @@ class AiSummaryBlock extends BlockType
 
     public function label(): string
     {
-        return 'Month in review';
+        return ReportLang::get('ai_summary.heading');
     }
 
     public function description(): string

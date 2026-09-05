@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Reporting\Support;
 
 use App\Support\Format;
+use App\Support\ReportLang;
 
 /**
  * Builds the short, auto-generated "at a glance" sentence shown at the top of
@@ -34,15 +35,20 @@ class Insight
         $change = Format::change($current, $previous);
 
         if ($change['percent'] === null) {
-            return "{$value} {$noun} this period.";
+            return ReportLang::get('insight.this_period', ['value' => $value, 'noun' => $noun]);
         }
 
         if ($change['direction'] === 'flat') {
-            return "{$value} {$noun}, unchanged from the prior period.";
+            return ReportLang::get('insight.unchanged', ['value' => $value, 'noun' => $noun]);
         }
 
         $pct = Format::number(abs($change['percent']), 1);
 
-        return "{$value} {$noun}, {$change['direction']} {$pct}% from the prior period.";
+        return ReportLang::get('insight.changed', [
+            'value' => $value,
+            'noun' => $noun,
+            'direction' => ReportLang::get('common.direction.'.$change['direction']),
+            'percent' => $pct,
+        ]);
     }
 }

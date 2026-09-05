@@ -6,6 +6,7 @@ namespace App\Reporting\Blocks;
 
 use App\Reporting\Contracts\BlockType;
 use App\Reporting\Support\BlockContext;
+use App\Support\ReportLang;
 
 class CoverBlock extends BlockType
 {
@@ -16,7 +17,7 @@ class CoverBlock extends BlockType
 
     public function label(): string
     {
-        return 'Cover';
+        return ReportLang::get('cover.label');
     }
 
     public function description(): string

@@ -8,6 +8,7 @@ use App\Reporting\Contracts\BlockType;
 use App\Reporting\Support\BlockContext;
 use App\Reporting\Support\BlockOption;
 use App\Support\Format;
+use App\Support\ReportLang;
 
 /**
  * Ad platform performance. Unlike Ecommerce/Uptime/Forms, this is tied to a
@@ -17,13 +18,21 @@ use App\Support\Format;
  */
 class AdsSummaryBlock extends BlockType
 {
-    /** key => [metric_key, label, fmt, goodUp] */
-    private const METRICS = [
-        'spend' => ['ads.spend', 'Spend', 'money', false],
-        'clicks' => ['ads.clicks', 'Clicks', 'number', true],
-        'impressions' => ['ads.impressions', 'Impressions', 'number', true],
-        'conversions' => ['ads.conversions', 'Conversions', 'number', true],
-    ];
+    /**
+     * key => [metric_key, label, fmt, goodUp]. A method rather than a const so
+     * the labels resolve through the report language dictionary.
+     *
+     * @return array<string, array{0: string, 1: string, 2: string, 3: bool}>
+     */
+    private static function metrics(): array
+    {
+        return [
+            'spend' => ['ads.spend', ReportLang::get('ads.metric.spend'), 'money', false],
+            'clicks' => ['ads.clicks', ReportLang::get('ads.metric.clicks'), 'number', true],
+            'impressions' => ['ads.impressions', ReportLang::get('ads.metric.impressions'), 'number', true],
+            'conversions' => ['ads.conversions', ReportLang::get('ads.metric.conversions'), 'number', true],
+        ];
+    }
 
     public function type(): string
     {
@@ -32,7 +41,7 @@ class AdsSummaryBlock extends BlockType
 
     public function label(): string
     {
-        return 'Ad performance';
+        return ReportLang::get('ads.heading');
     }
 
     public function description(): string
@@ -106,7 +115,7 @@ class AdsSummaryBlock extends BlockType
     public function resolve(BlockContext $context): array
     {
         $compare = (bool) $context->block->configValue('compare', true);
-        $selected = (array) $context->block->configValue('metrics', array_keys(self::METRICS));
+        $selected = (array) $context->block->configValue('metrics', array_keys(self::metrics()));
 
         $current = $context->reader->metrics($context->site, 'google_ads', $context->range);
         $previous = $compare && $context->comparison
@@ -116,11 +125,12 @@ class AdsSummaryBlock extends BlockType
         $currency = $snapshot['currency'] ?? ($current['ads.spend']['unit'] ?? null);
 
         $metrics = [];
+        $definitions = self::metrics();
         foreach ($selected as $key) {
-            if (! isset(self::METRICS[$key])) {
+            if (! isset($definitions[$key])) {
                 continue;
             }
-            [$metricKey, $label, $fmt, $goodUp] = self::METRICS[$key];
+            [$metricKey, $label, $fmt, $goodUp] = $definitions[$key];
             $metrics[] = [
                 'label' => $label,
                 'fmt' => $fmt,
@@ -150,7 +160,11 @@ class AdsSummaryBlock extends BlockType
             return null;
         }
 
-        return 'Ads spent '.Format::money($spend, $currency).' for '.Format::number($clicks).' '.((int) $clicks === 1 ? 'click' : 'clicks').' this period.';
+        return ReportLang::get('ads.insight.text', [
+            'spend' => Format::money($spend, $currency),
+            'count' => Format::number($clicks),
+            'noun' => ReportLang::get((int) $clicks === 1 ? 'ads.insight.click' : 'ads.insight.clicks'),
+        ]);
     }
 
     public function icon(): string

@@ -1,9 +1,9 @@
-@php use App\Support\Format; @endphp
+@php use App\Support\Format; use App\Support\ReportLang; @endphp
 
-@include('reports.blocks.partials.heading', ['text' => $heading ?: 'Store performance', 'icon' => $icon ?? 'cart', 'suffix' => $data['provider'] ?? null])
+@include('reports.blocks.partials.heading', ['text' => $heading ?: ReportLang::get('ecommerce.heading'), 'icon' => $icon ?? 'cart', 'suffix' => $data['provider'] ?? null])
 
 @if (! ($data['active'] ?? false) || empty($data['metrics']))
-    <p class="muted">No store was detected on this site for the period.</p>
+    <p class="muted">{{ ReportLang::get('ecommerce.empty') }}</p>
 @else
     @include('reports.blocks.partials.insight', ['insight' => empty($data['ai_summary']) ? ($data['insight'] ?? null) : null])
     @include('reports.blocks.partials.ai-summary', ['aiSummary' => $data['ai_summary'] ?? null])
@@ -19,12 +19,12 @@
         @endphp
         <div class="table-scroll">
             <table class="data" style="margin-top:16px;">
-                <thead><tr><th>Top products</th><th style="width:34%;">Revenue</th><th>Sold</th></tr></thead>
+                <thead><tr><th>{{ ReportLang::get('ecommerce.col.top_products') }}</th><th style="width:34%;">{{ ReportLang::get('ecommerce.col.revenue') }}</th><th>{{ ReportLang::get('ecommerce.col.sold') }}</th></tr></thead>
                 <tbody>
                     @foreach ($data['top_products'] as $product)
                         @php $pct = round((float) ($product['revenue'] ?? 0) / $maxRevenue * 100); @endphp
                         <tr>
-                            <td>{{ $product['name'] ?? 'Product' }}</td>
+                            <td>{{ $product['name'] ?? ReportLang::get('ecommerce.product_fallback') }}</td>
                             <td>
                                 <table class="bars"><tr>
                                     <td style="padding:0;"><span class="bar-track"><span class="bar-fill" style="width:{{ $pct }}%;"></span></span></td>

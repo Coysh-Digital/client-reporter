@@ -8,6 +8,7 @@ use App\Integrations\Support\IntegrationCategory;
 use App\Reporting\Contracts\BlockType;
 use App\Reporting\Support\BlockContext;
 use App\Reporting\Support\BlockOption;
+use App\Support\ReportLang;
 
 class TopDevicesBlock extends BlockType
 {
@@ -18,7 +19,7 @@ class TopDevicesBlock extends BlockType
 
     public function label(): string
     {
-        return 'Top devices';
+        return ReportLang::get('devices.heading');
     }
 
     public function description(): string

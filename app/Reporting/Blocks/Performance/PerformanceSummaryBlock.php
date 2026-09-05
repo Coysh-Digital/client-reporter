@@ -8,6 +8,7 @@ use App\Integrations\Support\IntegrationCategory;
 use App\Reporting\Contracts\BlockType;
 use App\Reporting\Support\BlockContext;
 use App\Reporting\Support\BlockOption;
+use App\Support\ReportLang;
 
 /**
  * Core Web Vitals + performance score for the site, from any performance
@@ -23,7 +24,7 @@ class PerformanceSummaryBlock extends BlockType
 
     public function label(): string
     {
-        return 'Core Web Vitals';
+        return ReportLang::get('performance.heading');
     }
 
     public function description(): string
@@ -97,9 +98,9 @@ class PerformanceSummaryBlock extends BlockType
         $score = $metrics['performance.score']['value'] ?? null;
 
         $vitals = [
-            $this->vital('LCP', 'Largest Contentful Paint', $lcp, $lcp === null ? '—' : round($lcp / 1000, 1).'s', $this->rate($lcp, 2500, 4000)),
-            $this->vital('INP', 'Interaction to Next Paint', $inp, $inp === null ? '—' : round($inp).'ms', $this->rate($inp, 200, 500)),
-            $this->vital('CLS', 'Cumulative Layout Shift', $cls, $cls === null ? '—' : number_format((float) $cls, 2), $this->rate($cls, 0.1, 0.25)),
+            $this->vital(ReportLang::get('performance.vital.lcp.key'), ReportLang::get('performance.vital.lcp.label'), $lcp, $lcp === null ? '—' : round($lcp / 1000, 1).'s', $this->rate($lcp, 2500, 4000)),
+            $this->vital(ReportLang::get('performance.vital.inp.key'), ReportLang::get('performance.vital.inp.label'), $inp, $inp === null ? '—' : round($inp).'ms', $this->rate($inp, 200, 500)),
+            $this->vital(ReportLang::get('performance.vital.cls.key'), ReportLang::get('performance.vital.cls.label'), $cls, $cls === null ? '—' : number_format((float) $cls, 2), $this->rate($cls, 0.1, 0.25)),
         ];
 
         $scoreValue = $score !== null ? (int) round((float) $score) : null;
@@ -126,13 +127,18 @@ class PerformanceSummaryBlock extends BlockType
             return null;
         }
 
-        $rating = $score >= 90 ? 'a good' : ($score >= 50 ? 'a needs-improvement' : 'a poor');
-        $sentence = 'The site scored '.$score.' on performance, '.$rating.' rating.';
+        $rating = $score >= 90
+            ? ReportLang::get('performance.insight.rating_good')
+            : ($score >= 50 ? ReportLang::get('performance.insight.rating_needs') : ReportLang::get('performance.insight.rating_poor'));
+        $sentence = ReportLang::get('performance.insight.base', ['score' => $score, 'rating' => $rating]);
 
         $poor = array_values(array_filter($vitals, fn (array $v): bool => $v['rating'] === 'poor'));
         if ($poor !== []) {
             $labels = implode(' and ', array_map(fn (array $v): string => $v['key'], $poor));
-            $sentence .= ' '.$labels.' '.(count($poor) === 1 ? 'needs' : 'need').' attention.';
+            $sentence .= ReportLang::get(
+                count($poor) === 1 ? 'performance.insight.attention_singular' : 'performance.insight.attention_plural',
+                ['vitals' => $labels],
+            );
         }
 
         return $sentence;

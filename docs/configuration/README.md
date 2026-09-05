@@ -133,6 +133,10 @@ CLIENT_REPORTER_CONNECTOR_TIMESTAMP_TOLERANCE=300
 CLIENT_REPORTER_UPDATE_CHECK=true
 ```
 
+## Report wording
+
+The fixed words and phrases on your client-facing reports live in `config/report-language.php` (the shipped defaults) and can be reworded or translated in a git-ignored `config/report-language.local.php` that survives updates. This is covered in full under [Branding → Report wording and translation](../branding/README.md#report-wording-and-translation).
+
 ## Admin Settings page
 
 Log in as an Administrator and open **Settings** (`/settings`, requires the `manage-settings` permission) to change these at runtime without touching any config files. Whatever you save here overrides the config defaults:

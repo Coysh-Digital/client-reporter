@@ -8,6 +8,7 @@ use App\Integrations\Support\IntegrationCategory;
 use App\Reporting\Contracts\BlockType;
 use App\Reporting\Support\BlockContext;
 use App\Reporting\Support\BlockOption;
+use App\Support\ReportLang;
 
 class TopPagesBlock extends BlockType
 {
@@ -18,7 +19,7 @@ class TopPagesBlock extends BlockType
 
     public function label(): string
     {
-        return 'Top pages';
+        return ReportLang::get('top_pages.heading');
     }
 
     public function description(): string

@@ -1,23 +1,23 @@
-@php use App\Support\Format; @endphp
+@php use App\Support\Format; use App\Support\ReportLang; @endphp
 
-@include('reports.blocks.partials.heading', ['text' => $heading ?: 'Downloads', 'icon' => $icon ?? 'document'])
+@include('reports.blocks.partials.heading', ['text' => $heading ?: ReportLang::get('downloads.heading'), 'icon' => $icon ?? 'document'])
 
 @if (! ($data['has_data'] ?? false))
-    <p class="muted">No download data was collected for this period yet.</p>
+    <p class="muted">{{ ReportLang::get('downloads.empty') }}</p>
 @else
     @include('reports.blocks.partials.insight', ['insight' => empty($data['ai_summary']) ? ($data['insight'] ?? null) : null])
     @include('reports.blocks.partials.ai-summary', ['aiSummary' => $data['ai_summary'] ?? null])
     @include('reports.blocks.partials.metric-grid', ['metrics' => $data['tiles']])
 
     @if (! empty($data['timeseries']))
-        <div class="mini-bars-title" style="margin-top:22px;">Downloads over time</div>
+        <div class="mini-bars-title" style="margin-top:22px;">{{ ReportLang::get('downloads.over_time') }}</div>
         @include('reports.blocks.partials.line-chart', ['series' => $data['timeseries'], 'color' => $branding->primaryColor, 'chartHeight' => 120])
     @endif
 
     @if (! empty($data['top_files']))
         <div class="table-scroll">
             <table class="data" style="margin-top:16px;">
-                <thead><tr><th>Top files</th><th>Downloads</th></tr></thead>
+                <thead><tr><th>{{ ReportLang::get('downloads.col.top_files') }}</th><th>{{ ReportLang::get('downloads.col.downloads') }}</th></tr></thead>
                 <tbody>
                     @foreach ($data['top_files'] as $file)
                         <tr>

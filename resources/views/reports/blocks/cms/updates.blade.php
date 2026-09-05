@@ -1,6 +1,7 @@
-@include('reports.blocks.partials.heading', ['text' => $heading ?: 'Updates', 'icon' => $icon ?? 'wrench'])
+@include('reports.blocks.partials.heading', ['text' => $heading ?: \App\Support\ReportLang::get('cms_updates.heading'), 'icon' => $icon ?? 'wrench'])
 
 @php
+    use App\Support\ReportLang;
     $core = (bool) ($data['core_update'] ?? false);
     $pluginCount = (int) ($data['plugin_updates'] ?? 0);
     $themeCount = (int) ($data['theme_updates'] ?? 0);
@@ -11,21 +12,21 @@
 
     // Lead with the maintenance story: what we applied this period.
     if ($appliedTotal > 0) {
-        $insight = 'We applied '.$appliedTotal.' '.($appliedTotal === 1 ? 'update' : 'updates').' this period to keep the site current and secure.';
+        $insight = ReportLang::get($appliedTotal === 1 ? 'cms_updates.insight.applied_singular' : 'cms_updates.insight.applied_plural', ['count' => $appliedTotal]);
     } elseif ($total === 0) {
-        $insight = 'No updates were needed this period — the site is fully up to date.';
+        $insight = ReportLang::get('cms_updates.insight.none');
     } else {
-        $insight = 'No updates were applied this period. '.$total.' '.($total === 1 ? 'update is' : 'updates are').' currently pending.';
+        $insight = ReportLang::get($total === 1 ? 'cms_updates.insight.pending_singular' : 'cms_updates.insight.pending_plural', ['count' => $total]);
     }
 @endphp
 
 @include('reports.blocks.partials.insight', ['insight' => $insight])
 
 @if ($appliedTotal > 0)
-    <div class="mini-bars-title" style="margin-top:18px;">Applied this period</div>
+    <div class="mini-bars-title" style="margin-top:18px;">{{ ReportLang::get('cms_updates.applied_heading') }}</div>
     <div class="table-scroll">
         <table class="data" style="margin-top:8px;">
-            <thead><tr><th>Item</th><th>Type</th><th>Version</th><th>Date</th></tr></thead>
+            <thead><tr><th>{{ ReportLang::get('cms_updates.applied.col.item') }}</th><th>{{ ReportLang::get('cms_updates.applied.col.type') }}</th><th>{{ ReportLang::get('cms_updates.applied.col.version') }}</th><th>{{ ReportLang::get('cms_updates.applied.col.date') }}</th></tr></thead>
             <tbody>
                 @foreach ($applied as $item)
                     <tr>
@@ -41,24 +42,24 @@
 @endif
 
 @if ($total > 0)
-    <div class="mini-bars-title" style="margin-top:18px;">Currently pending</div>
+    <div class="mini-bars-title" style="margin-top:18px;">{{ ReportLang::get('cms_updates.pending_heading') }}</div>
 @endif
 
 @if ($total > 0)
     <p style="margin-bottom:10px;">
-        @if ($data['core_update']) <span class="pill" style="background:#f7efe1;color:#a4712a;">Core update available</span> @endif
-        @if (($data['plugin_updates'] ?? 0) > 0) <span class="pill" style="background:#f7efe1;color:#a4712a;">{{ $data['plugin_updates'] }} plugin update{{ $data['plugin_updates'] === 1 ? '' : 's' }}</span> @endif
-        @if (($data['theme_updates'] ?? 0) > 0) <span class="pill" style="background:#f7efe1;color:#a4712a;">{{ $data['theme_updates'] }} theme update{{ $data['theme_updates'] === 1 ? '' : 's' }}</span> @endif
+        @if ($data['core_update']) <span class="pill" style="background:#f7efe1;color:#a4712a;">{{ ReportLang::get('cms_updates.pill.core') }}</span> @endif
+        @if (($data['plugin_updates'] ?? 0) > 0) <span class="pill" style="background:#f7efe1;color:#a4712a;">{{ ReportLang::get($data['plugin_updates'] === 1 ? 'cms_updates.pill.plugins_singular' : 'cms_updates.pill.plugins_plural', ['count' => $data['plugin_updates']]) }}</span> @endif
+        @if (($data['theme_updates'] ?? 0) > 0) <span class="pill" style="background:#f7efe1;color:#a4712a;">{{ ReportLang::get($data['theme_updates'] === 1 ? 'cms_updates.pill.themes_singular' : 'cms_updates.pill.themes_plural', ['count' => $data['theme_updates']]) }}</span> @endif
     </p>
 
     @if (! empty($data['plugin_updates_list']))
         <div class="table-scroll">
             <table class="data">
-                <thead><tr><th>Plugin</th><th>Installed</th><th>Available</th></tr></thead>
+                <thead><tr><th>{{ ReportLang::get('cms_updates.plugins.col.plugin') }}</th><th>{{ ReportLang::get('cms_updates.plugins.col.installed') }}</th><th>{{ ReportLang::get('cms_updates.plugins.col.available') }}</th></tr></thead>
                 <tbody>
                     @foreach ($data['plugin_updates_list'] as $plugin)
                         <tr>
-                            <td>{{ $plugin['name'] ?? 'Plugin' }}</td>
+                            <td>{{ $plugin['name'] ?? ReportLang::get('cms_updates.plugin_fallback') }}</td>
                             <td class="muted">{{ $plugin['current'] ?? '—' }}</td>
                             <td>{{ $plugin['available'] ?? '—' }}</td>
                         </tr>
@@ -67,7 +68,7 @@
             </table>
         </div>
     @endif
-    <p class="muted" style="margin-top:8px; font-size:13px;">These updates are reported for your awareness. We apply them as part of your care plan.</p>
+    <p class="muted" style="margin-top:8px; font-size:13px;">{{ ReportLang::get('cms_updates.care_note') }}</p>
 @endif
 
 @if ($commentary)

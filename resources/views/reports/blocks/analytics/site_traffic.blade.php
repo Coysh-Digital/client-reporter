@@ -1,8 +1,8 @@
-@php use App\Support\Format; @endphp
-@include('reports.blocks.partials.heading', ['text' => $heading ?: 'Site traffic', 'icon' => $icon ?? 'chart', 'suffix' => $data['provider'] ?? null])
+@php use App\Support\Format; use App\Support\ReportLang; @endphp
+@include('reports.blocks.partials.heading', ['text' => $heading ?: ReportLang::get('traffic.heading'), 'icon' => $icon ?? 'chart', 'suffix' => $data['provider'] ?? null])
 
 @if (! ($data['has_data'] ?? false) || empty($data['tiles']))
-    <p class="muted">No analytics data was collected for this period yet.</p>
+    <p class="muted">{{ ReportLang::get('common.empty.analytics') }}</p>
 @else
     @include('reports.blocks.partials.insight', ['insight' => empty($data['ai_summary']) ? ($data['summary'] ?? null) : null])
     @include('reports.blocks.partials.ai-summary', ['aiSummary' => $data['ai_summary'] ?? null])
@@ -35,12 +35,12 @@
     </table>
 
     @if (($data['bounce_rate'] ?? null) !== null)
-        <p class="muted" style="font-size:13px;margin:12px 0 0;">Avg bounce rate {{ Format::percent($data['bounce_rate'], 1) }}</p>
+        <p class="muted" style="font-size:13px;margin:12px 0 0;">{{ ReportLang::get('traffic.bounce_rate_label', ['rate' => Format::percent($data['bounce_rate'], 1)]) }}</p>
     @endif
 
     {{-- Visitors over time --}}
     @if (! empty($data['timeseries']))
-        <div class="mini-bars-title" style="margin-top:24px;">Visitors over time</div>
+        <div class="mini-bars-title" style="margin-top:24px;">{{ ReportLang::get('traffic.visitors_over_time') }}</div>
         @include('reports.blocks.partials.line-chart', ['series' => $data['timeseries'], 'compareSeries' => $data['timeseries_previous'] ?? [], 'color' => $branding->primaryColor, 'chartHeight' => 150])
     @endif
 
@@ -49,26 +49,26 @@
         <tr>
             <td style="width:25%;padding-right:18px;vertical-align:top;">
                 @include('reports.blocks.partials.mini-bars', [
-                    'title' => 'Top pages',
-                    'unit' => 'pv',
+                    'title' => ReportLang::get('traffic.mini.top_pages'),
+                    'unit' => ReportLang::get('traffic.mini.unit_pageviews'),
                     'items' => array_map(fn ($p) => ['label' => $p['label'] ?? '', 'value' => $p['pageviews'] ?? 0], $data['top_pages'] ?? []),
                 ])
             </td>
             <td style="width:25%;padding-right:18px;vertical-align:top;">
                 @include('reports.blocks.partials.mini-bars', [
-                    'title' => 'Top referrers',
+                    'title' => ReportLang::get('traffic.mini.top_referrers'),
                     'items' => array_map(fn ($s) => ['label' => $s['label'] ?? '', 'value' => $s['visitors'] ?? 0], $data['sources'] ?? []),
                 ])
             </td>
             <td style="width:25%;padding-right:18px;vertical-align:top;">
                 @include('reports.blocks.partials.mini-bars', [
-                    'title' => 'Top countries',
+                    'title' => ReportLang::get('traffic.mini.top_countries'),
                     'items' => array_map(fn ($c) => ['label' => $c['label'] ?? '', 'value' => $c['visitors'] ?? 0], $data['countries'] ?? []),
                 ])
             </td>
             <td style="width:25%;vertical-align:top;">
                 @include('reports.blocks.partials.mini-bars', [
-                    'title' => 'Top devices',
+                    'title' => ReportLang::get('traffic.mini.top_devices'),
                     'items' => array_map(fn ($d) => ['label' => $d['label'] ?? '', 'value' => $d['visitors'] ?? 0], $data['devices'] ?? []),
                 ])
             </td>
@@ -76,7 +76,7 @@
     </table>
 
     @if (empty($data['events']))
-        <p class="muted" style="font-size:12.5px;margin-top:20px;">No custom events recorded for this analytics property in this period.</p>
+        <p class="muted" style="font-size:12.5px;margin-top:20px;">{{ ReportLang::get('common.empty.events') }}</p>
     @endif
 @endif
 

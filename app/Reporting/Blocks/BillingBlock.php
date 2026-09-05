@@ -12,6 +12,7 @@ use App\Reporting\Support\BlockContext;
 use App\Reporting\Support\BlockOption;
 use App\Reporting\Support\Insight;
 use App\Support\Format;
+use App\Support\ReportLang;
 
 /**
  * The agency's own billing of the client for the period — manually entered
@@ -28,7 +29,7 @@ class BillingBlock extends BlockType
 
     public function label(): string
     {
-        return 'Billing & invoices';
+        return ReportLang::get('billing.heading');
     }
 
     public function description(): string
@@ -86,15 +87,15 @@ class BillingBlock extends BlockType
             'has_data' => $invoices->isNotEmpty(),
             'currency' => $currency,
             'metrics' => [
-                ['label' => 'Invoiced', 'fmt' => 'money', 'goodUp' => true, 'current' => $totalInvoiced, 'previous' => $previousTotal],
-                ['label' => 'Paid', 'fmt' => 'money', 'goodUp' => true, 'current' => $totalPaid, 'previous' => null],
-                ['label' => 'Outstanding', 'fmt' => 'money', 'goodUp' => false, 'current' => $totalOutstanding, 'previous' => null],
-                ['label' => 'Overdue', 'fmt' => 'number', 'goodUp' => false, 'current' => (float) $overdueCount, 'previous' => null],
+                ['label' => ReportLang::get('billing.metric.invoiced'), 'fmt' => 'money', 'goodUp' => true, 'current' => $totalInvoiced, 'previous' => $previousTotal],
+                ['label' => ReportLang::get('billing.metric.paid'), 'fmt' => 'money', 'goodUp' => true, 'current' => $totalPaid, 'previous' => null],
+                ['label' => ReportLang::get('billing.metric.outstanding'), 'fmt' => 'money', 'goodUp' => false, 'current' => $totalOutstanding, 'previous' => null],
+                ['label' => ReportLang::get('billing.metric.overdue'), 'fmt' => 'number', 'goodUp' => false, 'current' => (float) $overdueCount, 'previous' => null],
             ],
             'invoices' => $invoices->map(fn ($invoice): array => [
                 'number' => $invoice->number,
                 'description' => $invoice->description,
-                'status' => $invoice->isOverdue() ? 'Overdue' : $invoice->status->label(),
+                'status' => $invoice->isOverdue() ? ReportLang::get('billing.status.overdue') : $invoice->status->label(),
                 'issued_at' => $invoice->issued_at->format('d M Y'),
                 'amount' => (float) $invoice->amount,
             ])->all(),
@@ -109,11 +110,14 @@ class BillingBlock extends BlockType
         }
 
         $sentence = $previous !== null
-            ? Insight::headline('invoiced', $total, $previous, 'money', $currency)
-            : Format::money($total, $currency).' invoiced this period.';
+            ? Insight::headline(ReportLang::get('billing.insight_noun'), $total, $previous, 'money', $currency)
+            : ReportLang::get('billing.insight.no_compare', ['total' => Format::money($total, $currency)]);
 
         if ($overdueCount > 0) {
-            $sentence .= ' '.$overdueCount.' '.($overdueCount === 1 ? 'invoice is' : 'invoices are').' overdue.';
+            $sentence .= ReportLang::get(
+                $overdueCount === 1 ? 'billing.insight.overdue_singular' : 'billing.insight.overdue_plural',
+                ['count' => $overdueCount],
+            );
         }
 
         return $sentence;

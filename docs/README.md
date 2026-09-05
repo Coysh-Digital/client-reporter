@@ -14,7 +14,7 @@ Hello, and welcome to the docs. Client Reporter is open-source, self-hosted clie
 ## Using Client Reporter
 
 - [Reports](reports/README.md) — building, scheduling and sharing client reports.
-- [Branding](branding/README.md) — fully white-labelling your client-facing reports.
+- [Branding](branding/README.md) — fully white-labelling your client-facing reports, and [editing or translating the report wording](branding/README.md#report-wording-and-translation).
 
 ## Integrations
 
