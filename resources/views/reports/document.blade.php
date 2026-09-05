@@ -51,25 +51,28 @@
             box-shadow: 0 20px 60px -24px rgba(40, 34, 20, .28), 0 2px 8px rgba(40, 34, 20, .05);
         }
         h1, h2, h3 { font-family: {!! $branding->headingFont !!}; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
-        .block { padding: 32px 44px; border-top: 1px solid #efe8da; }
+        .block { padding: 34px 46px; border-top: 1px solid #ede6d8; }
         .block:first-child { border-top: 0; }
         /* Gently marks the section the builder preview just scrolled to. */
         .block:target { box-shadow: inset 3px 0 0 var(--brand-primary); }
-        .block-heading-row { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
-        .block-heading { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.09em; color: var(--brand-secondary); overflow: hidden; }
-        .block-heading-icon { display: block; float: left; width: 20px; height: 20px; margin-top: -2px; }
-        .block-heading-body { display: block; margin-left: 26px; padding-top: 2px; }
-        .block-heading-source { width: 1%; white-space: nowrap; text-align: right; vertical-align: top; padding-left: 14px; }
+        /* Section header: a brand icon chip + title, shared by every block. */
+        .block-heading-row { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
+        .block-heading { overflow: hidden; vertical-align: middle; }
+        .block-heading-chip { display: block; float: left; width: 30px; height: 30px; border-radius: 8px; background: var(--brand-primary); padding: 5px; }
+        .block-heading-title { display: block; margin-left: 42px; padding-top: 5px; font-family: {!! $branding->headingFont !!}; font-size: 16px; font-weight: 600; letter-spacing: -0.01em; color: #201e1a; }
+        .block-heading-source { width: 1%; white-space: nowrap; text-align: right; vertical-align: middle; padding-left: 14px; }
         .block-heading-source-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: #98938a; }
-        .block-heading-source-badge { display: inline-block; margin-left: 6px; padding: 2px 10px; border-radius: 999px; background: #f3ecdf; font-size: 11px; font-weight: 600; color: #4a463d; }
-        .block-title { font-size: 20px; margin: 0 0 10px; overflow: hidden; }
-        .block-title-icon { display: block; float: left; width: 22px; height: 22px; margin-top: -1px; }
-        .block-title-body { display: block; margin-left: 30px; }
+        .block-heading-source-badge { display: inline-block; margin-left: 6px; padding: 3px 11px; border-radius: 999px; background: #f3ecdf; font-size: 11px; font-weight: 600; color: #4a463d; }
+        .block-title { font-size: 22px; margin: 0 0 12px; overflow: hidden; }
+        .block-title-body { display: block; margin-left: 42px; padding-top: 3px; }
         .table-scroll { overflow-x: auto; }
-        .insight { background: #f8f4e8; border: 1px solid #ece2c8; border-radius: 6px; padding: 12px 16px; margin: -4px 0 20px; font-size: 13.5px; line-height: 1.6; color: #4a4638; }
-        .insight-label { display: block; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--brand-secondary); margin-bottom: 4px; }
-        .ai-summary { background: #faf4ee; border: 1px solid #f0e2d2; border-radius: 6px; padding: 12px 16px; margin: -4px 0 20px; font-size: 13.5px; line-height: 1.6; color: #4a4638; }
-        .ai-summary-label { display: block; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--brand-primary); margin-bottom: 4px; }
+        /* Callouts: an editorial accent bar in a brand colour. */
+        .insight { background: #faf7ef; border: 1px solid #efe7d3; border-left: 3px solid var(--brand-secondary); border-radius: 7px; padding: 12px 16px 12px 18px; margin: 0 0 20px; font-size: 13.5px; line-height: 1.6; color: #4a4638; }
+        .insight-label { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--brand-secondary); margin-bottom: 4px; }
+        .ai-summary { background: #faf7ef; border: 1px solid #ece5da; border-left: 3px solid var(--brand-primary); border-radius: 7px; padding: 12px 16px 12px 18px; margin: 0 0 20px; font-size: 13.5px; line-height: 1.6; color: #4a4638; }
+        .ai-summary-label { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--brand-primary); margin-bottom: 4px; }
+        /* Headline metric tile, shared by the consolidated blocks. */
+        .metric-tile { border: 1px solid #ece5d6; border-top: 2px solid var(--brand-primary); border-radius: 9px; padding: 13px 15px; background: #fffdfa; }
         .contents-grid { width: 100%; border-collapse: collapse; margin-top: 4px; table-layout: fixed; }
         .contents-grid td { width: 33.33%; padding: 0 10px 12px 0; vertical-align: top; }
         .contents-item { display: block; padding: 14px 12px; border: 1px solid #efe8da; border-radius: 6px; overflow: hidden; }
