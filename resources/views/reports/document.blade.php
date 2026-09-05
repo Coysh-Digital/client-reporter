@@ -71,13 +71,15 @@
         .insight-label { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--brand-secondary); margin-bottom: 4px; }
         .ai-summary { background: #faf7ef; border: 1px solid #ece5da; border-left: 3px solid var(--brand-primary); border-radius: 7px; padding: 12px 16px 12px 18px; margin: 0 0 20px; font-size: 13.5px; line-height: 1.6; color: #4a4638; }
         .ai-summary-label { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--brand-primary); margin-bottom: 4px; }
-        /* Headline metric tile, shared by the consolidated blocks. */
-        .metric-tile { border: 1px solid #ece5d6; border-top: 2px solid var(--brand-primary); border-radius: 9px; padding: 13px 15px; background: #fffdfa; }
+        /* Headline metric tile, shared by the consolidated blocks. A min-height
+           keeps a row of tiles level even when one label wraps. */
+        .metric-tile { border: 1px solid #ece5d6; border-top: 2px solid var(--brand-primary); border-radius: 9px; padding: 13px 15px; background: #fffdfa; min-height: 84px; }
+        .metric-tile .metric-label { min-height: 15px; }
         .contents-grid { width: 100%; border-collapse: collapse; margin-top: 4px; table-layout: fixed; }
         .contents-grid td { width: 33.33%; padding: 0 10px 12px 0; vertical-align: top; }
-        .contents-item { display: block; padding: 14px 12px; border: 1px solid #efe8da; border-radius: 6px; overflow: hidden; }
-        .contents-icon { display: block; float: left; width: 20px; height: 20px; }
-        .contents-label { display: block; margin-left: 30px; padding-top: 1px; font-size: 13.5px; font-weight: 600; color: #211f1b; }
+        .contents-item { display: block; padding: 13px 14px; border: 1px solid #ece5d6; border-radius: 9px; overflow: hidden; }
+        .contents-chip { display: block; float: left; width: 26px; height: 26px; border-radius: 7px; background: var(--brand-primary); padding: 5px; }
+        .contents-label { display: block; margin-left: 36px; padding-top: 4px; font-size: 13.5px; font-weight: 600; color: #211f1b; }
         .commentary { margin-top: 16px; color: #57534a; font-size: 14.5px; line-height: 1.65; }
         .muted { color: #8b857a; }
         .metric-grid { width: 100%; border-collapse: collapse; margin-top: 4px; }
