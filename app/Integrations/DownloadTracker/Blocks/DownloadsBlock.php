@@ -37,7 +37,7 @@ class DownloadsBlock extends BlockType
 
     public function icon(): string
     {
-        return 'document';
+        return 'download';
     }
 
     public function requiresIntegration(): ?string

@@ -55,16 +55,16 @@
         .block:first-child { border-top: 0; }
         /* Gently marks the section the builder preview just scrolled to. */
         .block:target { box-shadow: inset 3px 0 0 var(--brand-primary); }
-        /* Section header: a brand icon chip + title, shared by every block. */
+        /* Section header: a brand icon chip + title, laid out as a table (no
+           floats) so it survives PDF page breaks. Shared by every block. */
         .block-heading-row { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
-        .block-heading { overflow: hidden; vertical-align: middle; }
-        .block-heading-chip { display: block; float: left; width: 30px; height: 30px; border-radius: 8px; background: var(--brand-primary); padding: 5px; }
-        .block-heading-title { display: block; margin-left: 42px; padding-top: 5px; font-family: {!! $branding->headingFont !!}; font-size: 16px; font-weight: 600; letter-spacing: -0.01em; color: #201e1a; }
+        .block-heading-chip-cell { width: 30px; padding: 0; vertical-align: middle; }
+        .block-heading-chip { display: block; width: 30px; height: 30px; border-radius: 8px; background: var(--brand-primary); padding: 5px; }
+        .block-heading-title-cell { padding: 0 0 0 12px; vertical-align: middle; font-family: {!! $branding->headingFont !!}; font-size: 16px; font-weight: 600; letter-spacing: -0.01em; color: #201e1a; }
+        .block-title-cell { padding: 0 0 0 12px; vertical-align: middle; font-family: {!! $branding->headingFont !!}; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; color: #201e1a; }
         .block-heading-source { width: 1%; white-space: nowrap; text-align: right; vertical-align: middle; padding-left: 14px; }
         .block-heading-source-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: #98938a; }
         .block-heading-source-badge { display: inline-block; margin-left: 6px; padding: 3px 11px; border-radius: 999px; background: #f3ecdf; font-size: 11px; font-weight: 600; color: #4a463d; }
-        .block-title { font-size: 22px; margin: 0 0 12px; overflow: hidden; }
-        .block-title-body { display: block; margin-left: 42px; padding-top: 3px; }
         .table-scroll { overflow-x: auto; }
         /* Callouts: an editorial accent bar in a brand colour. */
         .insight { background: #faf7ef; border: 1px solid #efe7d3; border-left: 3px solid var(--brand-secondary); border-radius: 7px; padding: 12px 16px 12px 18px; margin: 0 0 20px; font-size: 13.5px; line-height: 1.6; color: #4a4638; }
