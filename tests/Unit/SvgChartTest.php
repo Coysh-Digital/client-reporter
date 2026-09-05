@@ -52,6 +52,20 @@ class SvgChartTest extends TestCase
         $this->assertSame(2, substr_count($withCompare, '<polyline'));
     }
 
+    public function test_gauge_encodes_the_score_as_an_arc_and_clamps_range(): void
+    {
+        $uri = SvgChart::gaugeDataUri(83, '#12695e');
+        $svg = base64_decode(substr($uri, strlen('data:image/svg+xml;base64,')));
+
+        $this->assertStringStartsWith('data:image/svg+xml;base64,', $uri);
+        $this->assertStringContainsString('stroke-dasharray="83 100"', $svg);
+        $this->assertStringContainsString('#12695e', $svg);
+
+        // Out-of-range scores are clamped to 0..100.
+        $over = base64_decode(substr(SvgChart::gaugeDataUri(140, '#12695e'), strlen('data:image/svg+xml;base64,')));
+        $this->assertStringContainsString('stroke-dasharray="100 100"', $over);
+    }
+
     public function test_a_non_hex_colour_falls_back_safely(): void
     {
         // Guards against anything but a #hex colour reaching the SVG markup.

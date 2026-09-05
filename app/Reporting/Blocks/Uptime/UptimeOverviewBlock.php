@@ -123,8 +123,8 @@ class UptimeOverviewBlock extends BlockType
         ];
 
         $tiles = [
-            $tile('uptime.percentage', 'Avg uptime', 'uptime', true),
-            $tile('uptime.response_time_ms', 'Avg response', 'ms', false),
+            $tile('uptime.percentage', 'Uptime', 'uptime', true),
+            $tile('uptime.response_time_ms', 'Response', 'ms', false),
             $tile('uptime.incidents', 'Incidents', 'number', false),
             $tile('uptime.downtime_seconds', 'Downtime', 'duration', false),
         ];
