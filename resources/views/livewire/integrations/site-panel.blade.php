@@ -39,6 +39,14 @@
                                             </div>
                                         @endforeach
                                     </div>
+                                    @if (($insight['line'] ?? null) && count($insight['line']['data']) > 1)
+                                        <div class="mt-3 max-w-md" wire:ignore>
+                                            <p class="mb-1 text-[11px] text-faint">{{ $insight['line']['label'] }}</p>
+                                            <div class="h-40" x-data="crLineChart(@js($insight['line']))">
+                                                <canvas x-ref="canvas"></canvas>
+                                            </div>
+                                        </div>
+                                    @endif
                                     <div class="mt-3 max-w-md" wire:ignore>
                                         <p class="mb-1 text-[11px] text-faint">{{ $insight['chart']['label'] }} · by period</p>
                                         <div class="h-40" x-data="crBarChart(@js($insight['chart']))">

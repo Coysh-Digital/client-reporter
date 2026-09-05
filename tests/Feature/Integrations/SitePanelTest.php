@@ -7,6 +7,7 @@ namespace Tests\Feature\Integrations;
 use App\Enums\ConnectionStatus;
 use App\Livewire\Integrations\SitePanel;
 use App\Models\Metric;
+use App\Models\MetricSnapshot;
 use App\Models\Site;
 use App\Models\SiteIntegration;
 use App\Models\User;
@@ -68,6 +69,64 @@ class SitePanelTest extends TestCase
         $this->assertSame('Visitors', $insight['chart']['label']);
         $this->assertSame(['Aug 2026', 'Sep 2026'], $insight['chart']['labels']);
         $this->assertSame([4000.0, 5200.0], $insight['chart']['data']);
+    }
+
+    public function test_panel_charts_the_daily_timeseries_as_a_line(): void
+    {
+        $manager = User::factory()->manager()->create();
+        $site = Site::factory()->create();
+        $connection = SiteIntegration::factory()->create(['site_id' => $site->id]);
+
+        Metric::query()->create([
+            'site_integration_id' => $connection->id,
+            'metric_key' => 'analytics.visitors',
+            'period_start' => '2026-09-01',
+            'period_end' => '2026-09-30',
+            'value' => 5200.0,
+            'captured_at' => now(),
+        ]);
+
+        MetricSnapshot::query()->create([
+            'site_integration_id' => $connection->id,
+            'collector_key' => 'summary',
+            'period_start' => '2026-09-01',
+            'period_end' => '2026-09-30',
+            'granularity' => 'range',
+            'payload' => ['timeseries' => [
+                ['date' => '2026-09-01', 'value' => 120],
+                ['date' => '2026-09-02', 'value' => 180],
+                ['date' => '2026-09-03', 'value' => 150],
+            ]],
+            'captured_at' => now(),
+        ]);
+
+        $component = Livewire::actingAs($manager)->test(SitePanel::class, ['site' => $site]);
+        $line = $component->viewData('insights')[$connection->id]['line'];
+
+        $this->assertSame('Visitors per day', $line['label']);
+        $this->assertSame(['2026-09-01', '2026-09-02', '2026-09-03'], $line['labels']);
+        $this->assertSame([120.0, 180.0, 150.0], $line['data']);
+        $component->assertSee('crLineChart', false);
+    }
+
+    public function test_daily_line_is_absent_without_a_timeseries_snapshot(): void
+    {
+        $manager = User::factory()->manager()->create();
+        $site = Site::factory()->create();
+        $connection = SiteIntegration::factory()->create(['site_id' => $site->id]);
+
+        Metric::query()->create([
+            'site_integration_id' => $connection->id,
+            'metric_key' => 'analytics.visitors',
+            'period_start' => '2026-09-01',
+            'period_end' => '2026-09-30',
+            'value' => 5200.0,
+            'captured_at' => now(),
+        ]);
+
+        $component = Livewire::actingAs($manager)->test(SitePanel::class, ['site' => $site]);
+
+        $this->assertNull($component->viewData('insights')[$connection->id]['line']);
     }
 
     public function test_connect_list_hides_connected_workspace_and_workspace_only_services(): void

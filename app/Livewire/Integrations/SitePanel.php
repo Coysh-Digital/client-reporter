@@ -8,6 +8,7 @@ use App\Integrations\Contracts\Integration;
 use App\Integrations\IntegrationRegistry;
 use App\Jobs\RunConnectorCollection;
 use App\Models\Metric;
+use App\Models\MetricSnapshot;
 use App\Models\Site;
 use App\Models\SiteIntegration;
 use App\Models\WorkspaceIntegration;
@@ -97,10 +98,11 @@ class SitePanel extends Component
     }
 
     /**
-     * A compact snapshot for one connection: its latest-period metrics as chips
-     * plus a headline metric charted across every period collected so far.
+     * A compact snapshot for one connection: its latest-period metrics as chips,
+     * a headline metric charted across every period collected so far, and — when
+     * the provider reports per-day history — a daily line chart of that trend.
      *
-     * @return array{chips: array<int, array{label: string, value: string}>, chart: array{label: string, labels: array<int, string>, data: array<int, float>}}|null
+     * @return array{chips: array<int, array{label: string, value: string}>, chart: array{label: string, labels: array<int, string>, data: array<int, float>}, line: array{label: string, labels: array<int, string>, data: array<int, float>}|null}|null
      */
     private function insightFor(SiteIntegration $connection): ?array
     {
@@ -128,7 +130,51 @@ class SitePanel extends Component
                 'labels' => $series->map(fn (Metric $metric): string => $metric->period_start->format('M Y'))->all(),
                 'data' => $series->map(fn (Metric $metric): float => round($metric->value, 2))->all(),
             ],
+            'line' => $this->dailyLineFor($connection),
         ];
+    }
+
+    /**
+     * A daily line chart from the connection's most recent snapshot that carries
+     * a per-day timeseries (analytics visitors, uptime, Lighthouse score, search
+     * clicks, store revenue…), or null when the provider reports no daily data.
+     *
+     * @return array{label: string, labels: array<int, string>, data: array<int, float>}|null
+     */
+    private function dailyLineFor(SiteIntegration $connection): ?array
+    {
+        $snapshot = $connection->snapshots()
+            ->orderByDesc('period_start')
+            ->get()
+            ->first(fn (MetricSnapshot $s): bool => ! empty($s->payload['timeseries'] ?? []));
+
+        if ($snapshot === null) {
+            return null;
+        }
+
+        /** @var array<int, array{date?: string, value?: int|float}> $series */
+        $series = $snapshot->payload['timeseries'];
+
+        return [
+            'label' => $this->dailyLabel($snapshot->collector_key),
+            'labels' => array_map(fn (array $p): string => (string) ($p['date'] ?? ''), $series),
+            'data' => array_map(fn (array $p): float => round((float) ($p['value'] ?? 0), 2), $series),
+        ];
+    }
+
+    /**
+     * A friendly name for a collector's daily timeseries.
+     */
+    private function dailyLabel(string $collectorKey): string
+    {
+        return match ($collectorKey) {
+            'summary' => 'Visitors per day',
+            'monitors' => 'Daily uptime',
+            'core-web-vitals' => 'Performance score',
+            'search' => 'Search clicks per day',
+            'shopify', 'stripe', 'sales' => 'Revenue per day',
+            default => 'Daily trend',
+        };
     }
 
     private function formatMetric(Metric $metric): string
