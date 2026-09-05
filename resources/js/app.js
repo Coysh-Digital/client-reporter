@@ -43,4 +43,46 @@ document.addEventListener('alpine:init', () => {
             this.chart?.destroy();
         },
     }));
+
+    // A daily line chart (filled area) for the per-integration trend on the site
+    // page — daily visitors, uptime, Lighthouse score, search clicks, revenue.
+    // Same wire:ignore + init/destroy lifecycle as crBarChart.
+    window.Alpine.data('crLineChart', (config) => ({
+        chart: null,
+        init() {
+            const accent = getComputedStyle(document.documentElement)
+                .getPropertyValue('--color-accent').trim() || '#33406b';
+
+            this.chart = new Chart(this.$refs.canvas, {
+                type: 'line',
+                data: {
+                    labels: config.labels,
+                    datasets: [{
+                        label: config.label,
+                        data: config.data,
+                        borderColor: accent,
+                        backgroundColor: accent + '22',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 0,
+                        pointHoverRadius: 3,
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { intersect: false, mode: 'index' },
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { ticks: { precision: 0 } },
+                        x: { grid: { display: false }, ticks: { maxTicksLimit: 6, maxRotation: 0 } },
+                    },
+                },
+            });
+        },
+        destroy() {
+            this.chart?.destroy();
+        },
+    }));
 });
