@@ -14,6 +14,7 @@ use App\Livewire\Activity;
 use App\Livewire\Auth\ForgotPassword;
 use App\Livewire\Auth\Login;
 use App\Livewire\Auth\ResetPassword;
+use App\Livewire\Auth\TwoFactorChallenge;
 use App\Livewire\Branding;
 use App\Livewire\Clients;
 use App\Livewire\Dashboard;
@@ -31,11 +32,17 @@ Route::get('/install', Install\Wizard::class)->name('install');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', Login::class)->name('login');
+    Route::get('/two-factor-challenge', TwoFactorChallenge::class)->name('two-factor.challenge');
     Route::get('/forgot-password', ForgotPassword::class)->name('password.request');
     Route::get('/reset-password/{token}', ResetPassword::class)->name('password.reset');
 });
 
 Route::post('/logout', LogoutController::class)->middleware('auth')->name('logout');
+
+// Each user manages their own two-factor setup, regardless of role.
+Route::middleware(['auth', 'active'])->group(function () {
+    Route::get('/settings/two-factor', Settings\TwoFactor::class)->name('settings.two-factor');
+});
 
 /*
 | Public report share links. No authentication — access is gated by the
