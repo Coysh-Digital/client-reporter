@@ -8,7 +8,6 @@ use App\Integrations\Contracts\Integration;
 use App\Integrations\IntegrationRegistry;
 use App\Jobs\RunConnectorCollection;
 use App\Models\Metric;
-use App\Models\MetricSnapshot;
 use App\Models\Site;
 use App\Models\SiteIntegration;
 use App\Models\WorkspaceIntegration;
@@ -26,6 +25,9 @@ use Livewire\Component;
  */
 class SitePanel extends Component
 {
+    /** Enough for 24 periods of a provider with ~10 metrics each. */
+    private const MAX_METRIC_ROWS = 240;
+
     public Site $site;
 
     public function mount(Site $site): void
@@ -49,7 +51,7 @@ class SitePanel extends Component
         // Queue it rather than collecting in-request — some providers (e.g. GA4)
         // are slow, and blocking makes the page look frozen. Progress shows on
         // the Activity page.
-        RunConnectorCollection::dispatch($connection, $range->start->toDateString(), $range->end->toDateString());
+        RunConnectorCollection::queueFor($connection, $range);
 
         session()->flash('panel_status', 'Collection queued — running in the background. See Activity for progress.');
     }
@@ -106,8 +108,15 @@ class SitePanel extends Component
      */
     private function insightFor(SiteIntegration $connection): ?array
     {
+        // Bounded: the newest couple of years of periods, not every row ever
+        // collected. Rows come back newest-first and are re-sorted ascending.
         /** @var Collection<int, Metric> $metrics */
-        $metrics = $connection->metrics()->orderBy('period_start')->get();
+        $metrics = $connection->metrics()
+            ->orderByDesc('period_start')
+            ->limit(self::MAX_METRIC_ROWS)
+            ->get()
+            ->sortBy('period_start')
+            ->values();
         if ($metrics->isEmpty()) {
             return null;
         }
@@ -143,10 +152,11 @@ class SitePanel extends Component
      */
     private function dailyLineFor(SiteIntegration $connection): ?array
     {
+        // One row, chosen in SQL: the newest snapshot that carries a series.
         $snapshot = $connection->snapshots()
+            ->where('has_timeseries', true)
             ->orderByDesc('period_start')
-            ->get()
-            ->first(fn (MetricSnapshot $s): bool => ! empty($s->payload['timeseries'] ?? []));
+            ->first();
 
         if ($snapshot === null) {
             return null;

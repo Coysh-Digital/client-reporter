@@ -8,8 +8,8 @@ use App\Enums\ConnectionStatus;
 use App\Integrations\Contracts\Integration;
 use App\Integrations\IntegrationRegistry;
 use App\Integrations\Support\AuthMethod;
-use App\Integrations\Support\ConfigField;
 use App\Integrations\Support\IntegrationException;
+use App\Livewire\Concerns\ValidatesConfigFields;
 use App\Models\Client;
 use App\Models\ClientBillingConnection;
 use App\Models\Site;
@@ -18,7 +18,6 @@ use App\Models\WorkspaceIntegration;
 use App\Support\AuditLogger;
 use App\Support\ClientMatcher;
 use App\Support\SiteMatcher;
-use Illuminate\Support\Facades\Validator;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -32,6 +31,8 @@ use Livewire\Component;
 #[Layout('components.layouts.app')]
 class WorkspaceSetup extends Component
 {
+    use ValidatesConfigFields;
+
     public string $integrationKey = '';
 
     public ?int $workspaceId = null;
@@ -114,7 +115,7 @@ class WorkspaceSetup extends Component
         $isOAuth = $integration->manifest()->authMethod === AuthMethod::OAuth;
         $fields = $integration->accountConfigFields();
         $existing = $this->workspace();
-        $this->validateFields($fields, $existing);
+        $this->validateConfigFields($fields, $this->values, $this->name, $existing !== null);
 
         $credentials = $existing !== null ? ($existing->credentials ?? []) : [];
         $settings = $existing !== null ? ($existing->settings ?? []) : [];
@@ -296,31 +297,6 @@ class WorkspaceSetup extends Component
         }
 
         return $created;
-    }
-
-    /**
-     * @param  array<int, ConfigField>  $fields
-     */
-    private function validateFields(array $fields, ?WorkspaceIntegration $existing): void
-    {
-        $rules = [];
-        $attributes = [];
-
-        foreach ($fields as $field) {
-            $rule = $field->validationRules();
-            if ($field->secret && $existing !== null) {
-                $rule = array_map(fn ($r) => $r === 'required' ? 'nullable' : $r, $rule);
-            }
-            $rules["values.{$field->key}"] = $rule;
-            $attributes["values.{$field->key}"] = $field->label;
-        }
-
-        Validator::make(
-            ['values' => $this->values, 'name' => $this->name],
-            array_merge($rules, ['name' => ['required', 'string', 'max:255']]),
-            [],
-            $attributes,
-        )->validate();
     }
 
     public function needsOAuthConnect(): bool

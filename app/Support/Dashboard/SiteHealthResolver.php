@@ -63,7 +63,7 @@ class SiteHealthResolver
         $out = [];
         foreach ($sites as $site) {
             $conns = $integrationsBySite->get($site->id, collect());
-            $hasError = $conns->contains(fn (SiteIntegration $i): bool => $i->status === ConnectionStatus::Error);
+            $hasError = $conns->contains(fn (SiteIntegration $i): bool => $i->status === ConnectionStatus::Error || $i->status === ConnectionStatus::AuthExpired);
             $hasWarn = $conns->contains(fn (SiteIntegration $i): bool => $i->status === ConnectionStatus::NeedsAttention);
 
             $m = $metricsBySite[$site->id] ?? [];

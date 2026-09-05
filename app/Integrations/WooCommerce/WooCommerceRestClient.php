@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace App\Integrations\WooCommerce;
 
+use App\Integrations\Support\AbstractHttpClient;
 use App\Integrations\Support\IntegrationException;
 use App\Support\DateRange;
-use App\Support\Http\OutboundUrl;
-use App\Support\Http\UnsafeUrlException;
-use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\PendingRequest;
 
 /**
  * Read-only client for the WooCommerce REST API (v3). Authenticates with a
@@ -16,16 +15,31 @@ use Illuminate\Http\Client\ConnectionException;
  * plugin required. This is the direct-store path; WooCommerce data can also
  * arrive through the WordPress connector.
  */
-class WooCommerceRestClient
+class WooCommerceRestClient extends AbstractHttpClient
 {
-    private readonly string $baseUrl;
+    private readonly string $storeUrl;
 
     public function __construct(
         string $storeUrl,
         private readonly string $consumerKey,
         private readonly string $consumerSecret,
     ) {
-        $this->baseUrl = $this->normaliseStore($storeUrl).'/wp-json/wc/v3';
+        $this->storeUrl = $this->normaliseStore($storeUrl);
+    }
+
+    protected function provider(): string
+    {
+        return 'WooCommerce';
+    }
+
+    protected function baseUrl(): ?string
+    {
+        return $this->storeUrl;
+    }
+
+    protected function unreachableMessage(): string
+    {
+        return 'Could not reach the WooCommerce store. Check the store URL and try again.';
     }
 
     /**
@@ -35,7 +49,7 @@ class WooCommerceRestClient
      */
     public function salesReport(DateRange $range): array
     {
-        $rows = $this->get('/reports/sales', [
+        $rows = $this->request('/reports/sales', [
             'date_min' => $range->start->toDateString(),
             'date_max' => $range->end->toDateString(),
         ]);
@@ -52,7 +66,7 @@ class WooCommerceRestClient
      */
     public function topSellers(DateRange $range): array
     {
-        $rows = $this->get('/reports/top_sellers', [
+        $rows = $this->request('/reports/top_sellers', [
             'date_min' => $range->start->toDateString(),
             'date_max' => $range->end->toDateString(),
         ]);
@@ -66,7 +80,7 @@ class WooCommerceRestClient
     public function currency(): ?string
     {
         try {
-            $setting = $this->get('/settings/general/woocommerce_currency');
+            $setting = $this->request('/settings/general/woocommerce_currency');
         } catch (IntegrationException) {
             return null;
         }
@@ -80,29 +94,19 @@ class WooCommerceRestClient
      * @param  array<string, scalar>  $params
      * @return array<int|string, mixed>
      */
-    private function get(string $path, array $params = []): array
+    private function request(string $path, array $params = []): array
     {
-        try {
-            $response = app(OutboundUrl::class)->client(20)
-                ->withBasicAuth($this->consumerKey, $this->consumerSecret)
-                ->acceptJson()->get(OutboundUrl::check($this->baseUrl).$path, $params);
-        } catch (UnsafeUrlException $e) {
-            throw new IntegrationException($e->getMessage());
-        } catch (ConnectionException) {
-            throw new IntegrationException('Could not reach the WooCommerce store. Check the store URL and try again.');
-        }
+        $response = $this->get(
+            '/wp-json/wc/v3'.$path,
+            $params,
+            fn (PendingRequest $r): PendingRequest => $r->withBasicAuth($this->consumerKey, $this->consumerSecret),
+        );
 
-        if ($response->status() === 401 || $response->status() === 403) {
-            throw new IntegrationException('WooCommerce rejected the API keys. Check the consumer key/secret and that they have Read access.');
-        }
-
-        if ($response->status() === 404) {
-            throw new IntegrationException('WooCommerce REST API not found at this URL. Make sure WooCommerce is active and the store URL is correct.');
-        }
-
-        if ($response->failed()) {
-            throw new IntegrationException('WooCommerce returned an error (HTTP '.$response->status().').');
-        }
+        $this->guard($response, [
+            401 => 'WooCommerce rejected the API keys. Check the consumer key/secret and that they have Read access.',
+            403 => 'WooCommerce rejected the API keys. Check the consumer key/secret and that they have Read access.',
+            404 => 'WooCommerce REST API not found at this URL. Make sure WooCommerce is active and the store URL is correct.',
+        ]);
 
         return (array) $response->json();
     }

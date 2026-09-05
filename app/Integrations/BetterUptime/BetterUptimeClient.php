@@ -4,21 +4,29 @@ declare(strict_types=1);
 
 namespace App\Integrations\BetterUptime;
 
-use App\Integrations\Support\IntegrationException;
+use App\Integrations\Support\AbstractHttpClient;
 use App\Support\DateRange;
-use App\Support\Http\OutboundUrl;
-use App\Support\Http\UnsafeUrlException;
-use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\PendingRequest;
 
 /**
  * Read-only client for the Better Stack (Better Uptime) v2 API.
  */
-class BetterUptimeClient
+class BetterUptimeClient extends AbstractHttpClient
 {
     public function __construct(
         private readonly string $token,
-        private readonly string $baseUrl = 'https://uptime.betterstack.com',
+        private readonly string $apiBase = 'https://uptime.betterstack.com',
     ) {}
+
+    protected function provider(): string
+    {
+        return 'Better Stack';
+    }
+
+    protected function baseUrl(): ?string
+    {
+        return $this->apiBase;
+    }
 
     /**
      * @return array<int, array<string, mixed>>
@@ -64,22 +72,12 @@ class BetterUptimeClient
      */
     private function request(string $path, array $params = []): array
     {
-        try {
-            $response = app(OutboundUrl::class)->client(20)->withToken($this->token)->acceptJson()
-                ->get(OutboundUrl::check(rtrim($this->baseUrl, '/')).'/'.$path, $params);
-        } catch (UnsafeUrlException $e) {
-            throw new IntegrationException($e->getMessage());
-        } catch (ConnectionException) {
-            throw new IntegrationException('Could not reach Better Stack. Please try again shortly.');
-        }
+        $response = $this->get($path, $params, fn (PendingRequest $r): PendingRequest => $r->withToken($this->token));
 
-        if ($response->status() === 401 || $response->status() === 403) {
-            throw new IntegrationException('Better Stack rejected the API token.');
-        }
-
-        if ($response->failed()) {
-            throw new IntegrationException('Better Stack returned an error (HTTP '.$response->status().').');
-        }
+        $this->guard($response, [
+            401 => 'Better Stack rejected the API token.',
+            403 => 'Better Stack rejected the API token.',
+        ]);
 
         return (array) $response->json();
     }

@@ -26,7 +26,7 @@ class HonestAnalyticsCollector extends AbstractCollector
     {
         $client = (new HonestAnalyticsIntegration)->client($connection);
 
-        $data = $client->get('report', [
+        $data = $client->fetch('report', [
             'from' => $range->start->toDateString(),
             'to' => $range->end->toDateString(),
         ]);

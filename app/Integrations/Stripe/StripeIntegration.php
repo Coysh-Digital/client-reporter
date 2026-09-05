@@ -71,6 +71,11 @@ class StripeIntegration extends Integration
         return VerificationResult::success('Connected to Stripe.');
     }
 
+    public function providesEcommerce(): ?array
+    {
+        return ['collector_key' => 'stripe', 'provider' => 'Stripe', 'priority' => 40];
+    }
+
     /**
      * @return array<int, Collector>
      */

@@ -5,21 +5,25 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Enums\ReportFrequency;
+use App\Jobs\GenerateReport;
 use App\Models\Report;
 use App\Models\Site;
 use App\Reporting\ReportComposer;
-use App\Reporting\ReportGenerator;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
-use Throwable;
 
+/**
+ * Composes a report for every scheduled site whose latest period has closed
+ * and queues its generation. Generation itself runs one job per report, so a
+ * slow integration on one site never holds up the rest or the scheduler.
+ */
 class GenerateScheduledReports extends Command
 {
     protected $signature = 'client-reporter:generate-scheduled';
 
-    protected $description = 'Generate reports for scheduled sites whose latest period has closed';
+    protected $description = 'Queue reports for scheduled sites whose latest period has closed';
 
-    public function handle(ReportComposer $composer, ReportGenerator $generator): int
+    public function handle(ReportComposer $composer): int
     {
         $now = CarbonImmutable::now();
 
@@ -29,8 +33,8 @@ class GenerateScheduledReports extends Command
             ->with('reportTemplate')
             ->get();
 
-        $generated = 0;
-        $failed = 0;
+        $queued = 0;
+        $retried = 0;
 
         foreach ($sites as $site) {
             $period = $site->report_frequency->lastCompletedPeriod($now);
@@ -39,15 +43,21 @@ class GenerateScheduledReports extends Command
                 continue;
             }
 
-            // Skip if a report already covers this exact closed period (whether
-            // scheduled or created by hand) — never duplicate.
-            $exists = Report::query()
+            // A report already covering this exact closed period (scheduled or
+            // hand-made) is never duplicated — but a scheduled one whose
+            // generation failed gets another go on the next run.
+            $existing = Report::query()
                 ->where('site_id', $site->id)
                 ->whereDate('range_start', $period->start->toDateString())
                 ->whereDate('range_end', $period->end->toDateString())
-                ->exists();
+                ->first();
 
-            if ($exists) {
+            if ($existing !== null) {
+                if ($existing->scheduled && ! $existing->isGenerated() && $existing->generationFailed()) {
+                    GenerateReport::queueFor($existing);
+                    $retried++;
+                }
+
                 continue;
             }
 
@@ -61,19 +71,11 @@ class GenerateScheduledReports extends Command
                 scheduled: true,
             );
 
-            try {
-                $generator->generate($report);
-                $generated++;
-            } catch (Throwable $e) {
-                // Leave nothing half-made: drop the draft so the next run retries.
-                $report->delete();
-                $failed++;
-                report($e);
-                $this->warn("Failed to generate scheduled report for {$site->name}: {$e->getMessage()}");
-            }
+            GenerateReport::queueFor($report);
+            $queued++;
         }
 
-        $this->info("Generated {$generated} scheduled report(s)".($failed > 0 ? ", {$failed} failed." : '.'));
+        $this->info("Queued {$queued} scheduled report(s)".($retried > 0 ? ", retried {$retried} failed one(s)." : '.'));
 
         return self::SUCCESS;
     }

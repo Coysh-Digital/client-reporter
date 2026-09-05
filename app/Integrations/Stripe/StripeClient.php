@@ -4,16 +4,15 @@ declare(strict_types=1);
 
 namespace App\Integrations\Stripe;
 
-use App\Integrations\Support\IntegrationException;
+use App\Integrations\Support\AbstractHttpClient;
 use App\Support\DateRange;
-use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Http\Client\PendingRequest;
 
 /**
  * Read-only client for the Stripe API. Authenticates with a secret or
  * restricted API key (Bearer) and reads succeeded charges for a period.
  */
-class StripeClient
+class StripeClient extends AbstractHttpClient
 {
     private const BASE_URL = 'https://api.stripe.com/v1';
 
@@ -21,6 +20,11 @@ class StripeClient
     private const MAX_PAGES = 20;
 
     public function __construct(private readonly string $apiKey) {}
+
+    protected function provider(): string
+    {
+        return 'Stripe';
+    }
 
     /**
      * All charges created within the period, following Stripe's cursor
@@ -38,7 +42,7 @@ class StripeClient
         ];
 
         for ($page = 0; $page < self::MAX_PAGES; $page++) {
-            $body = $this->get('/charges', $params);
+            $body = $this->request('/charges', $params);
             $rows = is_array($body['data'] ?? null) ? $body['data'] : [];
             $charges = array_merge($charges, $rows);
 
@@ -60,26 +64,14 @@ class StripeClient
      * @param  array<string, scalar>  $params
      * @return array<string, mixed>
      */
-    private function get(string $path, array $params = []): array
+    private function request(string $path, array $params = []): array
     {
-        try {
-            $response = Http::withToken($this->apiKey)->timeout(20)->acceptJson()
-                ->get(self::BASE_URL.$path, $params);
-        } catch (ConnectionException) {
-            throw new IntegrationException('Could not reach Stripe. Please try again shortly.');
-        }
+        $response = $this->get(self::BASE_URL.$path, $params, fn (PendingRequest $r): PendingRequest => $r->withToken($this->apiKey));
 
-        if ($response->status() === 401) {
-            throw new IntegrationException('Stripe rejected the API key. Check the key and that it can read charges.');
-        }
-
-        if ($response->status() === 403) {
-            throw new IntegrationException('This Stripe key is not permitted to read charges. Grant it read access to Charges.');
-        }
-
-        if ($response->failed()) {
-            throw new IntegrationException('Stripe returned an error (HTTP '.$response->status().').');
-        }
+        $this->guard($response, [
+            401 => 'Stripe rejected the API key. Check the key and that it can read charges.',
+            403 => 'This Stripe key is not permitted to read charges. Grant it read access to Charges.',
+        ]);
 
         return (array) $response->json();
     }

@@ -4,20 +4,28 @@ declare(strict_types=1);
 
 namespace App\Integrations\PageSpeed;
 
-use App\Integrations\Support\IntegrationException;
-use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Support\Facades\Http;
+use App\Integrations\Support\AbstractHttpClient;
 
 /**
  * Read-only client for the Google PageSpeed Insights API (v5). Works without a
  * key (rate-limited) or with a Google API key. Returns Lighthouse lab data plus
  * CrUX field data (real-user Core Web Vitals) when the URL has enough traffic.
  */
-class PageSpeedClient
+class PageSpeedClient extends AbstractHttpClient
 {
     private const ENDPOINT = 'https://www.googleapis.com/pagespeedonline/v5/runPagespeed';
 
+    /** A Lighthouse run is slow; give it a minute and never retry a 5xx (it would double the wait). */
+    protected int $timeout = 60;
+
+    protected int $retries = 0;
+
     public function __construct(private readonly ?string $apiKey = null) {}
+
+    protected function provider(): string
+    {
+        return 'PageSpeed Insights';
+    }
 
     /**
      * @return array<string, mixed>
@@ -34,23 +42,10 @@ class PageSpeedClient
             $params['key'] = $this->apiKey;
         }
 
-        try {
-            $response = Http::timeout(60)->acceptJson()->get(self::ENDPOINT, $params);
-        } catch (ConnectionException) {
-            throw new IntegrationException('Could not reach PageSpeed Insights. Please try again shortly.');
-        }
-
-        if ($response->status() === 429) {
-            throw new IntegrationException('PageSpeed Insights rate-limited the request. Add a Google API key to raise the limit.');
-        }
-
-        if ($response->status() === 400) {
-            throw new IntegrationException('PageSpeed Insights could not analyse this URL. Check the site address.');
-        }
-
-        if ($response->failed()) {
-            throw new IntegrationException('PageSpeed Insights returned an error (HTTP '.$response->status().').');
-        }
+        $response = $this->guard($this->get(self::ENDPOINT, $params), [
+            429 => 'PageSpeed Insights rate-limited the request. Add a Google API key to raise the limit.',
+            400 => 'PageSpeed Insights could not analyse this URL. Check the site address.',
+        ]);
 
         return (array) $response->json();
     }

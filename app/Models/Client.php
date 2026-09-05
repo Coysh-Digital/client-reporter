@@ -33,6 +33,18 @@ class Client extends Model
     }
 
     /**
+     * users.client_id carries no database foreign key (kept portable across
+     * SQLite/MySQL/Postgres), so a deleted client's portal users are detached
+     * and deactivated here instead of left pointing at a missing record.
+     */
+    protected static function booted(): void
+    {
+        static::deleting(function (Client $client): void {
+            $client->portalUsers()->update(['client_id' => null, 'is_active' => false]);
+        });
+    }
+
+    /**
      * Portal users belonging to this client.
      *
      * @return HasMany<User, $this>

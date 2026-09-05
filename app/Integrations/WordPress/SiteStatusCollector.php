@@ -31,7 +31,7 @@ class SiteStatusCollector extends AbstractCollector
             (string) $connection->credential('secret'),
         );
 
-        $data = $client->get('site');
+        $data = $client->fetch('site');
 
         $coreUpdate = (bool) ($data['core_update_available'] ?? false);
         $pluginUpdates = (int) ($data['plugin_updates'] ?? 0);
@@ -76,7 +76,7 @@ class SiteStatusCollector extends AbstractCollector
     private function appliedUpdates(SignedConnectorClient $client, SiteIntegration $connection, DateRange $range, array $data): array
     {
         try {
-            $log = $client->get('updates', [
+            $log = $client->fetch('updates', [
                 'from' => $range->start->toDateString(),
                 'to' => $range->end->toDateString(),
             ]);

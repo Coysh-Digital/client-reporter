@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace App\Integrations\Connector;
 
+use App\Integrations\Support\AbstractHttpClient;
 use App\Integrations\Support\IntegrationException;
-use App\Support\Http\OutboundUrl;
-use App\Support\Http\UnsafeUrlException;
-use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\PendingRequest;
 
 /**
  * Makes read-only, HMAC-signed GET requests to a companion connector (the
@@ -16,19 +15,37 @@ use Illuminate\Http\Client\ConnectionException;
  * body hash so the plugin can verify authenticity, reject stale timestamps
  * (replay/timestamp validation) and reject replayed nonces.
  */
-class SignedConnectorClient
+class SignedConnectorClient extends AbstractHttpClient
 {
+    /** Each request carries a single-use nonce, so a retry would be rejected as a replay. */
+    protected int $retries = 0;
+
     public function __construct(
-        private readonly string $baseUrl,
+        private readonly string $siteUrl,
         private readonly string $secret,
         private readonly string $pathPrefix = '/wp-json/client-reporter/v1/',
     ) {}
+
+    protected function provider(): string
+    {
+        return 'the website';
+    }
+
+    protected function baseUrl(): ?string
+    {
+        return $this->siteUrl;
+    }
+
+    protected function unreachableMessage(): string
+    {
+        return 'Could not reach the website. Check the URL and that the plugin is active.';
+    }
 
     /**
      * @param  array<string, scalar>  $query
      * @return array<string, mixed>
      */
-    public function get(string $endpoint, array $query = []): array
+    public function fetch(string $endpoint, array $query = []): array
     {
         $path = '/'.trim($this->pathPrefix, '/').'/'.ltrim($endpoint, '/');
         $timestamp = (string) time();
@@ -36,28 +53,16 @@ class SignedConnectorClient
 
         $signature = $this->sign('GET', $path, $timestamp, $nonce, '');
 
-        try {
-            $response = app(OutboundUrl::class)->client(20)
-                ->withHeaders([
-                    'X-CR-Timestamp' => $timestamp,
-                    'X-CR-Nonce' => $nonce,
-                    'X-CR-Signature' => $signature,
-                    'Accept' => 'application/json',
-                ])
-                ->get(OutboundUrl::check(rtrim($this->baseUrl, '/')).$path, $query);
-        } catch (UnsafeUrlException $e) {
-            throw new IntegrationException($e->getMessage());
-        } catch (ConnectionException) {
-            throw new IntegrationException('Could not reach the website. Check the URL and that the plugin is active.');
-        }
+        $response = $this->get($path, $query, fn (PendingRequest $r): PendingRequest => $r->withHeaders([
+            'X-CR-Timestamp' => $timestamp,
+            'X-CR-Nonce' => $nonce,
+            'X-CR-Signature' => $signature,
+        ]));
 
-        if ($response->status() === 401 || $response->status() === 403) {
-            throw new IntegrationException('The website rejected the connection. The connection code may be wrong or was rotated.');
-        }
-
-        if ($response->failed()) {
-            throw new IntegrationException('The website returned an error (HTTP '.$response->status().').');
-        }
+        $this->guard($response, [
+            401 => 'The website rejected the connection. The connection code may be wrong or was rotated.',
+            403 => 'The website rejected the connection. The connection code may be wrong or was rotated.',
+        ]);
 
         $data = $response->json();
 

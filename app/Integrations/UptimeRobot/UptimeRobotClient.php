@@ -4,19 +4,23 @@ declare(strict_types=1);
 
 namespace App\Integrations\UptimeRobot;
 
+use App\Integrations\Support\AbstractHttpClient;
 use App\Integrations\Support\IntegrationException;
-use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Support\Facades\Http;
 
 /**
  * Thin, read-only client for the UptimeRobot v2 API. Only ever reads monitor
  * data; it never creates, edits or deletes anything.
  */
-class UptimeRobotClient
+class UptimeRobotClient extends AbstractHttpClient
 {
     private const BASE = 'https://api.uptimerobot.com/v2/';
 
     public function __construct(private readonly string $apiKey) {}
+
+    protected function provider(): string
+    {
+        return 'UptimeRobot';
+    }
 
     /**
      * Fetch monitors with optional logs, response times and a custom uptime
@@ -44,7 +48,7 @@ class UptimeRobotClient
             $params['logs'] = 1;
         }
 
-        $data = $this->post('getMonitors', $params);
+        $data = $this->call('getMonitors', $params);
 
         return $data['monitors'] ?? [];
     }
@@ -53,22 +57,12 @@ class UptimeRobotClient
      * @param  array<string, mixed>  $params
      * @return array<string, mixed>
      */
-    private function post(string $endpoint, array $params = []): array
+    private function call(string $endpoint, array $params = []): array
     {
-        try {
-            $response = Http::asForm()
-                ->timeout(20)
-                ->post(self::BASE.$endpoint, array_merge([
-                    'api_key' => $this->apiKey,
-                    'format' => 'json',
-                ], $params));
-        } catch (ConnectionException) {
-            throw new IntegrationException('Could not reach UptimeRobot. Please try again shortly.');
-        }
-
-        if ($response->failed()) {
-            throw new IntegrationException('UptimeRobot returned an error (HTTP '.$response->status().').');
-        }
+        $response = $this->guard($this->post(self::BASE.$endpoint, array_merge([
+            'api_key' => $this->apiKey,
+            'format' => 'json',
+        ], $params), asForm: true));
 
         $data = $response->json();
 

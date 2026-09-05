@@ -1,6 +1,6 @@
 @props(['name'])
 
-@php $icon = \App\Support\Icons::get($name); @endphp
+@php $icon = \App\Support\UiIcons::get($name); @endphp
 
 @if ($icon)
     <svg {{ $attributes->merge(['class' => 'h-4 w-4', 'fill' => 'currentColor', 'aria-hidden' => 'true']) }} viewBox="0 0 {{ $icon['width'] }} {{ $icon['height'] }}">

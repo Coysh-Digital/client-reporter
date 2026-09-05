@@ -12,6 +12,8 @@ use Livewire\Component;
 #[Layout('components.layouts.app')]
 class Show extends Component
 {
+    private const RECENT_REPORTS = 5;
+
     public Site $site;
 
     public function mount(Site $site): void
@@ -34,6 +36,9 @@ class Show extends Component
 
     public function render(): mixed
     {
-        return view('livewire.sites.show');
+        return view('livewire.sites.show', [
+            'recentReports' => $this->site->reports()->latest()->take(self::RECENT_REPORTS)->get(),
+            'reportCount' => $this->site->reports()->count(),
+        ]);
     }
 }

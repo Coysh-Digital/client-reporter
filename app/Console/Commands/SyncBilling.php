@@ -5,28 +5,42 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Billing\BillingSyncer;
+use App\Jobs\SyncBillingConnection;
+use App\Models\ClientBillingConnection;
 use Illuminate\Console\Command;
 
 /**
  * Pulls invoices from every client's billing connection (FreeAgent, Xero)
  * into the local ledger, so reports stay current without anyone having to
- * open the accounting system.
+ * open the accounting system. Each connection is queued as its own job.
  */
 class SyncBilling extends Command
 {
-    protected $signature = 'client-reporter:sync-billing';
+    protected $signature = 'client-reporter:sync-billing {--sync : Sync immediately instead of queueing}';
 
     protected $description = 'Sync invoices from connected billing integrations (FreeAgent, Xero)';
 
     public function handle(BillingSyncer $syncer): int
     {
-        $result = $syncer->syncAll();
+        if ($this->option('sync')) {
+            $result = $syncer->syncAll();
 
-        $this->info("Synced {$result['synced']} invoice(s).");
+            $this->info("Synced {$result['synced']} invoice(s).");
 
-        foreach ($result['failed'] as $message) {
-            $this->warn($message);
+            foreach ($result['failed'] as $message) {
+                $this->warn($message);
+            }
+
+            return self::SUCCESS;
         }
+
+        $links = ClientBillingConnection::query()->get();
+
+        foreach ($links as $link) {
+            SyncBillingConnection::dispatch($link);
+        }
+
+        $this->info("Queued billing sync for {$links->count()} client connection(s).");
 
         return self::SUCCESS;
     }

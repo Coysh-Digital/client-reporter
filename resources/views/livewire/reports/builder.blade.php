@@ -5,18 +5,25 @@
         <a href="{{ route('sites.show', $report->site) }}" wire:navigate class="hover:text-ink">{{ $report->site->name }}</a>
     </div>
 
+    @if ($report->generationFailed())
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md bg-danger-soft px-4 py-3 text-sm text-danger">
+            <span>Generation failed: {{ $report->generation_error }}</span>
+            <button type="button" wire:click="retryGeneration" class="cr-btn cr-btn-secondary">Try again</button>
+        </div>
+    @endif
+
     <x-page-header :title="$title ?: 'Untitled report'" subtitle="Build and arrange the sections your client will see.">
         <x-slot:actions>
             <a href="{{ route('reports.show', $report) }}" wire:navigate class="cr-btn cr-btn-secondary">
                 <x-icon name="arrow-up-right-from-square" class="h-3.5 w-3.5" />
                 Preview
             </a>
-            <button wire:click="generate" class="cr-btn cr-btn-primary">
+            <button wire:click="generate" class="cr-btn cr-btn-primary" @disabled($report->isGenerating())>
                 <span wire:loading.remove wire:target="generate" class="flex items-center gap-2">
                     <x-icon name="file-chart-column" class="h-3.5 w-3.5" />
                     Generate &amp; view
                 </span>
-                <span wire:loading wire:target="generate">Generating…</span>
+                <span wire:loading wire:target="generate">Queuing…</span>
             </button>
         </x-slot:actions>
     </x-page-header>
@@ -271,11 +278,13 @@
         </div>
     </div>
 
-    {{-- Generating overlay: a friendlier wait while we collect fresh data,
-         resolve every section and freeze the render. Shown only while the
-         `generate` action is in flight; the cycling messages are cosmetic. --}}
-    <div wire:loading.flex wire:target="generate" wire:key="generating-overlay"
-         class="fixed inset-0 z-50 items-center justify-center p-4"
+    {{-- Generating overlay: a friendlier wait while the background job collects
+         fresh data, resolves every section and freezes the render. Shown while
+         the report's generation is queued or running; the page polls and moves
+         on to the finished report. The cycling messages are cosmetic. --}}
+    @if ($report->isGenerating())
+    <div wire:poll.2s="pollGeneration" wire:key="generating-overlay"
+         class="fixed inset-0 z-50 flex items-center justify-center p-4"
          style="background:color-mix(in srgb, var(--color-ink) 45%, transparent);backdrop-filter:blur(2px);">
         <div class="w-full max-w-sm rounded-2xl border border-line bg-surface p-6 text-center shadow-xl"
              x-data="{ i: 0, timer: null, messages: [
@@ -293,7 +302,12 @@
             <p class="text-[15px] font-semibold text-ink">Generating your report</p>
             <p class="mt-1 h-4 text-[13px] text-muted" x-text="messages[i]"></p>
             <div class="cr-progress mt-4"><div class="cr-progress-bar"></div></div>
-            <p class="mt-3 text-[11px] text-faint">This can take a moment while we gather fresh data.</p>
+            <p class="mt-3 text-[11px] text-faint">
+                {{ $report->generation_status === \App\Enums\GenerationStatus::Queued
+                    ? 'Waiting for the background worker to pick this up…'
+                    : 'This can take a moment while we gather fresh data.' }}
+            </p>
         </div>
     </div>
+    @endif
 </div>

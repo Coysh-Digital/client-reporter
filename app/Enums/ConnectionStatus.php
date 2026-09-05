@@ -13,6 +13,7 @@ enum ConnectionStatus: string
     case NotConnected = 'not_connected';
     case Connected = 'connected';
     case NeedsAttention = 'needs_attention';
+    case AuthExpired = 'auth_expired';
     case Error = 'error';
 
     public function label(): string
@@ -21,6 +22,7 @@ enum ConnectionStatus: string
             self::NotConnected => 'Not connected',
             self::Connected => 'Connected',
             self::NeedsAttention => 'Needs attention',
+            self::AuthExpired => 'Authentication expired',
             self::Error => 'Error',
         };
     }
@@ -33,13 +35,42 @@ enum ConnectionStatus: string
         return match ($this) {
             self::Connected => 'ok',
             self::NeedsAttention => 'warn',
-            self::Error => 'danger',
+            self::AuthExpired, self::Error => 'danger',
             self::NotConnected => 'neutral',
         };
     }
 
+    /**
+     * Whether scheduled collection should keep trying this connection. An
+     * expired authentication stops until someone reconnects: hammering a dead
+     * token only burns the provider's goodwill.
+     */
     public function isLive(): bool
     {
         return $this === self::Connected || $this === self::NeedsAttention;
+    }
+
+    /**
+     * Whether the connection needs a person to do something.
+     */
+    public function needsAttention(): bool
+    {
+        return $this === self::NeedsAttention || $this === self::AuthExpired || $this === self::Error;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function liveValues(): array
+    {
+        return [self::Connected->value, self::NeedsAttention->value];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function troubledValues(): array
+    {
+        return [self::NeedsAttention->value, self::AuthExpired->value, self::Error->value];
     }
 }

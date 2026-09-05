@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\GenerationStatus;
+use App\Enums\ReportPeriodStatus;
 use App\Support\DateRange;
 use Database\Factories\ReportFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -23,6 +25,11 @@ use Illuminate\Support\Carbon;
  * @property Carbon $range_end
  * @property bool $compare_previous
  * @property Carbon|null $generated_at
+ * @property GenerationStatus|null $generation_status
+ * @property Carbon|null $generation_queued_at
+ * @property Carbon|null $generation_started_at
+ * @property string|null $generation_error
+ * @property int|null $shares_count
  */
 class Report extends Model
 {
@@ -41,6 +48,10 @@ class Report extends Model
         'intro',
         'created_by',
         'generated_at',
+        'generation_status',
+        'generation_queued_at',
+        'generation_started_at',
+        'generation_error',
     ];
 
     protected function casts(): array
@@ -51,6 +62,9 @@ class Report extends Model
             'compare_previous' => 'boolean',
             'scheduled' => 'boolean',
             'generated_at' => 'datetime',
+            'generation_status' => GenerationStatus::class,
+            'generation_queued_at' => 'datetime',
+            'generation_started_at' => 'datetime',
         ];
     }
 
@@ -107,5 +121,32 @@ class Report extends Model
     public function isGenerated(): bool
     {
         return $this->generated_at !== null;
+    }
+
+    public function isGenerating(): bool
+    {
+        return $this->generation_status?->isInProgress() ?? false;
+    }
+
+    public function generationFailed(): bool
+    {
+        return $this->generation_status === GenerationStatus::Failed;
+    }
+
+    /**
+     * Where this report stands for its period: draft, generated-but-unsent
+     * ("ready"), or sent (it has at least one share link / email). Uses the
+     * `shares_count` aggregate when the query loaded it, so lists stay at one
+     * query.
+     */
+    public function periodStatus(): ReportPeriodStatus
+    {
+        if (! $this->isGenerated() && $this->status !== 'final') {
+            return ReportPeriodStatus::Draft;
+        }
+
+        $shares = $this->shares_count ?? $this->shares()->count();
+
+        return $shares > 0 ? ReportPeriodStatus::Sent : ReportPeriodStatus::Ready;
     }
 }

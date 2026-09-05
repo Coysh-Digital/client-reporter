@@ -26,7 +26,7 @@ class CraftAnalyticsCollector extends AbstractCollector
     {
         $client = (new CraftAnalyticsIntegration)->client($connection);
 
-        $data = $client->get('report', [
+        $data = $client->fetch('report', [
             'from' => $range->start->toDateString(),
             'to' => $range->end->toDateString(),
         ]);

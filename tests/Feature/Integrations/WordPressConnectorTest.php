@@ -51,7 +51,7 @@ class WordPressConnectorTest extends TestCase
     {
         Http::fake(['wp.test/*' => Http::response(['ok' => true, 'connector' => 'wordpress', 'version' => '0.1.0'])]);
 
-        (new SignedConnectorClient('https://wp.test', 'shared-secret'))->get('verify');
+        (new SignedConnectorClient('https://wp.test', 'shared-secret'))->fetch('verify');
 
         Http::assertSent(function ($request) {
             return $request->hasHeader('X-CR-Signature')

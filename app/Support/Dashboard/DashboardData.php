@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Support\Dashboard;
 
 use App\Enums\ConnectionStatus;
-use App\Enums\ReportPeriodStatus;
 use App\Enums\SiteHealth;
 use App\Models\Client;
 use App\Models\Metric;
@@ -24,6 +23,9 @@ use Illuminate\Support\Collection;
  */
 class DashboardData
 {
+    /** The "needs attention" queue never grows past this; the lists behind it are bounded too. */
+    private const MAX_ATTENTION_ITEMS = 25;
+
     /** Metrics surfaced as "notable changes", with display rules. */
     private const MOVERS = [
         'analytics.visitors' => ['label' => 'Visitors', 'higherIsBetter' => true, 'format' => 'percent'],
@@ -52,11 +54,12 @@ class DashboardData
         $sites = Site::query()->where('is_active', true)->with('client')->get();
 
         $health = $this->health->forSites($sites, $period);
+        $readyToSend = $this->scheduledReadyToSend();
 
         return [
             'period' => $period,
-            'portfolio' => $this->portfolio($sites, $health),
-            'needsAttention' => $this->needsAttention($sites, $period),
+            'portfolio' => $this->portfolio($sites, $health, $readyToSend),
+            'needsAttention' => $this->needsAttention($sites, $period, $readyToSend),
             'reportsThisPeriod' => $this->reportsThisPeriod(),
             'notableChanges' => $this->notableChanges($period, $comparison),
         ];
@@ -67,7 +70,7 @@ class DashboardData
      * @param  array<int, SiteHealth>  $health
      * @return array<string, mixed>
      */
-    private function portfolio(Collection $sites, array $health): array
+    private function portfolio(Collection $sites, array $health, Collection $readyToSend): array
     {
         $healthy = count(array_filter($health, fn (SiteHealth $h): bool => $h === SiteHealth::Healthy));
         $warn = count(array_filter($health, fn (SiteHealth $h): bool => $h === SiteHealth::NeedsAttention));
@@ -79,7 +82,7 @@ class DashboardData
             ->count();
 
         $needReconnect = SiteIntegration::query()
-            ->whereIn('status', [ConnectionStatus::NeedsAttention->value, ConnectionStatus::Error->value])
+            ->whereIn('status', ConnectionStatus::troubledValues())
             ->whereHas('site', fn ($q) => $q->where('is_active', true))
             ->count();
 
@@ -93,7 +96,7 @@ class DashboardData
             'integrations' => $integrations,
             'integrationsNeedReconnect' => $needReconnect,
             'sitesScheduled' => $sitesScheduled,
-            'reportsToPrepare' => $this->scheduledReadyToSend()->count(),
+            'reportsToPrepare' => $readyToSend->count(),
         ];
     }
 
@@ -101,24 +104,30 @@ class DashboardData
      * @param  Collection<int, Site>  $sites
      * @return array<int, array<string, mixed>>
      */
-    private function needsAttention(Collection $sites, DateRange $period): array
+    private function needsAttention(Collection $sites, DateRange $period, Collection $readyToSend): array
     {
         $items = [];
 
-        // Integrations in trouble.
+        // Integrations in trouble (bounded: the list is a queue to work, not a report).
         $troubled = SiteIntegration::query()
-            ->whereIn('status', [ConnectionStatus::NeedsAttention->value, ConnectionStatus::Error->value])
+            ->whereIn('status', ConnectionStatus::troubledValues())
             ->whereHas('site', fn ($q) => $q->where('is_active', true))
             ->with('site.client')
+            ->orderByDesc('last_attempted_at')
+            ->limit(self::MAX_ATTENTION_ITEMS)
             ->get();
 
         foreach ($troubled as $conn) {
             $integration = $conn->integration();
             $name = $integration?->manifest()->name ?? $conn->integration_key;
             $items[] = [
-                'severity' => $conn->status === ConnectionStatus::Error ? 2 : 1,
+                'severity' => $conn->status === ConnectionStatus::NeedsAttention ? 1 : 2,
                 'variant' => $conn->status->badge(),
-                'title' => $conn->status === ConnectionStatus::Error ? "{$name} sync failed" : "{$name} needs attention",
+                'title' => match ($conn->status) {
+                    ConnectionStatus::AuthExpired => "{$name} needs reconnecting",
+                    ConnectionStatus::Error => "{$name} sync failed",
+                    default => "{$name} needs attention",
+                },
                 'subtitle' => $this->siteLine($conn->site).($conn->last_error ? ' · '.$conn->last_error : ''),
                 'when' => $conn->last_collected_at?->diffForHumans() ?? $conn->last_connected_at?->diffForHumans() ?? '',
                 'actionLabel' => 'Reconnect',
@@ -144,7 +153,7 @@ class DashboardData
         }
 
         // Scheduled reports that have been auto-generated but not yet sent.
-        foreach ($this->scheduledReadyToSend() as $report) {
+        foreach ($readyToSend as $report) {
             if ($report->site === null) {
                 continue;
             }
@@ -183,18 +192,12 @@ class DashboardData
             ->orderByDesc('generated_at')
             ->limit(50)
             ->get()
-            ->map(function (Report $report): array {
-                $status = ((int) ($report->shares_count ?? 0)) > 0
-                    ? ReportPeriodStatus::Sent
-                    : ReportPeriodStatus::Ready;
-
-                return [
-                    'client' => $report->site->client->name,
-                    'site' => $report->site->name,
-                    'status' => $status,
-                    'actionUrl' => route('reports.show', $report),
-                ];
-            })
+            ->map(fn (Report $report): array => [
+                'client' => $report->site->client->name,
+                'site' => $report->site->name,
+                'status' => $report->periodStatus(),
+                'actionUrl' => route('reports.show', $report),
+            ])
             ->all();
     }
 
@@ -212,6 +215,7 @@ class DashboardData
             ->doesntHave('shares')
             ->with('site.client')
             ->orderByDesc('generated_at')
+            ->limit(self::MAX_ATTENTION_ITEMS)
             ->get();
     }
 

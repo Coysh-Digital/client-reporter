@@ -81,6 +81,11 @@ class WooCommerceIntegration extends Integration
         );
     }
 
+    public function providesEcommerce(): ?array
+    {
+        return ['collector_key' => 'sales', 'provider' => 'WooCommerce', 'priority' => 100];
+    }
+
     /**
      * @return array<int, Collector>
      */

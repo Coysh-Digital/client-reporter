@@ -39,20 +39,21 @@
                         <a href="{{ route('reports.create', ['site' => $site->id]) }}" wire:navigate class="text-sm text-accent hover:underline">+ New report</a>
                     @endcan
                 </div>
-                @php $siteReports = $site->reports()->latest()->take(5)->get(); @endphp
-                @if ($siteReports->isEmpty())
+                @if ($recentReports->isEmpty())
                     <x-empty-state title="No reports yet"
                                    description="Once services are connected you can build and send branded reports." />
                 @else
                     <div class="cr-card divide-y divide-line">
-                        @foreach ($siteReports as $report)
+                        @foreach ($recentReports as $report)
                             <a href="{{ route('reports.show', $report) }}" wire:navigate wire:key="rep-{{ $report->id }}"
                                class="flex items-center justify-between px-5 py-3 hover:bg-paper">
                                 <div>
                                     <div class="font-medium text-ink">{{ $report->title }}</div>
                                     <div class="text-xs text-muted">{{ $report->dateRange()->label() }}</div>
                                 </div>
-                                @if ($report->status === 'final')
+                                @if ($report->isGenerating())
+                                    <x-badge variant="info">{{ $report->generation_status->label() }}</x-badge>
+                                @elseif ($report->status === 'final')
                                     <x-badge variant="ok">Generated</x-badge>
                                 @else
                                     <x-badge variant="neutral">Draft</x-badge>
@@ -60,6 +61,10 @@
                             </a>
                         @endforeach
                     </div>
+                    @if ($reportCount > $recentReports->count())
+                        <p class="mt-2 text-xs text-muted">Showing the latest {{ $recentReports->count() }} of {{ $reportCount }} reports.
+                            <a href="{{ route('reports.index') }}" wire:navigate class="font-medium text-ink hover:underline">View all reports</a></p>
+                    @endif
                 @endif
             </div>
         </div>

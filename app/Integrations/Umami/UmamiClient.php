@@ -4,23 +4,31 @@ declare(strict_types=1);
 
 namespace App\Integrations\Umami;
 
-use App\Integrations\Support\IntegrationException;
+use App\Integrations\Support\AbstractHttpClient;
 use App\Support\DateRange;
-use App\Support\Http\OutboundUrl;
-use App\Support\Http\UnsafeUrlException;
-use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\PendingRequest;
 
 /**
  * Read-only client for the Umami analytics API (Umami Cloud or a self-hosted
  * instance reachable with an API key). Time ranges are millisecond epochs.
  */
-class UmamiClient
+class UmamiClient extends AbstractHttpClient
 {
     public function __construct(
-        private readonly string $baseUrl,
+        private readonly string $instanceUrl,
         private readonly string $apiKey,
         private readonly string $websiteId,
     ) {}
+
+    protected function provider(): string
+    {
+        return 'Umami';
+    }
+
+    protected function baseUrl(): ?string
+    {
+        return $this->instanceUrl;
+    }
 
     /**
      * @return array<string, mixed>
@@ -73,24 +81,14 @@ class UmamiClient
             $params['endAt'] = $range->end->timestamp * 1000;
         }
 
-        try {
-            $response = app(OutboundUrl::class)->client(20)
-                ->withHeaders(['x-umami-api-key' => $this->apiKey])
-                ->acceptJson()
-                ->get(OutboundUrl::check(rtrim($this->baseUrl, '/')).'/'.$path, $params);
-        } catch (UnsafeUrlException $e) {
-            throw new IntegrationException($e->getMessage());
-        } catch (ConnectionException) {
-            throw new IntegrationException('Could not reach Umami. Please try again shortly.');
-        }
+        $response = $this->get($path, $params, fn (PendingRequest $r): PendingRequest => $r->withHeaders(['x-umami-api-key' => $this->apiKey]));
 
-        if ($response->status() === 401 || $response->status() === 403) {
-            throw new IntegrationException('Umami rejected the API key.');
-        }
-
-        if ($response->failed()) {
-            throw new IntegrationException('Umami returned an error (HTTP '.$response->status().'). Check the website ID.');
-        }
+        $this->guard($response, [
+            401 => 'Umami rejected the API key.',
+            403 => 'Umami rejected the API key.',
+        ] + ($response->successful() || in_array($response->status(), [401, 403], true) ? [] : [
+            $response->status() => 'Umami returned an error (HTTP '.$response->status().'). Check the website ID.',
+        ]));
 
         return (array) $response->json();
     }

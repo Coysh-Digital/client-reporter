@@ -9,10 +9,10 @@ use App\Integrations\Contracts\Integration;
 use App\Integrations\IntegrationRegistry;
 use App\Integrations\Support\AuthMethod;
 use App\Integrations\Support\ConfigField;
+use App\Livewire\Concerns\ValidatesConfigFields;
 use App\Models\Site;
 use App\Models\SiteIntegration;
 use App\Support\AuditLogger;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -20,6 +20,8 @@ use Livewire\Component;
 #[Layout('components.layouts.app')]
 class Setup extends Component
 {
+    use ValidatesConfigFields;
+
     public Site $site;
 
     public string $integrationKey = '';
@@ -106,7 +108,7 @@ class Setup extends Component
         $integration = $this->integration();
         $existing = $this->connection();
         $fields = $this->fields($integration, $existing);
-        $this->validateFields($fields, $existing);
+        $this->validateConfigFields($fields, $this->values, $this->name, $existing !== null);
 
         $credentials = $existing !== null ? ($existing->credentials ?? []) : [];
         $settings = $existing !== null ? ($existing->settings ?? []) : [];
@@ -176,34 +178,6 @@ class Setup extends Component
         session()->flash('status', $result->message);
 
         return $this->redirectRoute('sites.show', $this->site, navigate: true);
-    }
-
-    /**
-     * @param  array<int, ConfigField>  $fields
-     */
-    private function validateFields(array $fields, ?SiteIntegration $existing): void
-    {
-        $rules = [];
-        $attributes = [];
-
-        foreach ($fields as $field) {
-            $rule = $field->validationRules();
-
-            // On edit, a secret left blank means "keep existing".
-            if ($field->secret && $existing !== null) {
-                $rule = array_map(fn ($r) => $r === 'required' ? 'nullable' : $r, $rule);
-            }
-
-            $rules["values.{$field->key}"] = $rule;
-            $attributes["values.{$field->key}"] = $field->label;
-        }
-
-        Validator::make(
-            ['values' => $this->values, 'name' => $this->name],
-            array_merge($rules, ['name' => ['required', 'string', 'max:255']]),
-            [],
-            $attributes,
-        )->validate();
     }
 
     public function isConnectorBased(): bool

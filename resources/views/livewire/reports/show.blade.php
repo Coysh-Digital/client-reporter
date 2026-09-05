@@ -1,6 +1,20 @@
-<div>
+<div {{ $report->isGenerating() ? 'wire:poll.3s=pollGeneration' : '' }}>
     @if (session('status'))
         <div class="mb-4 rounded-md bg-ok-soft px-3 py-2 text-sm text-ok">{{ session('status') }}</div>
+    @endif
+
+    @if ($report->generationFailed())
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md bg-danger-soft px-4 py-3 text-sm text-danger">
+            <span>Generation failed: {{ $report->generation_error }}</span>
+            @can('manage-reports')
+                <button type="button" wire:click="retryGeneration" class="cr-btn cr-btn-secondary">Try again</button>
+            @endcan
+        </div>
+    @elseif ($report->isGenerating())
+        <div class="mb-4 flex items-center gap-3 rounded-md bg-info-soft px-4 py-3 text-sm text-info">
+            <span class="inline-block h-2 w-2 animate-pulse rounded-full" style="background:var(--color-info);"></span>
+            {{ $report->generation_status === \App\Enums\GenerationStatus::Queued ? 'Generation is queued and will start shortly.' : 'Generating this report in the background — fresh data is being collected.' }}
+        </div>
     @endif
 
     <div class="mb-2 text-sm text-muted">
@@ -13,9 +27,9 @@
         <x-slot:actions>
             @can('manage-reports')
                 <a href="{{ route('reports.edit', $report) }}" wire:navigate class="cr-btn cr-btn-secondary">Edit</a>
-                <button wire:click="generate" class="cr-btn cr-btn-secondary">
-                    <span wire:loading.remove wire:target="generate">{{ $report->isGenerated() ? 'Regenerate' : 'Generate' }}</span>
-                    <span wire:loading wire:target="generate">Working…</span>
+                <button wire:click="generate" class="cr-btn cr-btn-secondary" @disabled($report->isGenerating())>
+                    <span wire:loading.remove wire:target="generate">{{ $report->isGenerating() ? 'Generating…' : ($report->isGenerated() ? 'Regenerate' : 'Generate') }}</span>
+                    <span wire:loading wire:target="generate">Queuing…</span>
                 </button>
                 @if ($report->isGenerated())
                     <livewire:reports.share-panel :report="$report" :key="'share-'.$report->id" />
@@ -42,7 +56,7 @@
             <div class="cr-card px-5 py-4">
                 <h3 class="text-xs font-medium uppercase tracking-wide text-faint">Details</h3>
                 <dl class="mt-3 space-y-2 text-sm">
-                    <div><dt class="text-muted">Status</dt><dd>@if ($report->isGenerated())<x-badge variant="ok">Generated</x-badge>@else<x-badge variant="neutral">Draft</x-badge>@endif</dd></div>
+                    <div><dt class="text-muted">Status</dt><dd>@if ($report->isGenerating())<x-badge variant="info">{{ $report->generation_status->label() }}</x-badge>@elseif ($report->isGenerated())<x-badge variant="ok">Generated</x-badge>@else<x-badge variant="neutral">Draft</x-badge>@endif</dd></div>
                     <div><dt class="text-muted">Period</dt><dd class="text-ink">{{ $report->dateRange()->label() }}</dd></div>
                     <div><dt class="text-muted">Comparison</dt><dd class="text-ink">{{ $report->compare_previous ? 'Previous period' : 'Off' }}</dd></div>
                     @if ($report->generated_at)

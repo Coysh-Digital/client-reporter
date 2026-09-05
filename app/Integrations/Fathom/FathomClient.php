@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace App\Integrations\Fathom;
 
-use App\Integrations\Support\IntegrationException;
+use App\Integrations\Support\AbstractHttpClient;
 use App\Support\DateRange;
-use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Response;
 
 /**
  * Read-only client for the Fathom Analytics API (v1 aggregations).
  */
-class FathomClient
+class FathomClient extends AbstractHttpClient
 {
     private const BASE = 'https://api.usefathom.com/v1';
 
@@ -21,32 +21,24 @@ class FathomClient
         private readonly string $siteId,
     ) {}
 
+    protected function provider(): string
+    {
+        return 'Fathom';
+    }
+
     /**
      * @param  array<string, scalar>  $extra
      * @return array<int, array<string, mixed>>
      */
     public function aggregations(DateRange $range, array $aggregates, array $extra = []): array
     {
-        try {
-            $response = Http::withToken($this->token)->timeout(20)->acceptJson()
-                ->get(self::BASE.'/aggregations', array_merge([
-                    'entity' => 'pageview',
-                    'entity_id' => $this->siteId,
-                    'aggregates' => implode(',', $aggregates),
-                    'date_from' => $range->start->toDateString(),
-                    'date_to' => $range->end->toDateString(),
-                ], $extra));
-        } catch (ConnectionException) {
-            throw new IntegrationException('Could not reach Fathom. Please try again shortly.');
-        }
-
-        if ($response->status() === 401 || $response->status() === 403) {
-            throw new IntegrationException('Fathom rejected the API token.');
-        }
-
-        if ($response->failed()) {
-            throw new IntegrationException('Fathom returned an error (HTTP '.$response->status().'). Check the site ID.');
-        }
+        $response = $this->request('/aggregations', array_merge([
+            'entity' => 'pageview',
+            'entity_id' => $this->siteId,
+            'aggregates' => implode(',', $aggregates),
+            'date_from' => $range->start->toDateString(),
+            'date_to' => $range->end->toDateString(),
+        ], $extra), 'Fathom returned an error (HTTP :status). Check the site ID.');
 
         return (array) $response->json();
     }
@@ -60,20 +52,7 @@ class FathomClient
      */
     public function eventNames(): array
     {
-        try {
-            $response = Http::withToken($this->token)->timeout(20)->acceptJson()
-                ->get(self::BASE."/sites/{$this->siteId}/events", ['limit' => 100]);
-        } catch (ConnectionException) {
-            throw new IntegrationException('Could not reach Fathom. Please try again shortly.');
-        }
-
-        if ($response->status() === 401 || $response->status() === 403) {
-            throw new IntegrationException('Fathom rejected the API token.');
-        }
-
-        if ($response->failed()) {
-            throw new IntegrationException('Fathom returned an error (HTTP '.$response->status().').');
-        }
+        $response = $this->request("/sites/{$this->siteId}/events", ['limit' => 100]);
 
         return array_values(array_filter(array_map(
             fn (array $event): string => (string) ($event['name'] ?? ''),
@@ -90,27 +69,14 @@ class FathomClient
      */
     public function eventAggregation(DateRange $range, string $eventName, array $aggregates): array
     {
-        try {
-            $response = Http::withToken($this->token)->timeout(20)->acceptJson()
-                ->get(self::BASE.'/aggregations', [
-                    'entity' => 'event',
-                    'site_id' => $this->siteId,
-                    'entity_name' => $eventName,
-                    'aggregates' => implode(',', $aggregates),
-                    'date_from' => $range->start->toDateString(),
-                    'date_to' => $range->end->toDateString(),
-                ]);
-        } catch (ConnectionException) {
-            throw new IntegrationException('Could not reach Fathom. Please try again shortly.');
-        }
-
-        if ($response->status() === 401 || $response->status() === 403) {
-            throw new IntegrationException('Fathom rejected the API token.');
-        }
-
-        if ($response->failed()) {
-            throw new IntegrationException('Fathom returned an error (HTTP '.$response->status().').');
-        }
+        $response = $this->request('/aggregations', [
+            'entity' => 'event',
+            'site_id' => $this->siteId,
+            'entity_name' => $eventName,
+            'aggregates' => implode(',', $aggregates),
+            'date_from' => $range->start->toDateString(),
+            'date_to' => $range->end->toDateString(),
+        ]);
 
         return (array) $response->json();
     }
@@ -122,23 +88,28 @@ class FathomClient
      */
     public function sites(): array
     {
-        try {
-            $response = Http::withToken($this->token)->timeout(20)->acceptJson()->get(self::BASE.'/sites');
-        } catch (ConnectionException) {
-            throw new IntegrationException('Could not reach Fathom. Please try again shortly.');
-        }
-
-        if ($response->status() === 401 || $response->status() === 403) {
-            throw new IntegrationException('Fathom rejected the API token.');
-        }
-
-        if ($response->failed()) {
-            throw new IntegrationException('Fathom returned an error (HTTP '.$response->status().').');
-        }
-
-        $data = $response->json();
+        $data = $this->request('/sites')->json();
         $list = is_array($data) ? ($data['data'] ?? $data) : [];
 
         return is_array($list) ? array_values(array_filter($list, 'is_array')) : [];
+    }
+
+    /**
+     * @param  array<string, mixed>  $query
+     */
+    private function request(string $path, array $query = [], ?string $failure = null): Response
+    {
+        $response = $this->get(self::BASE.$path, $query, fn (PendingRequest $r): PendingRequest => $r->withToken($this->token));
+
+        $messages = [
+            401 => 'Fathom rejected the API token.',
+            403 => 'Fathom rejected the API token.',
+        ];
+
+        if ($failure !== null && ! $response->successful()) {
+            $messages[$response->status()] ??= str_replace(':status', (string) $response->status(), $failure);
+        }
+
+        return $this->guard($response, $messages);
     }
 }

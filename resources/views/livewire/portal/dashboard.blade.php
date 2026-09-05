@@ -19,6 +19,9 @@
                     </a>
                 @endforeach
             </div>
+            @if ($reports->hasPages())
+                <div class="mt-4">{{ $reports->links('vendor.pagination.cr') }}</div>
+            @endif
         @endif
     </div>
 

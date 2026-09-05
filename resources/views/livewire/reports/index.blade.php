@@ -42,7 +42,11 @@
                     <div class="flex flex-wrap items-center justify-between gap-3 sm:contents">
                         <span class="tnum text-[13px] text-muted">{{ $report->dateRange()->label() }}</span>
                         <span>
-                            @if ($report->status === 'final')
+                            @if ($report->isGenerating())
+                                <x-status-dot variant="info" :label="$report->generation_status->label()" />
+                            @elseif ($report->generationFailed())
+                                <x-status-dot variant="danger" label="Generation failed" />
+                            @elseif ($report->status === 'final')
                                 <x-status-dot variant="ok" label="Generated" />
                             @else
                                 <x-status-dot variant="neutral" label="Draft" />

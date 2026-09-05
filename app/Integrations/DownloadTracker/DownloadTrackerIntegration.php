@@ -75,7 +75,7 @@ class DownloadTrackerIntegration extends Integration
     public function verify(SiteIntegration $connection): VerificationResult
     {
         try {
-            $data = $this->client($connection)->get('verify');
+            $data = $this->client($connection)->fetch('verify');
         } catch (IntegrationException $e) {
             return VerificationResult::failure($e->getMessage());
         }

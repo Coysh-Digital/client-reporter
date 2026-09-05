@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Integrations\FreeAgent;
 
-use App\Integrations\Support\IntegrationException;
-use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Support\Facades\Http;
+use App\Integrations\Support\AbstractHttpClient;
+use App\Integrations\Support\AuthenticationException;
+use Illuminate\Http\Client\PendingRequest;
 
 /**
  * Read-only client for the FreeAgent API (v2). Exchanges a stored refresh
@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Http;
  * invoices — used only to sync the agency's own billing into the local
  * invoice ledger, never to read a client's own accounts.
  */
-class FreeAgentClient
+class FreeAgentClient extends AbstractHttpClient
 {
     private const BASE = 'https://api.freeagent.com/v2';
 
@@ -26,27 +26,28 @@ class FreeAgentClient
         private readonly string $clientSecret,
     ) {}
 
+    protected function provider(): string
+    {
+        return 'FreeAgent';
+    }
+
     public function accessToken(): string
     {
         if ($this->token !== null) {
             return $this->token;
         }
 
-        try {
-            $response = Http::asForm()->timeout(20)->post(self::BASE.'/token_endpoint', [
-                'client_id' => $this->clientId,
-                'client_secret' => $this->clientSecret,
-                'refresh_token' => $this->refreshToken,
-                'grant_type' => 'refresh_token',
-            ]);
-        } catch (ConnectionException) {
-            throw new IntegrationException('Could not reach FreeAgent. Please try again shortly.');
-        }
+        $response = $this->post(self::BASE.'/token_endpoint', [
+            'client_id' => $this->clientId,
+            'client_secret' => $this->clientSecret,
+            'refresh_token' => $this->refreshToken,
+            'grant_type' => 'refresh_token',
+        ], asForm: true);
 
         $token = $response->json('access_token');
 
         if (! $response->successful() || ! is_string($token)) {
-            throw new IntegrationException('FreeAgent declined the connection. It may need to be reconnected.');
+            throw new AuthenticationException('FreeAgent declined the connection. It may need to be reconnected.');
         }
 
         return $this->token = $token;
@@ -97,7 +98,7 @@ class FreeAgentClient
         $items = [];
 
         do {
-            $data = $this->get($path, $params + ['per_page' => $perPage, 'page' => $page]);
+            $data = $this->request($path, $params + ['per_page' => $perPage, 'page' => $page]);
             $batch = is_array($data[$key] ?? null) ? $data[$key] : [];
 
             foreach ($batch as $item) {
@@ -114,22 +115,16 @@ class FreeAgentClient
      * @param  array<string, scalar>  $params
      * @return array<string, mixed>
      */
-    private function get(string $path, array $params = []): array
+    private function request(string $path, array $params = []): array
     {
-        try {
-            $response = Http::withToken($this->accessToken())->timeout(20)->acceptJson()
-                ->get(self::BASE.$path, $params);
-        } catch (ConnectionException) {
-            throw new IntegrationException('Could not reach FreeAgent. Please try again shortly.');
-        }
+        $token = $this->accessToken();
 
-        if ($response->status() === 401 || $response->status() === 403) {
-            throw new IntegrationException('FreeAgent rejected the request. The connection may need to be reconnected.');
-        }
+        $response = $this->get(self::BASE.$path, $params, fn (PendingRequest $r): PendingRequest => $r->withToken($token));
 
-        if ($response->failed()) {
-            throw new IntegrationException('FreeAgent returned an error (HTTP '.$response->status().').');
-        }
+        $this->guard($response, [
+            401 => 'FreeAgent rejected the request. The connection may need to be reconnected.',
+            403 => 'FreeAgent rejected the request. The connection may need to be reconnected.',
+        ]);
 
         return (array) $response->json();
     }

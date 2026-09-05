@@ -28,7 +28,7 @@ class WooCommerceCollector extends AbstractCollector
             (string) $connection->credential('secret'),
         );
 
-        $data = $client->get('woocommerce', [
+        $data = $client->fetch('woocommerce', [
             'start' => $range->start->toDateString(),
             'end' => $range->end->toDateString(),
         ]);
