@@ -32,7 +32,7 @@
                     $deltaClass = $isGood === null ? 'delta-flat' : ($isGood ? 'delta-up' : 'delta-down');
                 @endphp
                 <td style="width:20%;padding:0 10px 0 0;vertical-align:top;">
-                    <div style="border:1px solid #efe8da;border-radius:8px;padding:12px 13px;">
+                    <div class="metric-tile">
                         <div class="metric-label">{{ $t['label'] }}</div>
                         <div class="metric-value" style="font-size:21px;margin-top:5px;">{{ Format::forType($cur, $t['fmt'] ?? 'number') }}</div>
                         @if ($prev !== null && $ch['percent'] !== null)

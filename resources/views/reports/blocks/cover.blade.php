@@ -28,7 +28,7 @@
     </div>
 @else
     {{-- Standard / bold: full-bleed branded cover band. --}}
-    <div class="cover-band" style="background:var(--brand-primary);color:#eef0f6;margin:-32px -44px 0;padding:{{ $bold ? '60px 44px 54px' : '52px 44px 46px' }};">
+    <div class="cover-band" style="background:var(--brand-primary);color:#eef0f6;margin:-34px -46px 0;padding:{{ $bold ? '60px 46px 54px' : '52px 46px 46px' }};">
         <table class="cover-split" style="width:100%;border-collapse:collapse;"><tr>
             <td style="vertical-align:middle;">
                 @if ($branding->hasLogo())
@@ -37,10 +37,13 @@
                     <div style="font-family:{!! $branding->headingFont !!};font-size:19px;font-weight:600;color:#fff;">{{ $branding->agencyName }}</div>
                 @endif
             </td>
-            <td style="vertical-align:middle;text-align:right;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#a9b0cd;">Website report</td>
+            <td style="vertical-align:middle;text-align:right;">
+                <span style="display:inline-block;padding:4px 12px;border:1px solid rgba(255,255,255,.28);border-radius:999px;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#e7eaf5;">Website report</span>
+            </td>
         </tr></table>
 
         <div style="margin-top:{{ $bold ? '60px' : '52px' }};">
+            <div style="height:4px;width:44px;background:var(--brand-secondary);border-radius:2px;margin-bottom:20px;"></div>
             <h1 style="font-size:{{ $bold ? '54px' : '46px' }};line-height:1.02;font-weight:600;letter-spacing:-.02em;color:#fff;margin:0;">{{ $client }}</h1>
             <div style="margin-top:14px;font-size:16px;color:#c7ccdf;font-variant-numeric:tabular-nums;">{{ $site }} &middot; {{ $period }}</div>
         </div>
