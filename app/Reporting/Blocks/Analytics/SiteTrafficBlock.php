@@ -124,7 +124,7 @@ class SiteTrafficBlock extends BlockType
                 $tile('analytics.visitors', 'Visitors', 'number', true),
                 $tile('analytics.visits', 'Visits', 'number', true),
                 $tile('analytics.pageviews', 'Pageviews', 'number', true),
-                $tile('analytics.visit_duration', 'Avg visit duration', 'duration', true),
+                $tile('analytics.visit_duration', 'Avg. duration', 'duration', true),
             ],
             'bounce_rate' => $current['analytics.bounce_rate']['value'] ?? null,
             'timeseries' => $snapshot['timeseries'] ?? [],
