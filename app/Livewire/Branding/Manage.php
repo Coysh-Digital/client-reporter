@@ -7,9 +7,13 @@ namespace App\Livewire\Branding;
 use App\Models\BrandingProfile;
 use App\Models\Client;
 use App\Models\Site;
+use App\Rules\SafeCss;
 use App\Support\AuditLogger;
 use App\Support\Branding\BrandingResolver;
+use App\Support\GoogleFonts;
+use Closure;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -20,12 +24,17 @@ class Manage extends Component
 {
     use WithFileUploads;
 
+    /** Which profile is being edited; fixed at mount so the gate cannot be swapped from the browser. */
+    #[Locked]
     public string $scope = 'global';
 
+    #[Locked]
     public ?Client $client = null;
 
+    #[Locked]
     public ?Site $site = null;
 
+    #[Locked]
     public BrandingProfile $profile;
 
     // Editable fields
@@ -111,9 +120,9 @@ class Manage extends Component
             'report_footer' => ['nullable', 'string', 'max:2000'],
             'email_footer' => ['nullable', 'string', 'max:2000'],
             'report_cover_style' => ['required', 'in:minimal,standard,bold'],
-            'heading_font' => ['nullable', 'string', 'max:255'],
-            'body_font' => ['nullable', 'string', 'max:255'],
-            'custom_css' => ['nullable', 'string', 'max:20000'],
+            'heading_font' => ['nullable', 'string', 'max:255', $this->knownFont()],
+            'body_font' => ['nullable', 'string', 'max:255', $this->knownFont()],
+            'custom_css' => ['nullable', 'string', 'max:20000', new SafeCss],
             'logo' => ['nullable', 'image', 'max:2048'],
             'favicon' => ['nullable', 'image', 'max:512'],
         ]);
@@ -122,6 +131,14 @@ class Manage extends Component
             if (in_array($field, ['logo', 'favicon'], true)) {
                 continue;
             }
+
+            // Fonts are stored as the canonical stack for the chosen catalogue
+            // family, never as the raw string the browser sent.
+            if (in_array($field, ['heading_font', 'body_font'], true)) {
+                $family = GoogleFonts::extractFamily(is_string($value) ? $value : null);
+                $value = $family !== null ? GoogleFonts::cssStack($family) : '';
+            }
+
             $this->profile->{$field} = $value !== '' ? $value : null;
         }
 
@@ -159,13 +176,34 @@ class Manage extends Component
         $this->profile->update(['favicon_path' => null]);
     }
 
+    /**
+     * The gate follows the profile actually being edited (its owner type), not
+     * a request value, so a client/site editor can never reach the global profile.
+     */
     private function authorizeScope(): void
     {
-        $this->authorize(match ($this->scope) {
-            'site' => 'manage-sites',
-            'client' => 'manage-clients',
+        $owner = $this->profile->exists ? $this->profile->brandable_type : null;
+
+        $ability = match (true) {
+            $owner === (new Site)->getMorphClass(), $this->scope === 'site' && $owner === null => 'manage-sites',
+            $owner === (new Client)->getMorphClass(), $this->scope === 'client' && $owner === null => 'manage-clients',
             default => 'manage-branding',
-        });
+        };
+
+        $this->authorize($ability);
+    }
+
+    /**
+     * Only a family from the curated catalogue may be stored: the value ends
+     * up inside a <style> block on every client-facing report.
+     */
+    private function knownFont(): Closure
+    {
+        return function (string $attribute, mixed $value, Closure $fail): void {
+            if (is_string($value) && trim($value) !== '' && GoogleFonts::extractFamily($value) === null) {
+                $fail('Choose a font from the list.');
+            }
+        };
     }
 
     public function render(): mixed

@@ -7,9 +7,9 @@ namespace App\Http\Controllers;
 use App\Enums\ConnectionStatus;
 use App\Models\WorkspaceIntegration;
 use App\Support\AuditLogger;
+use App\Support\OAuthState;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Http;
 
@@ -33,7 +33,7 @@ class FreeAgentOAuthController
             'client_id' => config('services.freeagent.client_id'),
             'redirect_uri' => route('integrations.freeagent.callback'),
             'response_type' => 'code',
-            'state' => Crypt::encryptString((string) $workspace->id),
+            'state' => OAuthState::issue('freeagent', (string) $workspace->id),
         ]);
 
         return redirect('https://api.freeagent.com/v2/approve_app?'.$params);
@@ -43,11 +43,7 @@ class FreeAgentOAuthController
     {
         Gate::authorize('manage-integrations');
 
-        try {
-            $workspaceId = (int) Crypt::decryptString((string) $request->query('state'));
-        } catch (\Throwable) {
-            abort(403, 'Invalid OAuth state.');
-        }
+        $workspaceId = (int) OAuthState::consume($request, 'freeagent');
 
         $workspace = WorkspaceIntegration::query()->findOrFail($workspaceId);
 
@@ -56,7 +52,7 @@ class FreeAgentOAuthController
                 ->with('status', 'FreeAgent connection was cancelled.');
         }
 
-        $response = Http::asForm()->post('https://api.freeagent.com/v2/token_endpoint', [
+        $response = Http::asForm()->timeout(15)->post('https://api.freeagent.com/v2/token_endpoint', [
             'code' => $request->query('code'),
             'client_id' => config('services.freeagent.client_id'),
             'client_secret' => config('services.freeagent.client_secret'),

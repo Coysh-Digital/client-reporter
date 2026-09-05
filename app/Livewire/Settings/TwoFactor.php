@@ -131,7 +131,10 @@ class TwoFactor extends Component
     {
         $user = Auth::user();
 
-        if ($user === null || ! Hash::check($this->password, (string) $user->password)) {
+        $password = $this->password;
+        $this->reset('password');
+
+        if ($user === null || ! Hash::check($password, (string) $user->password)) {
             throw ValidationException::withMessages(['password' => 'That password is incorrect.']);
         }
 

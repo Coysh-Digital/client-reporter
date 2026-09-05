@@ -36,6 +36,32 @@ What this means in practice:
 - Keeping `APP_KEY` secret (and out of version control) is essential — see hardening below.
 - Rotating `APP_KEY` invalidates all stored credentials, which would then need to be re-entered.
 
+**Treat `APP_KEY` as the master key.** Everything encrypted at rest — every integration credential, the AI provider key and users' two-factor secrets — is unreadable without it. If it is lost there is no recovery path other than re-entering each credential and having every user set up two-factor again, so keep a copy of `.env` with your database backups (see [Updating](../updating/README.md)). Never regenerate it on a live install.
+
+## Outbound requests and private networks
+
+Client Reporter fetches from addresses that staff type in: site URLs (favicons), self-hosted analytics and monitoring instances, the WordPress/Craft companion plugins and site-import sources. Every one of those requests goes through a single guard (`App\Support\Http\OutboundUrl`):
+
+- only `http://` and `https://` are allowed, and a URL may not carry a username or password;
+- the host must resolve to a **public** address — loopback, private (RFC 1918), link-local (including cloud metadata endpoints such as `169.254.169.254`), carrier-grade NAT, multicast and reserved ranges are refused, for IPv4 and IPv6 alike;
+- redirects are followed at most three hops and every hop is checked again.
+
+This stops a staff account being used to make the server read from its own network. If a service you connect legitimately lives on a private address, list its hostname in `CLIENT_REPORTER_ALLOWED_HOSTS` (comma-separated), or set `CLIENT_REPORTER_ALLOW_PRIVATE_URLS=true` to turn the check off for the whole install. Prefer the allow-list.
+
+Site favicons are additionally never stored as SVG, because the cached icon is served from the application's own origin.
+
+## Client-facing report pages
+
+Reports (share links, the client portal and staff previews) are served with a strict `Content-Security-Policy` that allows no scripts at all, plus `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `Cache-Control: private, no-store` and `noindex` markers. Agency branding that ends up in the report stylesheet is constrained at both ends: fonts must come from the built-in catalogue, and the optional custom CSS is validated (no markup, no `@import`, no `url()`) when saved and filtered again when rendered.
+
+## Sessions, passwords and reverse proxies
+
+- Passwords must be at least 12 characters (installer, user management, password reset). Login, the two-factor challenge, password-reset requests and share-link password guesses are all rate limited; a share link is revoked after 20 wrong passwords.
+- The two-factor challenge expires five minutes after the password step and re-checks that the account is still active.
+- OAuth connections (Google, Xero, FreeAgent) bind the round-trip to the browser session with a single-use `state` nonce that expires after ten minutes.
+- Behind a reverse proxy, load balancer or CDN, set `TRUSTED_PROXIES` in `.env` (the proxy address(es), or `*` for a CDN such as Cloudflare). Without it the application sees every visitor as the proxy, so rate limits collapse into one bucket and the audit log records the proxy's address.
+- The MCP endpoint's API tokens expire (30 days by default; `client-reporter:mcp-token --expires-days=N`) and can be revoked with `--revoke`. Deactivating or deleting a user revokes their tokens.
+
 ## Public report share tokens
 
 Reports can be shared with clients through public links. These are designed so that a database read can't reveal a working link, and so that access can be time-boxed, password-protected and revoked.
@@ -45,7 +71,7 @@ Reports can be shared with clients through public links. These are designed so t
 - **Optional expiry.** A share can be given an expiry date; once it's past, it no longer resolves.
 - **Optional password.** A share can require a password, stored as a bcrypt hash (`password_hash`) and checked when the visitor unlocks the report.
 - **Revocation.** A share can be revoked (`revoked_at`); a revoked or expired share is treated as inactive and won't resolve.
-- **Rate limiting.** Public report routes are throttled (60 requests/minute), and the password-unlock endpoint is throttled more tightly (10 requests/minute) to resist brute-force guessing of passwords.
+- **Rate limiting and lockout.** Public report routes are throttled (60 requests/minute). Password guesses are limited to 10 per minute per link and address, share passwords must be at least 10 characters, and a link is revoked outright after 20 wrong guesses. An unlock lasts 30 minutes in the visitor's browser session.
 
 ## Staff roles and the client portal
 
@@ -68,7 +94,8 @@ Please do **not** report security vulnerabilities through public GitHub issues. 
 
 Client Reporter is self-hosted, so the security of an installation depends partly on how you deploy it. Here's a sensible baseline:
 
-- **Serve everything over HTTPS.** Connection codes, share links and session cookies all travel over the network; TLS protects them in transit. Set `APP_URL` to the `https://` origin and enforce HTTPS at the web server or load balancer.
+- **Serve everything over HTTPS.** Connection codes, share links and session cookies all travel over the network; TLS protects them in transit. Set `APP_URL` to the `https://` origin, keep `SESSION_SECURE_COOKIE=true` (the default in `.env.example`) and enforce HTTPS at the web server or load balancer. If a proxy terminates TLS, set `TRUSTED_PROXIES` so the app knows the request was secure.
+- **Keep debug off.** `.env.example` ships with `APP_ENV=production` and `APP_DEBUG=false`; a debug error page prints configuration, including secrets, to whoever triggers it.
 - **Protect `APP_KEY`.** It encrypts all stored credentials. Generate a strong key (`php artisan key:generate`), keep it out of version control, and back it up somewhere safe — losing it means re-entering every integration credential; leaking it undermines credential encryption.
 - **Lock down file permissions.** The web server needs write access only to `storage/` and `bootstrap/cache/`; the rest of the application (especially `.env`) shouldn't be world-readable, and `.env` must never be web-accessible.
 - **Keep everything updated.** Apply Client Reporter, PHP, and dependency updates promptly, and keep the companion plugins on client sites up to date too. Security fixes land on the default branch ahead of tagged releases (see [SECURITY.md](../../SECURITY.md)).

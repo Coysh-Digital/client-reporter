@@ -5,9 +5,17 @@ declare(strict_types=1);
 namespace Tests\Feature\Auth;
 
 use App\Enums\UserRole;
+use App\Livewire\Billing\InvoicePanel;
+use App\Livewire\Branding\Manage;
+use App\Livewire\Clients\Index as ClientsIndex;
+use App\Livewire\Reports\Builder;
+use App\Livewire\Reports\SharePanel;
+use App\Models\Client;
+use App\Models\Report;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class AuthorizationTest extends TestCase
@@ -72,5 +80,38 @@ class AuthorizationTest extends TestCase
         $admin = User::factory()->administrator()->create();
 
         $this->actingAs($admin)->get('/users')->assertOk();
+    }
+
+    /**
+     * Livewire actions are reachable without visiting the page that renders
+     * them, so every mutating action re-checks the gate itself.
+     */
+    public function test_a_viewer_cannot_invoke_mutating_livewire_actions(): void
+    {
+        $viewer = User::factory()->viewer()->create();
+        $client = Client::factory()->create();
+        $report = Report::factory()->create();
+
+        Livewire::actingAs($viewer)->test(SharePanel::class, ['report' => $report])
+            ->call('createLink')->assertForbidden();
+
+        Livewire::actingAs($viewer)->test(Builder::class, ['report' => $report])
+            ->assertForbidden();
+
+        Livewire::actingAs($viewer)->test(InvoicePanel::class, ['client' => $client])
+            ->set('number', 'INV-1')->set('amount', '10')
+            ->call('save')->assertForbidden();
+
+        Livewire::actingAs($viewer)->test(ClientsIndex::class)
+            ->call('delete', $client->id)->assertForbidden();
+
+        $this->assertDatabaseHas('clients', ['id' => $client->id]);
+    }
+
+    public function test_a_manager_cannot_reach_global_branding_through_the_component(): void
+    {
+        $manager = User::factory()->manager()->create();
+
+        Livewire::actingAs($manager)->test(Manage::class)->assertForbidden();
     }
 }

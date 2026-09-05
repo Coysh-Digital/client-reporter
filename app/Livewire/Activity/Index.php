@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Livewire\Activity;
 
 use App\Models\CollectorRun;
+use App\Support\SafeError;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
@@ -62,6 +63,13 @@ class Index extends Component
     public function retryFailedJob(string $uuid): void
     {
         $this->authorize('manage-integrations');
+
+        // Only a job that is actually in failed_jobs may be retried: queue:retry
+        // also accepts "all", which must not be reachable from the browser.
+        if (! Str::isUuid($uuid) || ! DB::table('failed_jobs')->where('uuid', $uuid)->exists()) {
+            return;
+        }
+
         // queue:retry re-dispatches the stored job onto its original connection,
         // then removes it from failed_jobs — the only correct way to retry.
         Artisan::call('queue:retry', ['id' => [$uuid]]);
@@ -133,7 +141,7 @@ class Index extends Component
                     'name' => $this->jobName($job->payload),
                     'queue' => (string) $job->queue,
                     'failed_at' => Carbon::parse((string) $job->failed_at),
-                    'exception' => Str::of((string) $job->exception)->explode("\n")->first() ?? '',
+                    'exception' => SafeError::fromTrace((string) $job->exception),
                 ])->all();
         } catch (\Throwable) {
             return [];

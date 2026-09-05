@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Support\AuditLogger;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -44,12 +45,16 @@ class Form extends Component
     {
         $this->authorize('manage-users');
 
+        // This form manages staff accounts only; converting a client-portal
+        // user into staff (while it keeps a client_id) is never intended.
+        abort_if($this->user?->isClient(), 403);
+
         $validated = $this->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->user?->id)],
             'role' => ['required', Rule::in(array_map(fn (UserRole $r) => $r->value, UserRole::staffRoles()))],
             'is_active' => ['boolean'],
-            'password' => [$this->user ? 'nullable' : 'required', 'string', 'min:8', 'confirmed'],
+            'password' => [$this->user ? 'nullable' : 'required', 'string', Password::defaults(), 'confirmed'],
         ]);
 
         $attributes = [
@@ -71,6 +76,7 @@ class Form extends Component
             $audit->log('user.created', $user);
         }
 
+        $this->reset('password', 'password_confirmation');
         session()->flash('status', $this->user ? 'User updated.' : 'User created.');
 
         return $this->redirectRoute('users.index', navigate: true);

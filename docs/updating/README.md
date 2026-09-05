@@ -7,7 +7,7 @@ Since Client Reporter is source you clone, updating just means pulling the lates
 ## Before you update
 
 - **Back up your database.** For SQLite, copy `database/database.sqlite`; for MySQL/PostgreSQL, take a dump. Migrations only go forward, so there's no undo.
-- **Back up `.env`** — and keep `APP_KEY` safe in particular, since it's what decrypts your stored integration credentials.
+- **Back up `.env`** — and keep `APP_KEY` safe in particular, since it's what decrypts your stored integration credentials, the AI provider key and users' two-factor secrets. Losing it means re-entering every credential. A complete backup is the database, `.env`, and `storage/app/public/` (uploaded logos and cached favicons).
 - **Read the [changelog](../../CHANGELOG.md)** for the release you're moving to, and take note of anything in a **BREAKING** or upgrade-notes section.
 - It's worth flipping on maintenance mode while you upgrade: `php artisan down` (then `php artisan up` when you're done).
 

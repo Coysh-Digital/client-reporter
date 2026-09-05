@@ -40,7 +40,7 @@ class PlausibleIntegration extends Integration
         return [
             ConfigField::apiKey('api_token', 'API key', 'A Stats API key from Plausible → Settings → API keys.'),
             new ConfigField(key: 'site_id', label: 'Site ID (domain)', required: true, secret: false, help: 'e.g. example.com', placeholder: 'example.com', scope: 'site'),
-            new ConfigField(key: 'base_url', label: 'Plausible URL', required: false, secret: false, help: 'Only for self-hosted Plausible. Leave blank for plausible.io.', placeholder: 'https://plausible.io'),
+            ConfigField::url('base_url', 'Plausible URL', required: false, help: 'Only for self-hosted Plausible. Leave blank for plausible.io.', placeholder: 'https://plausible.io'),
         ];
     }
 

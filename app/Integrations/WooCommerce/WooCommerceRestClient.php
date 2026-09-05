@@ -6,8 +6,9 @@ namespace App\Integrations\WooCommerce;
 
 use App\Integrations\Support\IntegrationException;
 use App\Support\DateRange;
+use App\Support\Http\OutboundUrl;
+use App\Support\Http\UnsafeUrlException;
 use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Support\Facades\Http;
 
 /**
  * Read-only client for the WooCommerce REST API (v3). Authenticates with a
@@ -82,8 +83,11 @@ class WooCommerceRestClient
     private function get(string $path, array $params = []): array
     {
         try {
-            $response = Http::withBasicAuth($this->consumerKey, $this->consumerSecret)
-                ->timeout(20)->acceptJson()->get($this->baseUrl.$path, $params);
+            $response = app(OutboundUrl::class)->client(20)
+                ->withBasicAuth($this->consumerKey, $this->consumerSecret)
+                ->acceptJson()->get(OutboundUrl::check($this->baseUrl).$path, $params);
+        } catch (UnsafeUrlException $e) {
+            throw new IntegrationException($e->getMessage());
         } catch (ConnectionException) {
             throw new IntegrationException('Could not reach the WooCommerce store. Check the store URL and try again.');
         }

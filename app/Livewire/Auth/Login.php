@@ -38,6 +38,9 @@ class Login extends Component
         $provider = Auth::getProvider();
         $user = $provider->retrieveByCredentials($credentials);
 
+        // The password has done its job; never echo it back in the response.
+        $this->reset('password');
+
         if ($user === null || ! $provider->validateCredentials($user, $credentials)) {
             RateLimiter::hit($this->throttleKey());
             $audit->log('auth.login.failed', metadata: ['email' => $this->email]);
@@ -62,7 +65,11 @@ class Login extends Component
         // Second factor required: hand off to the challenge, holding only the
         // pending user id (never the password) and the remember choice.
         if ($user->hasTwoFactorEnabled()) {
+            // A fresh session id for the half-authenticated state, so a session
+            // fixed before login cannot be completed by someone else.
+            session()->regenerate();
             session()->put('auth.two_factor.pending_id', $user->id);
+            session()->put('auth.two_factor.pending_at', now()->timestamp);
             session()->put('auth.two_factor.remember', $this->remember);
 
             return $this->redirectRoute('two-factor.challenge', navigate: true);

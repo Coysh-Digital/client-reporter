@@ -7,9 +7,9 @@ namespace App\Http\Controllers;
 use App\Enums\ConnectionStatus;
 use App\Models\WorkspaceIntegration;
 use App\Support\AuditLogger;
+use App\Support\OAuthState;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Http;
 
@@ -35,7 +35,7 @@ class XeroOAuthController
             'client_id' => config('services.xero.client_id'),
             'redirect_uri' => route('integrations.xero.callback'),
             'scope' => self::SCOPE,
-            'state' => Crypt::encryptString((string) $workspace->id),
+            'state' => OAuthState::issue('xero', (string) $workspace->id),
         ]);
 
         return redirect('https://login.xero.com/identity/connect/authorize?'.$params);
@@ -45,11 +45,7 @@ class XeroOAuthController
     {
         Gate::authorize('manage-integrations');
 
-        try {
-            $workspaceId = (int) Crypt::decryptString((string) $request->query('state'));
-        } catch (\Throwable) {
-            abort(403, 'Invalid OAuth state.');
-        }
+        $workspaceId = (int) OAuthState::consume($request, 'xero');
 
         $workspace = WorkspaceIntegration::query()->findOrFail($workspaceId);
 
@@ -58,7 +54,7 @@ class XeroOAuthController
                 ->with('status', 'Xero connection was cancelled.');
         }
 
-        $response = Http::asForm()
+        $response = Http::asForm()->timeout(15)
             ->withBasicAuth((string) config('services.xero.client_id'), (string) config('services.xero.client_secret'))
             ->post('https://identity.xero.com/connect/token', [
                 'code' => $request->query('code'),

@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace App\Integrations\Connector;
 
 use App\Integrations\Support\IntegrationException;
+use App\Support\Http\OutboundUrl;
+use App\Support\Http\UnsafeUrlException;
 use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Support\Facades\Http;
 
 /**
  * Makes read-only, HMAC-signed GET requests to a companion connector (the
@@ -36,14 +37,16 @@ class SignedConnectorClient
         $signature = $this->sign('GET', $path, $timestamp, $nonce, '');
 
         try {
-            $response = Http::timeout(20)
+            $response = app(OutboundUrl::class)->client(20)
                 ->withHeaders([
                     'X-CR-Timestamp' => $timestamp,
                     'X-CR-Nonce' => $nonce,
                     'X-CR-Signature' => $signature,
                     'Accept' => 'application/json',
                 ])
-                ->get(rtrim($this->baseUrl, '/').$path, $query);
+                ->get(OutboundUrl::check(rtrim($this->baseUrl, '/')).$path, $query);
+        } catch (UnsafeUrlException $e) {
+            throw new IntegrationException($e->getMessage());
         } catch (ConnectionException) {
             throw new IntegrationException('Could not reach the website. Check the URL and that the plugin is active.');
         }

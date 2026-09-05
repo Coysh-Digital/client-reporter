@@ -71,6 +71,25 @@ class ConnectionSetupTest extends TestCase
         $this->assertSame('original-key', $connection->credential('api_key'));
     }
 
+    public function test_a_self_hosted_service_on_a_private_address_is_refused(): void
+    {
+        Http::fake();
+        $manager = User::factory()->manager()->create();
+        $site = Site::factory()->create();
+
+        foreach (['http://127.0.0.1:8080', 'http://192.168.1.50/matomo', 'http://169.254.169.254', 'ftp://analytics.example.com'] as $url) {
+            Livewire::actingAs($manager)->test(Setup::class, ['site' => $site, 'key' => 'matomo'])
+                ->set('values.base_url', $url)
+                ->set('values.token', 'token')
+                ->set('values.site_id', '1')
+                ->call('save')
+                ->assertHasErrors('values.base_url');
+        }
+
+        Http::assertNothingSent();
+        $this->assertDatabaseCount('site_integrations', 0);
+    }
+
     public function test_a_viewer_cannot_reach_the_connect_screen(): void
     {
         $viewer = User::factory()->viewer()->create();

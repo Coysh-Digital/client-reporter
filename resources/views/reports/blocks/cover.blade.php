@@ -18,7 +18,7 @@
         @if ($branding->hasLogo())
             <img src="{{ $branding->logoUrl }}" alt="{{ $branding->agencyName }}" style="height:40px;max-width:240px;">
         @else
-            <div style="font-family:{!! $branding->headingFont !!};font-size:19px;font-weight:600;color:var(--brand-primary);">{{ $branding->agencyName }}</div>
+            <div style="font-family:{{ $branding->headingFontStack() }};font-size:19px;font-weight:600;color:var(--brand-primary);">{{ $branding->agencyName }}</div>
         @endif
         <div class="metric-label" style="margin-top:30px;">{{ ReportLang::get('cover.eyebrow') }}</div>
         <h1 style="font-size:40px;line-height:1.04;margin-top:8px;color:#211f1b;">{{ $client }}</h1>
@@ -35,7 +35,7 @@
                 @if ($branding->hasLogo())
                     <img src="{{ $branding->logoUrl }}" alt="{{ $branding->agencyName }}" style="height:42px;max-width:240px;">
                 @else
-                    <div style="font-family:{!! $branding->headingFont !!};font-size:19px;font-weight:600;color:#fff;">{{ $branding->agencyName }}</div>
+                    <div style="font-family:{{ $branding->headingFontStack() }};font-size:19px;font-weight:600;color:#fff;">{{ $branding->agencyName }}</div>
                 @endif
             </td>
             <td style="vertical-align:middle;text-align:right;">

@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace App\Importers;
 
 use App\Importers\Contracts\SiteImporter;
-use Illuminate\Support\Facades\Http;
+use App\Support\Http\OutboundUrl;
+use App\Support\Http\UnsafeUrlException;
 use Throwable;
 
 /**
@@ -56,15 +57,17 @@ class WpMgrImporter implements SiteImporter
         }
 
         try {
+            $base = OutboundUrl::check($base);
             // No query params: WPMgr's /sites endpoint doesn't recognise a
             // "state" filter (confirmed against a live instance — sending
             // state=active or include_archived at all silently zeroes the
             // result set rather than erroring). Filter client-side instead,
             // using the real "status" field the API actually returns.
-            $response = Http::withToken($apiKey)
+            $response = app(OutboundUrl::class)->client(20)->withToken($apiKey)
                 ->acceptJson()
-                ->timeout(20)
                 ->get($base.'/api/v1/sites');
+        } catch (UnsafeUrlException $e) {
+            throw new ImporterException($e->getMessage());
         } catch (Throwable $e) {
             throw new ImporterException('Could not reach WPMgr at '.$base.'.');
         }

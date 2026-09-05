@@ -64,7 +64,7 @@ class TwoFactorTest extends TestCase
     {
         $secret = TwoFactor::generateSecret();
         $user = $this->userWithTwoFactor($secret);
-        session(['auth.two_factor.pending_id' => $user->id, 'auth.two_factor.remember' => false]);
+        session(['auth.two_factor.pending_id' => $user->id, 'auth.two_factor.pending_at' => now()->timestamp, 'auth.two_factor.remember' => false]);
 
         Livewire::test(TwoFactorChallenge::class)
             ->set('code', TwoFactor::codeAt($secret))
@@ -75,10 +75,40 @@ class TwoFactorTest extends TestCase
         $this->assertNull(session('auth.two_factor.pending_id'));
     }
 
+    public function test_a_stale_challenge_sends_the_visitor_back_to_login(): void
+    {
+        $secret = TwoFactor::generateSecret();
+        $user = $this->userWithTwoFactor($secret);
+        session(['auth.two_factor.pending_id' => $user->id, 'auth.two_factor.pending_at' => now()->subMinutes(6)->timestamp]);
+
+        Livewire::test(TwoFactorChallenge::class)
+            ->set('code', TwoFactor::codeAt($secret))
+            ->call('verify')
+            ->assertRedirect(route('login'));
+
+        $this->assertGuest();
+        $this->assertNull(session('auth.two_factor.pending_id'));
+    }
+
+    public function test_the_challenge_refuses_an_account_deactivated_mid_way(): void
+    {
+        $secret = TwoFactor::generateSecret();
+        $user = $this->userWithTwoFactor($secret);
+        $user->update(['is_active' => false]);
+        session(['auth.two_factor.pending_id' => $user->id, 'auth.two_factor.pending_at' => now()->timestamp]);
+
+        Livewire::test(TwoFactorChallenge::class)
+            ->set('code', TwoFactor::codeAt($secret))
+            ->call('verify')
+            ->assertRedirect(route('login'));
+
+        $this->assertGuest();
+    }
+
     public function test_the_challenge_rejects_a_wrong_code(): void
     {
         $user = $this->userWithTwoFactor(TwoFactor::generateSecret());
-        session(['auth.two_factor.pending_id' => $user->id]);
+        session(['auth.two_factor.pending_id' => $user->id, 'auth.two_factor.pending_at' => now()->timestamp]);
 
         Livewire::test(TwoFactorChallenge::class)
             ->set('code', '000000')
@@ -91,7 +121,7 @@ class TwoFactorTest extends TestCase
     public function test_a_recovery_code_signs_in_and_is_consumed(): void
     {
         $user = $this->userWithTwoFactor(TwoFactor::generateSecret(), ['AAAAAA-BBBBBB', 'CCCCCC-DDDDDD']);
-        session(['auth.two_factor.pending_id' => $user->id]);
+        session(['auth.two_factor.pending_id' => $user->id, 'auth.two_factor.pending_at' => now()->timestamp]);
 
         Livewire::test(TwoFactorChallenge::class)
             ->set('recovery', true)

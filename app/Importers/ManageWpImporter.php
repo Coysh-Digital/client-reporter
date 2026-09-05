@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace App\Importers;
 
 use App\Importers\Contracts\SiteImporter;
-use Illuminate\Support\Facades\Http;
+use App\Support\Http\OutboundUrl;
+use App\Support\Http\UnsafeUrlException;
 use Throwable;
 
 /**
@@ -55,10 +56,12 @@ class ManageWpImporter implements SiteImporter
         }
 
         try {
-            $response = Http::withToken($apiKey)
+            $base = OutboundUrl::check($base);
+            $response = app(OutboundUrl::class)->client(20)->withToken($apiKey)
                 ->acceptJson()
-                ->timeout(20)
                 ->get($base.'/websites');
+        } catch (UnsafeUrlException $e) {
+            throw new ImporterException($e->getMessage());
         } catch (Throwable $e) {
             throw new ImporterException('Could not reach ManageWP at '.$base.'.');
         }

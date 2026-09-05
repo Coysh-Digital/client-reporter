@@ -17,7 +17,9 @@ trait AuthorizesStaffAccess
      * Over HTTP the request is authenticated with a Sanctum token, so a user is
      * always present and must be active agency staff. Over the local (stdio)
      * transport there is no authenticated user — whoever runs the command
-     * already has server access, so it is trusted.
+     * already has server access, so it is trusted. Any other context with no
+     * user (a misconfigured route, a future transport) is denied rather than
+     * silently allowed.
      *
      * Returns an error Response to short-circuit the tool, or null to proceed.
      */
@@ -26,7 +28,7 @@ trait AuthorizesStaffAccess
         $user = $request->user();
 
         if (! $user instanceof User) {
-            return null;
+            return app()->runningInConsole() ? null : Response::error('Unauthenticated.');
         }
 
         if (! $user->is_active) {

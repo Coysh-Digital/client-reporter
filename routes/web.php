@@ -28,7 +28,7 @@ use App\Livewire\Templates;
 use App\Livewire\Users;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/install', Install\Wizard::class)->name('install');
+Route::get('/install', Install\Wizard::class)->middleware('throttle:install')->name('install');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', Login::class)->name('login');
@@ -48,10 +48,10 @@ Route::middleware(['auth', 'active'])->group(function () {
 | Public report share links. No authentication — access is gated by the
 | unguessable token plus optional expiry, revocation and password.
 */
-Route::middleware('throttle:60,1')->group(function () {
+Route::middleware(['throttle:60,1', 'report-headers'])->group(function () {
     Route::get('/r/{token}', [PublicReportController::class, 'show'])->name('public-report');
     Route::post('/r/{token}/unlock', [PublicReportController::class, 'unlock'])
-        ->middleware('throttle:10,1')->name('public-report.unlock');
+        ->middleware('throttle:share-unlock')->name('public-report.unlock');
 });
 
 /*
@@ -60,7 +60,7 @@ Route::middleware('throttle:60,1')->group(function () {
 */
 Route::middleware(['auth', 'active', 'can:access-portal'])->prefix('portal')->group(function () {
     Route::get('/', Portal\Dashboard::class)->name('portal.dashboard');
-    Route::get('/reports/{report}', PortalReportController::class)->name('portal.report');
+    Route::get('/reports/{report}', PortalReportController::class)->middleware('report-headers')->name('portal.report');
 });
 
 /*
@@ -92,7 +92,7 @@ Route::middleware(['auth', 'active', 'can:access-admin'])->group(function () {
     Route::get('/reports', Reports\Index::class)->name('reports.index');
     Route::get('/reports/create', Reports\Create::class)->middleware('can:manage-reports')->name('reports.create');
     Route::get('/reports/{report}', Reports\Show::class)->name('reports.show');
-    Route::get('/reports/{report}/preview', ReportPreviewController::class)->name('reports.preview');
+    Route::get('/reports/{report}/preview', ReportPreviewController::class)->middleware('report-headers')->name('reports.preview');
     Route::get('/reports/{report}/pdf', ReportPdfController::class)->name('reports.pdf');
     Route::get('/reports/{report}/edit', Reports\Builder::class)->middleware('can:manage-reports')->name('reports.edit');
 

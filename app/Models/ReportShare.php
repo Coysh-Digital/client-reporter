@@ -15,6 +15,9 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $expires_at
  * @property Carbon|null $revoked_at
  * @property string|null $password_hash
+ * @property string $token_hash
+ * @property int $views
+ * @property int $failed_unlocks
  */
 class ReportShare extends Model
 {
@@ -25,6 +28,7 @@ class ReportShare extends Model
         'expires_at',
         'revoked_at',
         'views',
+        'failed_unlocks',
         'last_viewed_at',
         'created_by',
     ];
@@ -38,6 +42,7 @@ class ReportShare extends Model
             'revoked_at' => 'datetime',
             'last_viewed_at' => 'datetime',
             'views' => 'integer',
+            'failed_unlocks' => 'integer',
         ];
     }
 

@@ -9,7 +9,9 @@ use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Password as PasswordRule;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
@@ -23,7 +25,6 @@ class ResetPassword extends Component
     #[Validate('required|string|email')]
     public string $email = '';
 
-    #[Validate('required|string|confirmed|min:8')]
     public string $password = '';
 
     public string $password_confirmation = '';
@@ -36,7 +37,15 @@ class ResetPassword extends Component
 
     public function resetPassword(AuditLogger $audit): mixed
     {
-        $this->validate();
+        $this->validate([
+            'password' => ['required', 'string', 'confirmed', PasswordRule::defaults()],
+        ]);
+
+        if (! RateLimiter::attempt('password-reset|'.request()->ip(), 5, fn () => true)) {
+            throw ValidationException::withMessages([
+                'email' => 'Too many attempts. Please wait a minute and try again.',
+            ]);
+        }
 
         $status = Password::reset(
             [
@@ -54,6 +63,8 @@ class ResetPassword extends Component
                 Event::dispatch(new PasswordReset($user));
             }
         );
+
+        $this->reset('password', 'password_confirmation');
 
         if ($status !== Password::PasswordReset) {
             throw ValidationException::withMessages(['email' => __($status)]);

@@ -19,6 +19,8 @@ php artisan migrate      # default SQLite needs no configuration
 npm run build
 ```
 
+`.env.example` ships with production-safe values. For a local copy served over plain `http://`, set `APP_ENV=local`, `APP_DEBUG=true` and `SESSION_SECURE_COOKIE=false` in `.env` (otherwise the session cookie is never sent and you cannot stay signed in).
+
 Serve the app with `php artisan serve`, and run the Vite dev server with `npm run dev` for hot asset reloading. The `composer setup` script rolls the install/migrate/build steps into one command if you'd rather.
 
 ## Domain model

@@ -9,9 +9,13 @@ use Illuminate\Console\Command;
 
 class MakeMcpToken extends Command
 {
-    protected $signature = 'client-reporter:mcp-token {email : The email of the staff user the token belongs to} {--name=MCP access : A label for the token}';
+    protected $signature = 'client-reporter:mcp-token
+        {email : The email of the staff user the token belongs to}
+        {--name=MCP access : A label for the token}
+        {--expires-days=30 : Days until the token expires (1–365)}
+        {--revoke : Revoke every MCP token this user holds instead of creating one}';
 
-    protected $description = 'Create a Sanctum token for read-only MCP (HTTP) access, tied to a staff user';
+    protected $description = 'Create (or revoke) a Sanctum token for read-only MCP (HTTP) access, tied to a staff user';
 
     public function handle(): int
     {
@@ -23,6 +27,13 @@ class MakeMcpToken extends Command
             $this->error("No user found with email {$email}.");
 
             return self::FAILURE;
+        }
+
+        if ($this->option('revoke')) {
+            $count = $user->tokens()->delete();
+            $this->info("Revoked {$count} MCP token(s) for {$user->email}.");
+
+            return self::SUCCESS;
         }
 
         if (! $user->isStaff()) {
@@ -37,10 +48,13 @@ class MakeMcpToken extends Command
             return self::FAILURE;
         }
 
-        $token = $user->createToken((string) $this->option('name'), ['mcp:read']);
+        $days = max(1, min(365, (int) $this->option('expires-days')));
+        $expiresAt = now()->addDays($days);
+
+        $token = $user->createToken((string) $this->option('name'), ['mcp:read'], $expiresAt);
 
         $this->newLine();
-        $this->info("MCP token created for {$user->name} <{$user->email}>.");
+        $this->info("MCP token created for {$user->name} <{$user->email}>. It expires on {$expiresAt->toDateString()}.");
         $this->newLine();
         $this->line('  '.$token->plainTextToken);
         $this->newLine();

@@ -6,8 +6,9 @@ namespace App\Integrations\BetterUptime;
 
 use App\Integrations\Support\IntegrationException;
 use App\Support\DateRange;
+use App\Support\Http\OutboundUrl;
+use App\Support\Http\UnsafeUrlException;
 use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Support\Facades\Http;
 
 /**
  * Read-only client for the Better Stack (Better Uptime) v2 API.
@@ -64,8 +65,10 @@ class BetterUptimeClient
     private function request(string $path, array $params = []): array
     {
         try {
-            $response = Http::withToken($this->token)->timeout(20)->acceptJson()
-                ->get(rtrim($this->baseUrl, '/').'/'.$path, $params);
+            $response = app(OutboundUrl::class)->client(20)->withToken($this->token)->acceptJson()
+                ->get(OutboundUrl::check(rtrim($this->baseUrl, '/')).'/'.$path, $params);
+        } catch (UnsafeUrlException $e) {
+            throw new IntegrationException($e->getMessage());
         } catch (ConnectionException) {
             throw new IntegrationException('Could not reach Better Stack. Please try again shortly.');
         }

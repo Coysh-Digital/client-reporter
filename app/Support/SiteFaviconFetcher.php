@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace App\Support;
 
 use App\Models\Site;
-use Illuminate\Support\Facades\Http;
+use App\Support\Http\OutboundUrl;
+use App\Support\Http\UnsafeUrlException;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
 
@@ -15,6 +16,10 @@ use Throwable;
  * Parses the homepage for a declared icon <link>, falling back to /favicon.ico,
  * and stores the image on the public disk. Best-effort: any failure leaves the
  * previously cached icon in place and just records the attempt time.
+ *
+ * Every fetch goes through the outbound URL guard, and SVG is deliberately not
+ * accepted: the icon is served from this application's own origin, so a
+ * script-bearing SVG from a client site would run with the app's cookies.
  */
 class SiteFaviconFetcher
 {
@@ -27,7 +32,6 @@ class SiteFaviconFetcher
         'image/png' => 'png',
         'image/x-icon' => 'ico',
         'image/vnd.microsoft.icon' => 'ico',
-        'image/svg+xml' => 'svg',
         'image/jpeg' => 'jpg',
         'image/gif' => 'gif',
         'image/webp' => 'webp',
@@ -42,8 +46,11 @@ class SiteFaviconFetcher
         $origin = ($parts['scheme'] ?? 'https').'://'.$parts['host'];
 
         try {
-            $iconUrl = $this->discoverIconUrl($site->url, $origin);
-            $response = Http::timeout(self::TIMEOUT)->get($iconUrl);
+            $guard = app(OutboundUrl::class);
+            $guard->assertPublic($site->url);
+
+            $iconUrl = $this->discoverIconUrl($guard, $site->url, $origin);
+            $response = $guard->client(self::TIMEOUT)->get($iconUrl);
 
             $ext = $this->extensionFor((string) $response->header('Content-Type'), $iconUrl);
             $body = $response->body();
@@ -69,10 +76,10 @@ class SiteFaviconFetcher
         }
     }
 
-    private function discoverIconUrl(string $pageUrl, string $origin): string
+    private function discoverIconUrl(OutboundUrl $guard, string $pageUrl, string $origin): string
     {
         try {
-            $html = Http::timeout(self::TIMEOUT)->get($pageUrl)->body();
+            $html = $guard->client(self::TIMEOUT)->get($pageUrl)->body();
         } catch (Throwable) {
             $html = '';
         }
@@ -93,9 +100,17 @@ class SiteFaviconFetcher
                     continue;
                 }
 
-                // SVG icons scale cleanly, so prefer one if declared.
+                // A declared icon may live on any host; it must pass the same
+                // guard as the site itself before it is fetched.
+                try {
+                    $guard->assertPublic($url);
+                } catch (UnsafeUrlException) {
+                    continue;
+                }
+
+                // SVG is not stored (see class docblock); skip declared SVG icons.
                 if (str_contains(strtolower($url), '.svg')) {
-                    return $url;
+                    continue;
                 }
                 $fallback ??= $url;
             }
@@ -133,11 +148,17 @@ class SiteFaviconFetcher
             return self::EXTENSIONS[$type];
         }
 
+        // A declared type we do not accept (SVG, HTML, JSON…) is final: never
+        // save such a body under an image extension borrowed from the URL.
+        if ($type !== '' && ! in_array($type, ['application/octet-stream', 'binary/octet-stream'], true)) {
+            return null;
+        }
+
         // Fall back to the URL's extension only for known image types — never
         // save an HTML error page as if it were an icon.
         $ext = strtolower(pathinfo((string) parse_url($url, PHP_URL_PATH), PATHINFO_EXTENSION));
 
-        return in_array($ext, ['png', 'ico', 'svg', 'jpg', 'jpeg', 'gif', 'webp'], true)
+        return in_array($ext, ['png', 'ico', 'jpg', 'jpeg', 'gif', 'webp'], true)
             ? ($ext === 'jpeg' ? 'jpg' : $ext)
             : null;
     }

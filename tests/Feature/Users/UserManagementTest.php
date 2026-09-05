@@ -85,6 +85,30 @@ class UserManagementTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['event' => 'user.deactivated']);
     }
 
+    public function test_deactivating_a_user_revokes_their_api_tokens(): void
+    {
+        $admin = User::factory()->administrator()->create();
+        $user = User::factory()->manager()->create();
+        $user->createToken('MCP access', ['mcp:read']);
+
+        Livewire::actingAs($admin)->test(Index::class)->call('toggleActive', $user->id);
+
+        $this->assertCount(0, $user->refresh()->tokens);
+    }
+
+    public function test_a_client_portal_user_cannot_be_edited_as_staff(): void
+    {
+        $admin = User::factory()->administrator()->create();
+        $client = User::factory()->client()->create();
+
+        Livewire::actingAs($admin)->test(Form::class, ['user' => $client])
+            ->set('role', 'administrator')
+            ->call('save')
+            ->assertForbidden();
+
+        $this->assertTrue($client->refresh()->isClient());
+    }
+
     public function test_an_admin_can_delete_another_user(): void
     {
         $admin = User::factory()->administrator()->create();

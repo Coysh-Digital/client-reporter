@@ -16,11 +16,9 @@
         <link rel="icon" href="{{ $branding->faviconUrl }}">
     @endif
     {{-- Load the agency's chosen web fonts; ignored by dompdf, which falls back to the stack. --}}
+    <meta name="robots" content="noindex, nofollow">
     @php
-        $fontUrl = \App\Support\GoogleFonts::googleUrl([
-            \App\Support\GoogleFonts::extractFamily($branding->headingFont),
-            \App\Support\GoogleFonts::extractFamily($branding->bodyFont),
-        ]);
+        $fontUrl = \App\Support\GoogleFonts::googleUrl($branding->fontFamilies());
     @endphp
     @if ($fontUrl)
         <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -37,7 +35,7 @@
             margin: 0;
             background: #ece7dd;
             color: #211f1b;
-            font-family: {!! $branding->bodyFont !!};
+            font-family: {!! $branding->bodyFontStack() !!};
             font-size: 15px;
             line-height: 1.6;
             -webkit-font-smoothing: antialiased;
@@ -50,7 +48,7 @@
             overflow: hidden;
             box-shadow: 0 20px 60px -24px rgba(40, 34, 20, .28), 0 2px 8px rgba(40, 34, 20, .05);
         }
-        h1, h2, h3 { font-family: {!! $branding->headingFont !!}; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
+        h1, h2, h3 { font-family: {!! $branding->headingFontStack() !!}; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
         .block { padding: 34px 46px; border-top: 1px solid #ede6d8; }
         .block:first-child { border-top: 0; }
         /* Gently marks the section the builder preview just scrolled to. */
@@ -60,8 +58,8 @@
         .block-heading-row { width: 100%; border-collapse: collapse; margin-bottom: 20px; border-bottom: 1px solid #e7ded0; }
         .block-heading-chip-cell { width: 32px; padding: 0 0 13px 0; vertical-align: middle; }
         .block-heading-chip { display: block; width: 32px; height: 32px; border-radius: 8px; background: var(--brand-primary); padding: 6px; }
-        .block-heading-title-cell { padding: 0 0 13px 12px; vertical-align: middle; font-family: {!! $branding->headingFont !!}; font-size: 17.5px; font-weight: 600; letter-spacing: -0.01em; color: #201e1a; }
-        .block-title-cell { padding: 0 0 13px 12px; vertical-align: middle; font-family: {!! $branding->headingFont !!}; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; color: #201e1a; }
+        .block-heading-title-cell { padding: 0 0 13px 12px; vertical-align: middle; font-family: {!! $branding->headingFontStack() !!}; font-size: 17.5px; font-weight: 600; letter-spacing: -0.01em; color: #201e1a; }
+        .block-title-cell { padding: 0 0 13px 12px; vertical-align: middle; font-family: {!! $branding->headingFontStack() !!}; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; color: #201e1a; }
         .block-heading-source { width: 1%; white-space: nowrap; text-align: right; vertical-align: middle; padding: 0 0 13px 14px; }
         .block-heading-source-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: #98938a; margin-right: 8px; vertical-align: middle; }
         .block-heading-source-badge { display: inline-block; padding: 3px 11px; border-radius: 999px; background: #f3ecdf; font-size: 11px; font-weight: 600; color: #4a463d; vertical-align: middle; }
@@ -86,7 +84,7 @@
         .metric-grid { width: 100%; border-collapse: collapse; margin-top: 4px; }
         .metric-grid td { width: 25%; padding: 4px 14px 4px 0; vertical-align: top; }
         .metric-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #8b857a; }
-        .metric-value { font-family: {!! $branding->headingFont !!}; font-size: 27px; color: #211f1b; margin-top: 3px; font-variant-numeric: tabular-nums; }
+        .metric-value { font-family: {!! $branding->headingFontStack() !!}; font-size: 27px; color: #211f1b; margin-top: 3px; font-variant-numeric: tabular-nums; }
         .delta { font-size: 12.5px; margin-top: 2px; font-variant-numeric: tabular-nums; }
         .delta-up { color: #3f7d54; }
         .delta-down { color: #a13b32; }
@@ -107,7 +105,7 @@
         .status-cell { display: block; height: 20px; border-radius: 3px; font-size: 0; line-height: 0; }
         .gauge-ring-img { display: block; margin: 0 auto; }
         .report-footer { text-align: center; color: #9a9384; font-size: 12.5px; margin-top: 22px; line-height: 1.7; }
-        .report-footer .footer-name { font-family: {!! $branding->headingFont !!}; font-size: 15px; font-weight: 600; color: #4a463d; display: block; margin-bottom: 4px; }
+        .report-footer .footer-name { font-family: {!! $branding->headingFontStack() !!}; font-size: 15px; font-weight: 600; color: #4a463d; display: block; margin-bottom: 4px; }
         a { color: var(--brand-primary); text-decoration: none; }
 
         @media (max-width: 640px) {
@@ -145,7 +143,8 @@
             /* Long query strings / URLs wrap instead of forcing horizontal scroll. */
             table.data td { word-break: break-word; }
         }
-        @if ($branding->customCss) {!! $branding->customCss !!} @endif
+        {{-- Agency CSS: only rendered when it passes the SafeCss check (no markup, no remote fetches). --}}
+        @if ($branding->safeCustomCss()) {!! $branding->safeCustomCss() !!} @endif
     </style>
 </head>
 <body>

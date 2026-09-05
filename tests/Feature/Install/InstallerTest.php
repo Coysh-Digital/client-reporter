@@ -52,8 +52,8 @@ class InstallerTest extends TestCase
             ->set('step', 3)
             ->set('admin_name', 'Agency Owner')
             ->set('admin_email', 'owner@agency.test')
-            ->set('admin_password', 'supersecret')
-            ->set('admin_password_confirmation', 'supersecret')
+            ->set('admin_password', 'a-long-enough-password')
+            ->set('admin_password_confirmation', 'a-long-enough-password')
             ->set('step', 4)
             ->set('agency_name', 'Bright Digital')
             ->set('app_url', 'https://reports.bright.test')
@@ -85,6 +85,58 @@ class InstallerTest extends TestCase
 
             $this->assertSame('reached', $response->getContent(), "Gate should not redirect {$path}");
         }
+    }
+
+    public function test_the_wizard_refuses_to_run_again_once_installed(): void
+    {
+        // TestCase already marks installed. The page route redirects (see
+        // above); the component itself must also refuse, because Livewire's
+        // update endpoint bypasses the page-level gate.
+        Livewire::test(Wizard::class)->assertStatus(404);
+    }
+
+    public function test_the_install_route_is_rate_limited(): void
+    {
+        $this->markNotInstalled();
+
+        for ($i = 0; $i < 10; $i++) {
+            $this->get('/install')->assertOk();
+        }
+
+        $this->get('/install')->assertStatus(429);
+    }
+
+    public function test_passwords_are_moved_out_of_component_state_between_steps(): void
+    {
+        $this->markNotInstalled();
+
+        Livewire::test(Wizard::class)
+            ->set('step', 3)
+            ->set('admin_name', 'Agency Owner')
+            ->set('admin_email', 'owner@agency.test')
+            ->set('admin_password', 'a-long-enough-password')
+            ->set('admin_password_confirmation', 'a-long-enough-password')
+            ->call('next')
+            ->assertSet('step', 4)
+            ->assertSet('admin_password', '')
+            ->assertSet('admin_password_confirmation', '');
+
+        $this->assertSame('a-long-enough-password', session('install.admin_password'));
+    }
+
+    public function test_a_short_administrator_password_is_rejected(): void
+    {
+        $this->markNotInstalled();
+
+        Livewire::test(Wizard::class)
+            ->set('step', 3)
+            ->set('admin_name', 'Agency Owner')
+            ->set('admin_email', 'owner@agency.test')
+            ->set('admin_password', 'short')
+            ->set('admin_password_confirmation', 'short')
+            ->call('next')
+            ->assertHasErrors('admin_password')
+            ->assertSet('step', 3);
     }
 
     public function test_requirements_are_reported(): void
