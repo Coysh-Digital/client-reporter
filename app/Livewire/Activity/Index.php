@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace App\Livewire\Activity;
 
 use App\Models\CollectorRun;
+use App\Models\Site;
 use App\Support\SafeError;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -15,6 +16,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 /**
  * A live view of background work: what's on the queue right now, the history of
@@ -26,8 +28,33 @@ use Livewire\Component;
 #[Title('Activity')]
 class Index extends Component
 {
+    use WithPagination;
+
     #[Url(as: 'tab', keep: false)]
     public string $tab = 'runs';
+
+    /** all | success | failed | running */
+    #[Url(keep: false)]
+    public string $status = 'all';
+
+    #[Url(keep: false)]
+    public ?int $site = null;
+
+    public function updatingStatus(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingSite(): void
+    {
+        $this->resetPage();
+    }
+
+    public function setStatus(string $status): void
+    {
+        $this->status = in_array($status, ['all', 'success', 'failed', 'running'], true) ? $status : 'all';
+        $this->resetPage();
+    }
 
     public function mount(): void
     {
@@ -37,6 +64,7 @@ class Index extends Component
     public function setTab(string $tab): void
     {
         $this->tab = in_array($tab, ['runs', 'queued', 'failed'], true) ? $tab : 'runs';
+        $this->resetPage();
     }
 
     public function clearQueued(): void
@@ -81,30 +109,27 @@ class Index extends Component
     public function render(): mixed
     {
         return view('livewire.activity.index', [
-            'runs' => $this->tab === 'runs' ? $this->runs() : collect(),
+            'runs' => $this->tab === 'runs' ? $this->runs() : null,
             'queuedJobs' => $this->tab === 'queued' ? $this->queuedJobs() : [],
             'failedJobs' => $this->tab === 'failed' ? $this->failedJobs() : [],
             'queued' => $this->count('jobs'),
-            'running' => CollectorRun::query()->where('status', 'running')->count(),
-            'failedRecently' => CollectorRun::query()
-                ->where('status', 'failed')
-                ->where('started_at', '>=', Carbon::now()->subDay())
-                ->count(),
             'failedJobsCount' => $this->count('failed_jobs'),
+            'sites' => Site::query()->orderBy('name')->get(['id', 'name']),
         ]);
     }
 
     /**
-     * @return Collection<int, CollectorRun>
+     * @return LengthAwarePaginator<int, CollectorRun>
      */
-    private function runs(): Collection
+    private function runs(): LengthAwarePaginator
     {
         return CollectorRun::query()
             ->with('siteIntegration.site')
+            ->when($this->status !== 'all', fn ($q) => $q->where('status', $this->status))
+            ->when($this->site !== null, fn ($q) => $q->whereHas('siteIntegration', fn ($s) => $s->where('site_id', $this->site)))
             ->orderByDesc('started_at')
             ->orderByDesc('id')
-            ->limit(60)
-            ->get();
+            ->paginate(25);
     }
 
     /**

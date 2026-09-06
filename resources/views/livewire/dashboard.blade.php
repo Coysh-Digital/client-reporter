@@ -1,11 +1,23 @@
 <div>
     @if ($update['update_available'] ?? false)
-        <x-alert variant="info" class="mb-6">
-            Client Reporter {{ $update['latest'] }} is available (you're on {{ $update['current'] }}).
-            @if ($update['url'] ?? null)
-                <x-slot:action><a href="{{ $update['url'] }}" target="_blank" rel="noopener" class="font-medium underline">Release notes &amp; upgrade</a></x-slot:action>
-            @endif
-        </x-alert>
+        {{-- Dismissed per version, per browser: the next release shows again. --}}
+        <div x-data="{ dismissed: (() => { try { return localStorage.getItem('cr.update-dismissed') === @js($update['latest']); } catch (e) { return false; } })() }"
+             x-show="!dismissed" x-cloak>
+            <x-alert variant="info" class="mb-6">
+                Client Reporter {{ $update['latest'] }} is available (you're on {{ $update['current'] }}).
+                <x-slot:action>
+                    <span class="flex items-center gap-2">
+                        @if ($update['url'] ?? null)
+                            <a href="{{ $update['url'] }}" target="_blank" rel="noopener" class="font-medium underline">Release notes &amp; upgrade</a>
+                        @endif
+                        <button type="button" class="cr-btn-icon -my-1" aria-label="Dismiss update notice"
+                                x-on:click="dismissed = true; try { localStorage.setItem('cr.update-dismissed', @js($update['latest'])); } catch (e) {}">
+                            <x-icon name="x-mark" class="h-4 w-4" />
+                        </button>
+                    </span>
+                </x-slot:action>
+            </x-alert>
+        </div>
     @endif
 
     @php
@@ -30,8 +42,10 @@
                 @endif
             </p>
         </div>
-        <x-segmented :options="['this_month' => 'This month', 'last_30_days' => 'Last 30 days']" :value="$period" action="setPeriod" variant="solid" label="Dashboard period" />
+        <x-segmented :options="\App\Livewire\Dashboard::PERIODS" :value="$period" action="setPeriod" variant="solid" label="Dashboard period" />
     </div>
+
+    <div wire:loading.class="opacity-50" wire:target="setPeriod" class="transition-opacity">
 
     {{-- Portfolio metric row --}}
     @php
@@ -104,7 +118,7 @@
     {{-- Reports this period + Notable changes --}}
     <div class="mb-8 grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
         <section class="cr-panel">
-            <div class="flex items-baseline justify-between border-b border-line px-5 py-3.5">
+            <div class="cr-panel-header">
                 <h2 class="font-serif text-base font-semibold text-ink">Scheduled reports</h2>
                 <span class="text-xs text-faint">Auto-generated</span>
             </div>
@@ -116,7 +130,7 @@
                         <div class="flex items-center gap-3 px-5 py-3" @if (! $loop->last) style="border-bottom:1px solid var(--color-line);" @endif>
                             <span class="flex-1 truncate text-sm font-semibold text-ink">{{ $row['client'] }}</span>
                             <x-status-dot :variant="$row['status']->badge()" :label="$row['status']->label()" />
-                            <a href="{{ $row['actionUrl'] }}" wire:navigate class="text-xs font-semibold" style="color:var(--color-accent);">{{ $row['status']->actionLabel() }}</a>
+                            <a href="{{ $row['actionUrl'] }}" wire:navigate class="cr-link text-xs">{{ $row['status']->actionLabel() }}</a>
                         </div>
                     @endforeach
                 </div>
@@ -124,8 +138,9 @@
         </section>
 
         <section class="cr-panel">
-            <div class="border-b border-line px-5 py-3.5">
+            <div class="cr-panel-header">
                 <h2 class="font-serif text-base font-semibold text-ink">Notable changes</h2>
+                <span class="text-xs text-faint">vs the previous period</span>
             </div>
             @if (empty($data['notableChanges']))
                 <p class="px-5 py-8 text-center text-sm text-faint">No comparable data yet this period.</p>
@@ -143,6 +158,8 @@
                 </div>
             @endif
         </section>
+    </div>
+
     </div>
 
     {{-- Recent activity --}}

@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
 /**
@@ -32,6 +33,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $last_error
  * @property string|null $last_failure_kind
  * @property string|null $connector_version
+ * @property-read CollectorRun|null $latestRun
  */
 class SiteIntegration extends Model
 {
@@ -103,6 +105,16 @@ class SiteIntegration extends Model
     public function collectorRuns(): HasMany
     {
         return $this->hasMany(CollectorRun::class);
+    }
+
+    /**
+     * The most recently started collector run for this connection.
+     *
+     * @return HasOne<CollectorRun, $this>
+     */
+    public function latestRun(): HasOne
+    {
+        return $this->hasOne(CollectorRun::class)->latestOfMany('started_at');
     }
 
     /**

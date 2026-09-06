@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * @property ReportFrequency $report_frequency
+ * @property ReportFrequency|null $report_frequency
  * @property int|null $report_template_id
  */
 class Site extends Model
@@ -110,7 +110,7 @@ class Site extends Model
      */
     public function hasReportSchedule(): bool
     {
-        return $this->report_frequency->isScheduled();
+        return $this->report_frequency?->isScheduled() ?? false;
     }
 
     /**

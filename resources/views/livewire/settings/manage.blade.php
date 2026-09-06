@@ -1,4 +1,4 @@
-<div>
+<div x-data="crUnsavedGuard()" x-on:input="touch()" x-on:change="touch()" x-on:saved.window="clean()">
     <x-page-header title="Settings" subtitle="Application-wide configuration for this Client Reporter install." eyebrow="Workspace">
         <x-slot:actions>
             <x-button variant="primary" wire:click="save">

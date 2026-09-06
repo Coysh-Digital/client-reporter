@@ -42,6 +42,7 @@ class UserManagementTest extends TestCase
             ->set('name', 'No Password')
             ->set('email', 'nopass@acme.test')
             ->set('role', UserRole::Viewer->value)
+            ->set('send_invite', false)
             ->call('save')
             ->assertHasErrors('password');
     }

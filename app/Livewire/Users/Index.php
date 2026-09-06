@@ -36,7 +36,7 @@ class Index extends Component
      */
     protected function sortable(): array
     {
-        return ['name' => 'name', 'email' => 'email', 'role' => 'role', 'status' => 'is_active'];
+        return ['name' => 'name', 'email' => 'email', 'role' => 'role', 'status' => 'is_active', 'last_login' => 'last_login_at'];
     }
 
     /**

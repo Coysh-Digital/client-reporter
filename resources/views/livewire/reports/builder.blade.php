@@ -245,15 +245,40 @@
 
         {{-- Live preview --}}
         <div class="lg:col-span-2">
-            <div class="sticky top-[76px]" x-data="{ v: 0, focus: '' }"
-                 x-on:preview-refresh.window="v++; if ($event.detail && $event.detail.blockId) focus = $event.detail.blockId">
+            <div class="sticky top-[76px]"
+                 x-data="{
+                    v: 0, focus: '', loading: true, scrollTop: 0, timer: null,
+                    refresh(blockId) {
+                        // Debounce bursts of saves; remember where the client was reading.
+                        clearTimeout(this.timer);
+                        this.timer = setTimeout(() => {
+                            try { this.scrollTop = this.$refs.frame.contentWindow.scrollY || 0; } catch (e) {}
+                            this.focus = blockId || '';
+                            this.loading = true;
+                            this.v++;
+                        }, 250);
+                    },
+                    loaded() {
+                        this.loading = false;
+                        if (!this.focus && this.scrollTop) {
+                            try { this.$refs.frame.contentWindow.scrollTo(0, this.scrollTop); } catch (e) {}
+                        }
+                    }
+                 }"
+                 x-on:preview-refresh.window="refresh($event.detail && $event.detail.blockId)">
                 <div class="mb-2 flex items-center justify-between">
                     <p class="cr-eyebrow">Live preview</p>
-                    <button @click="v++" class="text-xs text-muted hover:text-ink">Refresh</button>
+                    <x-button size="sm" variant="ghost" icon="arrow-path" x-on:click="refresh()">Refresh</x-button>
                 </div>
-                <div class="overflow-hidden rounded-xl border border-line bg-white" style="height: 620px;">
-                    <iframe x-bind:src="'{{ route('reports.preview', $report) }}?v=' + v + (focus ? '#block-' + focus : '')"
-                            class="h-full w-full" style="border: 0;"></iframe>
+                <div class="relative overflow-hidden rounded-xl border border-line bg-white" style="height: calc(100vh - 170px); min-height: 520px;">
+                    <div x-show="loading" x-cloak x-transition.opacity class="absolute inset-0 z-10 flex items-center justify-center bg-white/70" aria-live="polite">
+                        <span class="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-muted shadow-sm">
+                            <span class="inline-block h-2 w-2 animate-pulse rounded-full" style="background:var(--color-accent);" aria-hidden="true"></span>
+                            Refreshing preview…
+                        </span>
+                    </div>
+                    <iframe x-ref="frame" x-bind:src="'{{ route('reports.preview', $report) }}?v=' + v + (focus ? '#block-' + focus : '')"
+                            x-on:load="loaded()" title="Live preview of {{ $title ?: 'this report' }}" class="h-full w-full" style="border: 0;"></iframe>
                 </div>
             </div>
         </div>

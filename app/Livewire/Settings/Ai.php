@@ -111,6 +111,7 @@ class Ai extends Component
         $audit->log('settings.ai.updated');
 
         $this->dispatch('toast', message: 'AI settings saved.', type: 'ok');
+        $this->dispatch('saved');
     }
 
     /**

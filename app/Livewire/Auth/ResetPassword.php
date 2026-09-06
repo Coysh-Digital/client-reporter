@@ -29,10 +29,14 @@ class ResetPassword extends Component
 
     public string $password_confirmation = '';
 
+    /** True when the link came from an invitation email (longer-lived token, different wording). */
+    public bool $invite = false;
+
     public function mount(string $token): void
     {
         $this->token = $token;
         $this->email = (string) request()->string('email');
+        $this->invite = request()->boolean('invite');
     }
 
     public function resetPassword(AuditLogger $audit): mixed
@@ -47,7 +51,7 @@ class ResetPassword extends Component
             ]);
         }
 
-        $status = Password::reset(
+        $status = Password::broker($this->invite ? 'invites' : 'users')->reset(
             [
                 'email' => $this->email,
                 'password' => $this->password,
@@ -70,8 +74,8 @@ class ResetPassword extends Component
             throw ValidationException::withMessages(['email' => __($status)]);
         }
 
-        $audit->log('auth.password.reset', metadata: ['email' => $this->email]);
-        session()->flash('status', 'Your password has been reset. Please sign in.');
+        $audit->log($this->invite ? 'auth.invitation.accepted' : 'auth.password.reset', metadata: ['email' => $this->email]);
+        session()->flash('status', $this->invite ? 'Your password is set. Please sign in.' : 'Your password has been reset. Please sign in.');
 
         return $this->redirectRoute('login', navigate: true);
     }

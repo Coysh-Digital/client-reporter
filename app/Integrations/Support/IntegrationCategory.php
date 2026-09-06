@@ -32,6 +32,25 @@ enum IntegrationCategory: string
     }
 
     /**
+     * The metric that best summarises an integration of this category when the
+     * integration does not name one itself.
+     */
+    public function defaultHeadlineMetric(): ?string
+    {
+        return match ($this) {
+            self::Cms => 'cms.updates_total',
+            self::Analytics => 'analytics.visitors',
+            self::Search => 'search.clicks',
+            self::Ecommerce => 'ecommerce.revenue',
+            self::Forms => 'leads.new',
+            self::Monitoring => 'uptime.percentage',
+            self::Performance => 'performance.score',
+            self::Downloads => 'downloads.total',
+            self::Billing => null,
+        };
+    }
+
+    /**
      * Display order for the integrations UI.
      *
      * @return array<int, self>

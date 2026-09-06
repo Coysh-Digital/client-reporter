@@ -10,6 +10,7 @@ use App\Integrations\Support\IntegrationException;
 use App\Models\Client;
 use App\Models\Invoice;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Livewire\Component;
 
 /**
@@ -167,13 +168,41 @@ class InvoicePanel extends Component
 
     public function render(): mixed
     {
+        $invoices = $this->client->invoices()->orderByDesc('issued_at')->get();
+
         return view('livewire.billing.invoice-panel', [
-            'invoices' => $this->client->invoices()->orderByDesc('issued_at')->get(),
+            'invoices' => $invoices,
+            'totals' => $this->totals($invoices),
             'recurringInvoices' => $this->client->recurringInvoices()
                 ->orderByRaw('next_recurs_on is null, next_recurs_on')
                 ->get(),
             'statuses' => InvoiceStatus::cases(),
             'billingConnection' => $this->client->billingConnection,
         ]);
+    }
+
+    /**
+     * Outstanding, overdue and paid-this-year figures, in the client's most
+     * common currency (mixed-currency clients are summed as-is and labelled).
+     *
+     * @param  Collection<int, Invoice>  $invoices
+     * @return array{currency: string|null, outstanding: float, overdue: float, paidYtd: float, mixed: bool}
+     */
+    private function totals($invoices): array
+    {
+        $currencies = $invoices->pluck('currency')->filter()->countBy();
+        $currency = $currencies->isNotEmpty() ? (string) $currencies->sortDesc()->keys()->first() : null;
+
+        $outstanding = $invoices->filter(fn (Invoice $i): bool => $i->status === InvoiceStatus::Sent);
+
+        return [
+            'currency' => $currency,
+            'outstanding' => (float) $outstanding->sum('amount'),
+            'overdue' => (float) $outstanding->filter(fn (Invoice $i): bool => $i->isOverdue())->sum('amount'),
+            'paidYtd' => (float) $invoices
+                ->filter(fn (Invoice $i): bool => $i->status === InvoiceStatus::Paid && ($i->paid_at ?? $i->issued_at)->isSameYear(now()))
+                ->sum('amount'),
+            'mixed' => $currencies->count() > 1,
+        ];
     }
 }

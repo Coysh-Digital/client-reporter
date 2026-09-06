@@ -60,6 +60,7 @@ class Manage extends Component
         $audit->log('settings.updated');
 
         $this->dispatch('toast', message: 'Settings saved.', type: 'ok');
+        $this->dispatch('saved');
     }
 
     public function render(UpdateChecker $updates): mixed

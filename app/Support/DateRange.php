@@ -122,6 +122,13 @@ readonly class DateRange
         return new self($now->subDays(30), $now->subDay());
     }
 
+    public static function last90Days(?CarbonInterface $now = null): self
+    {
+        $now = CarbonImmutable::parse($now ?? CarbonImmutable::now());
+
+        return new self($now->subDays(90), $now->subDay());
+    }
+
     public static function thisQuarter(?CarbonInterface $now = null): self
     {
         $now = CarbonImmutable::parse($now ?? CarbonImmutable::now());

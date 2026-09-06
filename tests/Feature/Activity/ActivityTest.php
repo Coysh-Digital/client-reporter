@@ -69,4 +69,44 @@ class ActivityTest extends TestCase
 
         Queue::assertPushed(RunConnectorCollection::class, fn ($job) => $job->siteIntegration->is($connection));
     }
+
+    public function test_runs_can_be_filtered_by_outcome_and_site_and_are_paginated(): void
+    {
+        $manager = User::factory()->manager()->create();
+        $alpha = Site::factory()->create(['name' => 'Alpha Site']);
+        $beta = Site::factory()->create(['name' => 'Beta Site']);
+        $alphaConnection = SiteIntegration::factory()->create(['site_id' => $alpha->id]);
+        $betaConnection = SiteIntegration::factory()->create(['site_id' => $beta->id]);
+
+        foreach (range(1, 30) as $i) {
+            CollectorRun::query()->create([
+                'site_integration_id' => $alphaConnection->id,
+                'collector_key' => 'monitors',
+                'status' => 'success',
+                'started_at' => now()->subMinutes($i),
+                'finished_at' => now()->subMinutes($i),
+                'records_written' => 1,
+            ]);
+        }
+        CollectorRun::query()->create([
+            'site_integration_id' => $betaConnection->id,
+            'collector_key' => 'summary',
+            'status' => 'failed',
+            'started_at' => now(),
+            'error_message' => 'quota exceeded',
+        ]);
+
+        Livewire::actingAs($manager)->test(Index::class)
+            ->assertSee('Beta Site')
+            ->assertSeeHtml('aria-label="Pagination"')
+            ->call('setStatus', 'failed')
+            ->assertSee('quota exceeded')
+            ->assertDontSee('monitors')
+            ->call('setStatus', 'all')
+            ->set('site', $alpha->id)
+            ->assertSee('monitors')
+            ->assertDontSee('quota exceeded')
+            ->call('setStatus', 'bogus')
+            ->assertSet('status', 'all');
+    }
 }

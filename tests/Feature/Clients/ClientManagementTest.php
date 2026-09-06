@@ -84,9 +84,10 @@ class ClientManagementTest extends TestCase
         $this->actingAs($viewer)
             ->get(route('clients.show', $client))
             ->assertOk()
-            ->assertSee('Report history')
+            ->assertSee('Recent reports')
+            ->assertSee('Websites')
             ->assertSee('Northwind Site')
-            ->assertSee('Reports generated')
+            ->assertSee('1 sent')
             ->assertSee('Sent')
             ->assertSee('Draft');
     }

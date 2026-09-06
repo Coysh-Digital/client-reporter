@@ -162,6 +162,7 @@ class Manage extends Component
 
         $audit->log('branding.updated', $this->profile, metadata: ['scope' => $this->scope]);
         $this->dispatch('toast', message: 'Branding saved.', type: 'ok');
+        $this->dispatch('saved');
     }
 
     public function removeLogo(): void

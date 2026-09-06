@@ -31,9 +31,26 @@
             </x-empty-state>
         @endif
     @else
+        @php $pageIds = $clients->pluck('id')->map(fn ($id) => (int) $id)->all(); $allTicked = $pageIds !== [] && array_diff($pageIds, array_map('intval', $selected)) === []; @endphp
+        @can('manage-clients')
+            @if ($selected !== [])
+                <div class="mb-3 flex flex-wrap items-center gap-3 rounded-lg border border-accent/30 bg-accent-soft/50 px-4 py-2 text-sm" role="status">
+                    <span class="font-medium text-ink">{{ count($selected) }} selected</span>
+                    <x-button size="sm" wire:click="setSelectedActive(true)" icon="check-circle">Activate</x-button>
+                    <x-button size="sm" wire:click="setSelectedActive(false)" icon="x-circle">Deactivate</x-button>
+                    <x-button size="sm" variant="ghost" wire:click="$set('selected', [])">Clear</x-button>
+                </div>
+            @endif
+        @endcan
         <x-table caption="Clients">
             <thead>
                 <tr>
+                    @can('manage-clients')
+                        <x-th class="w-8 !pr-0">
+                            <input type="checkbox" class="cr-checkbox" aria-label="Select all clients on this page"
+                                   @checked($allTicked) wire:click="selectPage({{ Js::from($pageIds) }}, $event.target.checked)">
+                        </x-th>
+                    @endcan
                     <x-th sort="name" :current="$this->currentSort()" :direction="$this->currentDirection()">Client</x-th>
                     <x-th sort="sites" :current="$this->currentSort()" :direction="$this->currentDirection()">Sites</x-th>
                     <x-th>Health</x-th>
@@ -45,6 +62,11 @@
                 @foreach ($clients as $client)
                     @php $health = $healthByClient[$client->id] ?? null; @endphp
                     <tr wire:key="client-{{ $client->id }}">
+                        @can('manage-clients')
+                            <x-td class="w-8 !pr-0">
+                                <input type="checkbox" class="cr-checkbox" value="{{ $client->id }}" wire:model.live="selected" aria-label="Select {{ $client->name }}">
+                            </x-td>
+                        @endcan
                         <x-td>
                             <a href="{{ route('clients.show', $client) }}" wire:navigate class="flex min-w-0 items-center gap-3">
                                 <x-avatar :name="$client->name" size="lg" aria-hidden="true" />
@@ -86,7 +108,7 @@
                                     <x-confirm-button role="menuitem" class="cr-menu-item cr-menu-item-danger"
                                         action="delete({{ $client->id }})"
                                         title="Delete {{ $client->name }}?"
-                                        message="This removes the client with all {{ $client->sites_count }} {{ Str::plural('site', $client->sites_count) }}, their integrations and every report. It cannot be undone."
+                                        message="Deleting {{ $client->name }} removes {{ $client->sites_count }} {{ Str::plural('site', $client->sites_count) }}, {{ $client->integrations_count }} {{ Str::plural('integration', $client->integrations_count) }} and {{ $client->reports_count }} {{ Str::plural('report', $client->reports_count) }}. It cannot be undone."
                                         confirm="Delete client" :danger="true">
                                         <x-icon name="trash-can" class="h-3.5 w-3.5 shrink-0" /> Delete
                                     </x-confirm-button>

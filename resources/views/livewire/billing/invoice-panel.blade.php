@@ -2,13 +2,33 @@
 <div>
 
     <div class="mb-3 flex items-center justify-between">
-        <h2 class="text-sm font-semibold text-ink">Billing</h2>
+        <h2 class="font-serif text-base font-semibold text-ink">Billing</h2>
         @can('manage-clients')
             @unless ($showForm)
                 <x-button size="sm" icon="plus" wire:click="startCreate">Add invoice</x-button>
             @endunless
         @endcan
     </div>
+
+    @if ($invoices->isNotEmpty())
+        <div class="mb-4 grid grid-cols-3 overflow-hidden rounded-xl border border-line bg-surface">
+            <div class="border-r border-line px-4 py-3">
+                <div class="cr-eyebrow">Outstanding</div>
+                <div class="tnum mt-1 text-md font-semibold text-ink">{{ Format::money($totals['outstanding'], $totals['currency']) }}</div>
+            </div>
+            <div class="border-r border-line px-4 py-3">
+                <div class="cr-eyebrow">Overdue</div>
+                <div class="tnum mt-1 text-md font-semibold" style="color:var(--color-{{ $totals['overdue'] > 0 ? 'danger' : 'ink' }});">{{ Format::money($totals['overdue'], $totals['currency']) }}</div>
+            </div>
+            <div class="px-4 py-3">
+                <div class="cr-eyebrow">Paid this year</div>
+                <div class="tnum mt-1 text-md font-semibold text-ink">{{ Format::money($totals['paidYtd'], $totals['currency']) }}</div>
+            </div>
+            @if ($totals['mixed'])
+                <p class="col-span-3 border-t border-line px-4 py-1.5 text-2xs text-faint">Invoices are in more than one currency; totals are summed as entered.</p>
+            @endif
+        </div>
+    @endif
 
     @if ($billingConnection)
         <div class="mb-4 flex items-center justify-between gap-3 rounded-md bg-accent-soft px-3 py-2 text-xs" style="color:var(--color-accent)">

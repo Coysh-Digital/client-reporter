@@ -12,6 +12,7 @@ use App\Support\AuditLogger;
 use App\Support\Dashboard\SiteHealthResolver;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
@@ -28,6 +29,43 @@ class Index extends Component
     /** all | active | inactive */
     #[Url]
     public string $status = 'all';
+
+    /** Client ids ticked for a bulk action (reset whenever the page changes). */
+    public array $selected = [];
+
+    public function updatedPage(): void
+    {
+        $this->selected = [];
+    }
+
+    /**
+     * Tick or untick every client on the current page.
+     *
+     * @param  array<int, int>  $ids
+     */
+    public function selectPage(array $ids, bool $on): void
+    {
+        $ids = array_map('intval', $ids);
+        $this->selected = $on
+            ? array_values(array_unique(array_merge($this->selected, $ids)))
+            : array_values(array_diff($this->selected, $ids));
+    }
+
+    public function setSelectedActive(bool $active, AuditLogger $audit): void
+    {
+        $this->authorize('manage-clients');
+
+        $ids = array_map('intval', $this->selected);
+        if ($ids === []) {
+            return;
+        }
+
+        $count = Client::query()->whereKey($ids)->where('is_active', ! $active)->update(['is_active' => $active]);
+        $audit->log($active ? 'client.bulk_activated' : 'client.bulk_deactivated', metadata: ['ids' => $ids, 'changed' => $count]);
+
+        $this->selected = [];
+        $this->dispatch('toast', message: sprintf('%d %s %s.', $count, Str::plural('client', $count), $active ? 'activated' : 'deactivated'), type: 'ok');
+    }
 
     /**
      * @return array<string, string>
@@ -66,7 +104,7 @@ class Index extends Component
     public function clients(): LengthAwarePaginator
     {
         $query = Client::query()
-            ->withCount('sites')
+            ->withCount(['sites', 'integrations', 'reports'])
             ->when($this->status === 'active', fn ($query) => $query->where('is_active', true))
             ->when($this->status === 'inactive', fn ($query) => $query->where('is_active', false));
 

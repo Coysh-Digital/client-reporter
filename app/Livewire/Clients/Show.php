@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Livewire\Clients;
 
 use App\Enums\ConnectionStatus;
+use App\Enums\SiteHealth;
 use App\Models\Client;
 use App\Models\Report;
 use App\Models\Site;
 use App\Support\Dashboard\SiteHealthResolver;
+use App\Support\DateRange;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -16,7 +18,7 @@ use Livewire\Component;
 #[Layout('components.layouts.app')]
 class Show extends Component
 {
-    private const HISTORY_LIMIT = 20;
+    private const RECENT_REPORTS = 8;
 
     public Client $client;
 
@@ -25,37 +27,23 @@ class Show extends Component
         $this->client = $client;
     }
 
-    public function render(): mixed
+    public function render(SiteHealthResolver $healthResolver): mixed
     {
         /** @var Collection<int, Site> $sites */
         $sites = $this->client->sites()
             ->orderBy('name')
             ->withCount([
                 'reports',
-                'integrations as connected_integrations_count' => fn ($q) => $q->whereIn('status', [
-                    ConnectionStatus::Connected->value,
-                    ConnectionStatus::NeedsAttention->value,
-                ]),
+                'integrations as connected_integrations_count' => fn ($q) => $q->where('status', '!=', ConnectionStatus::NotConnected->value),
+                'integrations as troubled_integrations_count' => fn ($q) => $q->whereIn('status', ConnectionStatus::troubledValues()),
             ])
             ->get();
 
-        $health = app(SiteHealthResolver::class)->forSites($sites);
-
+        $health = $healthResolver->forSites($sites->where('is_active', true));
         $siteIds = $sites->pluck('id')->all();
 
-        // Recent reports across the client's sites, newest first, bounded —
-        // a long-standing client accumulates hundreds and only the latest few
-        // are shown. Each site's own latest report is looked up separately so
-        // the summary is right even for a site whose reports are older.
-        $reports = Report::query()
-            ->whereIn('site_id', $siteIds)
-            ->with('site')
-            ->withCount('shares')
-            ->orderByDesc('range_end')
-            ->orderByDesc('id')
-            ->limit(self::HISTORY_LIMIT)
-            ->get();
-
+        // The latest report per site (one query), so each row is right even
+        // for a site whose reports are older than the recent list.
         $latestPerSite = Report::query()
             ->whereIn('site_id', $siteIds)
             ->withCount('shares')
@@ -65,20 +53,36 @@ class Show extends Component
             ->unique('site_id')
             ->keyBy('site_id');
 
+        $recentReports = Report::query()
+            ->whereIn('site_id', $siteIds)
+            ->with('site')
+            ->withCount('shares')
+            ->orderByDesc('range_end')
+            ->orderByDesc('id')
+            ->limit(self::RECENT_REPORTS)
+            ->get();
+
         $totals = Report::query()
             ->whereIn('site_id', $siteIds)
             ->selectRaw('count(*) as total, sum(case when exists (select 1 from report_shares where report_shares.report_id = reports.id) then 1 else 0 end) as sent')
             ->first();
+
+        $thisMonth = DateRange::thisMonth();
+        $reportsThisPeriod = Report::query()
+            ->whereIn('site_id', $siteIds)
+            ->whereDate('range_start', '>=', $thisMonth->start->toDateString())
+            ->count();
 
         $sitesSummary = $sites->map(function (Site $site) use ($health, $latestPerSite): array {
             $latest = $latestPerSite->get($site->id);
 
             return [
                 'site' => $site,
-                'health' => $health[$site->id] ?? null,
+                'health' => $site->is_active ? ($health[$site->id] ?? null) : null,
                 'connectedIntegrations' => (int) ($site->connected_integrations_count ?? 0),
+                'troubledIntegrations' => (int) ($site->troubled_integrations_count ?? 0),
                 'reportsCount' => (int) ($site->reports_count ?? 0),
-                'scheduled' => $site->report_frequency->isScheduled() ? $site->report_frequency->label() : null,
+                'scheduled' => $site->hasReportSchedule() ? $site->report_frequency?->label() : null,
                 'latestReport' => $latest !== null
                     ? [
                         'period' => $latest->dateRange()->label(),
@@ -89,20 +93,20 @@ class Show extends Component
             ];
         })->all();
 
-        $reportHistory = $reports->map(fn (Report $report): array => [
-            'id' => $report->id,
-            'site' => $report->site->name,
-            'period' => $report->dateRange()->label(),
-            'generatedAt' => $report->generated_at,
-            'status' => $report->periodStatus(),
-            'url' => route('reports.show', $report),
-        ])->all();
-
         return view('livewire.clients.show', [
             'sitesSummary' => $sitesSummary,
-            'reportHistory' => $reportHistory,
+            'strip' => [
+                'sites' => $sites->count(),
+                'healthy' => count(array_filter($health, fn (SiteHealth $h): bool => $h === SiteHealth::Healthy)),
+                'activeSites' => $sites->where('is_active', true)->count(),
+                'troubled' => (int) $sites->sum('troubled_integrations_count'),
+                'connected' => (int) $sites->sum('connected_integrations_count'),
+                'reportsThisPeriod' => $reportsThisPeriod,
+            ],
+            'recentReports' => $recentReports,
             'reportsTotal' => (int) ($totals->total ?? 0),
             'reportsSent' => (int) ($totals->sent ?? 0),
-        ]);
+            'portalUsers' => $this->client->portalUsers()->orderBy('name')->get(['id', 'name', 'email', 'is_active', 'last_login_at']),
+        ])->title($this->client->name);
     }
 }
