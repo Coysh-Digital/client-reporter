@@ -7,14 +7,14 @@ namespace App\Livewire\Reports;
 use App\Ai\AiSummariser;
 use App\Enums\ConnectionStatus;
 use App\Integrations\IntegrationRegistry;
+use App\Jobs\GenerateReport;
 use App\Models\Report;
 use App\Models\ReportTemplate;
 use App\Reporting\BlockAvailability;
 use App\Reporting\Blocks\Ai\AiSummaryBlock;
 use App\Reporting\BlockTypeRegistry;
 use App\Reporting\Contracts\BlockType;
-use App\Reporting\ReportGenerator;
-use App\Support\AuditLogger;
+use App\Reporting\ReportComposer;
 use App\Support\DateRange;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
@@ -143,24 +143,7 @@ class Builder extends Component
             return;
         }
 
-        $registry = app(BlockTypeRegistry::class);
-        $availability = app(BlockAvailability::class);
-        $connectedKeys = $availability->connectedKeys($this->report->site);
-
-        $position = 0;
-        foreach ($template->blocks as $definition) {
-            $blockType = $registry->find($definition['type'] ?? '');
-            if ($blockType === null || ! $availability->isAvailable($blockType, $this->report->site, $connectedKeys)) {
-                continue;
-            }
-
-            $this->report->blocks()->create([
-                'type' => $blockType->type(),
-                'position' => $position++,
-                'heading' => $definition['heading'] ?? $blockType->label(),
-                'config' => $definition['config'] ?? ($blockType->defaultConfig() ?: null),
-            ]);
-        }
+        app(ReportComposer::class)->seedBlocks($this->report, $template);
 
         $this->report->load('blocks');
         foreach ($this->report->blocks as $block) {
@@ -335,13 +318,35 @@ class Builder extends Component
         $this->dispatch('preview-refresh');
     }
 
-    public function generate(ReportGenerator $generator, AuditLogger $audit): mixed
+    /**
+     * Queue generation. It collects from every integration the report needs,
+     * so it runs in the background; the page polls until it finishes.
+     */
+    public function generate(): void
     {
         $this->authorize('manage-reports');
         $this->saveSettings();
 
-        $generator->generate($this->report->fresh(['blocks']));
-        $audit->log('report.generated', $this->report);
+        GenerateReport::queueFor($this->report, auth()->user());
+        $this->report->refresh();
+    }
+
+    public function retryGeneration(): void
+    {
+        $this->generate();
+    }
+
+    /**
+     * Polled while a generation is in flight; sends staff to the finished
+     * report once it lands, or leaves the failure banner in place.
+     */
+    public function pollGeneration(): mixed
+    {
+        $this->report->refresh();
+
+        if ($this->report->isGenerating() || $this->report->generationFailed()) {
+            return null;
+        }
 
         session()->flash('status', 'Report generated.');
 

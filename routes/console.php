@@ -38,7 +38,7 @@ Schedule::command('queue:work --stop-when-empty --max-time=55 --tries=1 --memory
 
 Schedule::command('client-reporter:generate-scheduled')->daily()->withoutOverlapping();
 
-Schedule::command('client-reporter:check-updates')->daily();
+Schedule::command('client-reporter:check-updates')->daily()->withoutOverlapping();
 
 Schedule::command('client-reporter:fetch-favicons')->weekly()->withoutOverlapping();
 

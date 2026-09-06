@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Integrations\Mailchimp;
 
+use App\Integrations\Support\AbstractHttpClient;
 use App\Integrations\Support\IntegrationException;
-use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Str;
 
 /**
@@ -15,9 +15,9 @@ use Illuminate\Support\Str;
  * (e.g. "…-us21"), so the base URL is derived from the key rather than
  * configured separately.
  */
-class MailchimpClient
+class MailchimpClient extends AbstractHttpClient
 {
-    private readonly string $baseUrl;
+    private readonly string $apiBase;
 
     public function __construct(private readonly string $apiKey)
     {
@@ -27,7 +27,12 @@ class MailchimpClient
             throw new IntegrationException('The Mailchimp API key looks invalid — it should end with a datacenter suffix, e.g. "-us21".');
         }
 
-        $this->baseUrl = "https://{$dc}.api.mailchimp.com/3.0";
+        $this->apiBase = "https://{$dc}.api.mailchimp.com/3.0";
+    }
+
+    protected function provider(): string
+    {
+        return 'Mailchimp';
     }
 
     /**
@@ -35,7 +40,7 @@ class MailchimpClient
      */
     public function list(string $listId): array
     {
-        return $this->get("/lists/{$listId}");
+        return $this->request("/lists/{$listId}");
     }
 
     /**
@@ -48,7 +53,7 @@ class MailchimpClient
      */
     public function growthHistory(string $listId): array
     {
-        $data = $this->get("/lists/{$listId}/growth-history", ['count' => 120]);
+        $data = $this->request("/lists/{$listId}/growth-history", ['count' => 120]);
 
         return array_map(fn (array $row): array => [
             'month' => (string) ($row['month'] ?? ''),
@@ -62,27 +67,18 @@ class MailchimpClient
      * @param  array<string, mixed>  $query
      * @return array<string, mixed>
      */
-    private function get(string $path, array $query = []): array
+    private function request(string $path, array $query = []): array
     {
-        try {
-            $response = Http::withBasicAuth('client-reporter', $this->apiKey)
-                ->timeout(20)
-                ->get($this->baseUrl.$path, $query);
-        } catch (ConnectionException) {
-            throw new IntegrationException('Could not reach Mailchimp. Please try again shortly.');
-        }
+        $response = $this->get(
+            $this->apiBase.$path,
+            $query,
+            fn (PendingRequest $r): PendingRequest => $r->withBasicAuth('client-reporter', $this->apiKey),
+        );
 
-        if ($response->status() === 401) {
-            throw new IntegrationException('Mailchimp rejected the API key.');
-        }
-
-        if ($response->status() === 404) {
-            throw new IntegrationException('Mailchimp audience not found — check the Audience ID.');
-        }
-
-        if (! $response->successful()) {
-            throw new IntegrationException("Mailchimp returned an unexpected response ({$response->status()}).");
-        }
+        $this->guard($response, [
+            401 => 'Mailchimp rejected the API key.',
+            404 => 'Mailchimp audience not found — check the Audience ID.',
+        ] + ($response->successful() ? [] : [$response->status() => "Mailchimp returned an unexpected response ({$response->status()})."]));
 
         return (array) $response->json();
     }

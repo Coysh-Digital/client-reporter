@@ -67,7 +67,7 @@ class WordPressIntegration extends Integration
     public function verify(SiteIntegration $connection): VerificationResult
     {
         try {
-            $data = $this->client($connection)->get('verify');
+            $data = $this->client($connection)->fetch('verify');
         } catch (IntegrationException $e) {
             return VerificationResult::failure($e->getMessage());
         }
@@ -80,6 +80,11 @@ class WordPressIntegration extends Integration
             'Connected to WordPress '.($data['wordpress_version'] ?? '').'.',
             ['connector_version' => (string) ($data['version'] ?? '')],
         );
+    }
+
+    public function providesEcommerce(): ?array
+    {
+        return ['collector_key' => 'woocommerce', 'provider' => 'WooCommerce', 'priority' => 80];
     }
 
     /**

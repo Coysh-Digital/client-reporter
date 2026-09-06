@@ -29,7 +29,7 @@ class CraftCommerceCollector extends AbstractCollector
             CraftIntegration::PATH_PREFIX,
         );
 
-        $data = $client->get('commerce', [
+        $data = $client->fetch('commerce', [
             'start' => $range->start->toDateString(),
             'end' => $range->end->toDateString(),
         ]);

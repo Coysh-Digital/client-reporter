@@ -7,9 +7,10 @@ namespace App\Support;
 /**
  * Icons used throughout the admin UI, stored as plain path data and rendered
  * via the <x-icon> Blade component — no icon-font runtime ships to the browser.
+ * (Client-facing report icons are a separate set: see ReportIcons.)
  * Source icons are Heroicons v2 (MIT); see resources/icons/README.md.
  */
-class Icons
+class UiIcons
 {
     /** @var array<string, array{width: int, height: int, paths: array<int, array{d: string, evenodd: bool}>}>|null */
     private static ?array $icons = null;

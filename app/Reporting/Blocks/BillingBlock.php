@@ -42,9 +42,16 @@ class BillingBlock extends BlockType
         return 'Billing';
     }
 
+    /** @var array<int, bool> */
+    private array $availability = [];
+
+    /**
+     * Only offered when the client has invoices. Memoised per site: the
+     * builder asks once per block type on every re-render.
+     */
     public function availableForSite(Site $site): ?bool
     {
-        return $site->client !== null && $site->client->invoices()->exists();
+        return $this->availability[$site->id] ??= $site->client !== null && $site->client->invoices()->exists();
     }
 
     public function options(): array

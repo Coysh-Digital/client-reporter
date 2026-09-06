@@ -29,7 +29,7 @@ class CraftStatusCollector extends AbstractCollector
             CraftIntegration::PATH_PREFIX,
         );
 
-        $data = $client->get('site');
+        $data = $client->fetch('site');
 
         $coreUpdate = (bool) ($data['craft_update_available'] ?? false);
         $pluginUpdates = (int) ($data['plugin_updates'] ?? 0);

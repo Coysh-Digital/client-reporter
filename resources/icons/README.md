@@ -1,7 +1,7 @@
 # UI icons
 
 `ui.php` holds the icon path data used by the admin UI, rendered through the
-`<x-icon name="...">` Blade component (`App\Support\Icons`). Icons are stored as
+`<x-icon name="...">` Blade component (`App\Support\UiIcons`). Icons are stored as
 plain SVG path data so no icon-font runtime is shipped to the browser.
 
 ## Licensing

@@ -4,24 +4,31 @@ declare(strict_types=1);
 
 namespace App\Integrations\Plausible;
 
-use App\Integrations\Support\IntegrationException;
+use App\Integrations\Support\AbstractHttpClient;
 use App\Support\DateRange;
-use App\Support\Http\OutboundUrl;
-use App\Support\Http\UnsafeUrlException;
-use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 
 /**
  * Read-only client for the Plausible Stats API (works with plausible.io or a
  * self-hosted instance).
  */
-class PlausibleClient
+class PlausibleClient extends AbstractHttpClient
 {
     public function __construct(
         private readonly string $token,
         private readonly string $siteId,
-        private readonly string $baseUrl = 'https://plausible.io',
+        private readonly string $instanceUrl = 'https://plausible.io',
     ) {}
+
+    protected function provider(): string
+    {
+        return 'Plausible';
+    }
+
+    protected function baseUrl(): ?string
+    {
+        return $this->instanceUrl;
+    }
 
     /**
      * @param  array<int, string>  $metrics
@@ -69,21 +76,12 @@ class PlausibleClient
      */
     public function sites(): array
     {
-        try {
-            $response = $this->http()->get(OutboundUrl::check(rtrim($this->baseUrl, '/')).'/api/v1/sites');
-        } catch (UnsafeUrlException $e) {
-            throw new IntegrationException($e->getMessage());
-        } catch (ConnectionException) {
-            throw new IntegrationException('Could not reach Plausible. Please try again shortly.');
-        }
+        $response = $this->get('api/v1/sites', configure: $this->auth());
 
-        if ($response->status() === 401 || $response->status() === 403) {
-            throw new IntegrationException('Plausible rejected the request. The API key needs "Site provisioning" access to list sites.');
-        }
-
-        if ($response->failed()) {
-            throw new IntegrationException('Plausible returned an error (HTTP '.$response->status().').');
-        }
+        $this->guard($response, [
+            401 => 'Plausible rejected the request. The API key needs "Site provisioning" access to list sites.',
+            403 => 'Plausible rejected the request. The API key needs "Site provisioning" access to list sites.',
+        ]);
 
         $sites = $response->json('sites', []);
 
@@ -96,31 +94,26 @@ class PlausibleClient
      */
     private function request(string $path, array $params, DateRange $range): array
     {
-        try {
-            $response = $this->http()->get(OutboundUrl::check(rtrim($this->baseUrl, '/')).'/'.$path, array_merge([
-                'site_id' => $this->siteId,
-                'period' => 'custom',
-                'date' => $range->start->toDateString().','.$range->end->toDateString(),
-            ], $params));
-        } catch (UnsafeUrlException $e) {
-            throw new IntegrationException($e->getMessage());
-        } catch (ConnectionException) {
-            throw new IntegrationException('Could not reach Plausible. Please try again shortly.');
-        }
+        $response = $this->get($path, array_merge([
+            'site_id' => $this->siteId,
+            'period' => 'custom',
+            'date' => $range->start->toDateString().','.$range->end->toDateString(),
+        ], $params), $this->auth());
 
-        if ($response->status() === 401) {
-            throw new IntegrationException('Plausible rejected the API token.');
-        }
-
-        if ($response->failed()) {
-            throw new IntegrationException('Plausible returned an error (HTTP '.$response->status().'). Check the site ID.');
-        }
+        $this->guard($response, [
+            401 => 'Plausible rejected the API token.',
+        ] + ($response->successful() || $response->status() === 401 ? [] : [
+            $response->status() => 'Plausible returned an error (HTTP '.$response->status().'). Check the site ID.',
+        ]));
 
         return (array) $response->json();
     }
 
-    private function http(): PendingRequest
+    /**
+     * @return callable(PendingRequest): PendingRequest
+     */
+    private function auth(): callable
     {
-        return app(OutboundUrl::class)->client(20)->withToken($this->token)->acceptJson();
+        return fn (PendingRequest $r): PendingRequest => $r->withToken($this->token);
     }
 }

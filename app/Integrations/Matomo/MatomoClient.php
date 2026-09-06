@@ -4,24 +4,32 @@ declare(strict_types=1);
 
 namespace App\Integrations\Matomo;
 
+use App\Integrations\Support\AbstractHttpClient;
 use App\Integrations\Support\IntegrationException;
 use App\Support\DateRange;
-use App\Support\Http\OutboundUrl;
-use App\Support\Http\UnsafeUrlException;
-use Illuminate\Http\Client\ConnectionException;
 
 /**
  * Read-only client for the Matomo Reporting API (works with Matomo Cloud or a
  * self-hosted instance). token_auth is sent in the POST body so it never lands
  * in a URL or server log.
  */
-class MatomoClient
+class MatomoClient extends AbstractHttpClient
 {
     public function __construct(
-        private readonly string $baseUrl,
+        private readonly string $instanceUrl,
         private readonly string $token,
         private readonly string $idSite,
     ) {}
+
+    protected function provider(): string
+    {
+        return 'Matomo';
+    }
+
+    protected function baseUrl(): ?string
+    {
+        return $this->instanceUrl;
+    }
 
     /**
      * @return array<string, mixed>
@@ -106,32 +114,13 @@ class MatomoClient
      */
     public function allSites(): array
     {
-        $params = [
+        $json = $this->call([
             'module' => 'API',
             'method' => 'SitesManager.getAllSites',
             'format' => 'JSON',
-        ];
+        ], 'Matomo returned an error (HTTP :status). Check the URL.');
 
-        try {
-            $response = app(OutboundUrl::class)->client(20)->asForm()
-                ->post(OutboundUrl::check(rtrim($this->baseUrl, '/')).'/index.php?'.http_build_query($params), ['token_auth' => $this->token]);
-        } catch (UnsafeUrlException $e) {
-            throw new IntegrationException($e->getMessage());
-        } catch (ConnectionException) {
-            throw new IntegrationException('Could not reach Matomo. Please try again shortly.');
-        }
-
-        if ($response->failed()) {
-            throw new IntegrationException('Matomo returned an error (HTTP '.$response->status().'). Check the URL.');
-        }
-
-        $json = $response->json();
-
-        if (is_array($json) && ($json['result'] ?? null) === 'error') {
-            throw new IntegrationException('Matomo rejected the request: '.(string) ($json['message'] ?? 'check the auth token.'));
-        }
-
-        return is_array($json) ? array_values(array_filter($json, 'is_array')) : [];
+        return array_values(array_filter($json, 'is_array'));
     }
 
     /**
@@ -140,34 +129,34 @@ class MatomoClient
      */
     private function request(string $method, DateRange $range, array $extra = [], string $period = 'range'): array
     {
-        $params = array_merge([
+        return $this->call(array_merge([
             'module' => 'API',
             'method' => $method,
             'idSite' => $this->idSite,
             'period' => $period,
             'date' => $range->start->toDateString().','.$range->end->toDateString(),
             'format' => 'JSON',
-        ], $extra);
+        ], $extra), 'Matomo returned an error (HTTP :status). Check the URL and site ID.');
+    }
 
-        try {
-            $response = app(OutboundUrl::class)->client(20)->asForm()
-                ->post(OutboundUrl::check(rtrim($this->baseUrl, '/')).'/index.php?'.http_build_query($params), ['token_auth' => $this->token]);
-        } catch (UnsafeUrlException $e) {
-            throw new IntegrationException($e->getMessage());
-        } catch (ConnectionException) {
-            throw new IntegrationException('Could not reach Matomo. Please try again shortly.');
-        }
+    /**
+     * @param  array<string, scalar>  $params
+     * @return array<mixed>
+     */
+    private function call(array $params, string $failure): array
+    {
+        $response = $this->post('/index.php?'.http_build_query($params), ['token_auth' => $this->token], asForm: true);
 
-        if ($response->failed()) {
-            throw new IntegrationException('Matomo returned an error (HTTP '.$response->status().'). Check the URL and site ID.');
-        }
+        $this->guard($response, $response->successful() ? [] : [
+            $response->status() => str_replace(':status', (string) $response->status(), $failure),
+        ]);
 
-        $json = (array) $response->json();
+        $json = $response->json();
 
-        if (($json['result'] ?? null) === 'error') {
+        if (is_array($json) && ($json['result'] ?? null) === 'error') {
             throw new IntegrationException('Matomo rejected the request: '.(string) ($json['message'] ?? 'check the auth token.'));
         }
 
-        return $json;
+        return is_array($json) ? $json : [];
     }
 }

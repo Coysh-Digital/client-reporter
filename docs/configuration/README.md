@@ -75,6 +75,12 @@ Data collection and the other background work run through Laravel's queue. There
 
 See [Shared hosting](../shared-hosting/README.md) for the cron setup and [when to move to a VPS](../shared-hosting/README.md#when-to-move-to-a-vps).
 
+### What runs on the queue
+
+Everything that talks to an external service runs as a queued job rather than inside a page request: data collection (one job per connection and period, retried with backoff on transient errors, unique so a backed-up queue never stacks duplicates), report generation (the builder queues it and polls until it finishes), billing sync and favicon fetches. The scheduler's `queue:work` line drains these; a VPS running a persistent worker processes them straight away. The Activity page shows what is queued, running and failed, and a run left behind by a killed worker is closed on the next `client-reporter:collect` tick.
+
+Collection-run history older than 90 days and all but the newest five frozen renders per report are pruned automatically; the metrics retention setting is separate and off by default.
+
 ## PDF rendering
 
 You can export reports to PDF with one of two drivers:

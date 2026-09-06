@@ -7,15 +7,20 @@ namespace App\Livewire\Portal;
 use App\Models\Client;
 use App\Models\Report;
 use App\Models\User;
-use Illuminate\Support\Collection;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 #[Layout('components.layouts.portal')]
 #[Title('Your reports')]
 class Dashboard extends Component
 {
+    use WithPagination;
+
+    private const PER_PAGE = 12;
+
     public Client $client;
 
     public function mount(): void
@@ -26,16 +31,17 @@ class Dashboard extends Component
     }
 
     /**
-     * @return Collection<int, Report>
+     * @return LengthAwarePaginator<int, Report>
      */
-    public function reports(): Collection
+    public function reports(): LengthAwarePaginator
     {
         return Report::query()
             ->whereHas('site', fn ($q) => $q->where('client_id', $this->client->id))
             ->where('status', 'final')
+            ->whereNotNull('generated_at')
             ->with('site')
             ->latest('generated_at')
-            ->get();
+            ->paginate(self::PER_PAGE);
     }
 
     public function render(): mixed

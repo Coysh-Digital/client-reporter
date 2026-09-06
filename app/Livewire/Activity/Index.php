@@ -42,7 +42,9 @@ class Index extends Component
     public function clearQueued(): void
     {
         $this->authorize('manage-integrations');
-        DB::table('jobs')->delete();
+        // Only jobs still waiting: one a worker has reserved is mid-flight and
+        // would be deleted from under it.
+        DB::table('jobs')->whereNull('reserved_at')->delete();
         session()->flash('status', 'Cleared the pending queue.');
     }
 

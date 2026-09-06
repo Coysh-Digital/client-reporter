@@ -4,18 +4,20 @@ declare(strict_types=1);
 
 namespace App\Integrations\GoogleAnalytics;
 
-use App\Integrations\Support\IntegrationException;
+use App\Integrations\Support\AbstractHttpClient;
+use App\Integrations\Support\GoogleOAuth;
 use App\Support\DateRange;
-use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Http\Client\PendingRequest;
 
 /**
  * Read-only client for the Google Analytics Data API (GA4). Exchanges a stored
- * refresh token for a short-lived access token, then runs reports. Uses the REST
- * API directly to avoid a heavy SDK dependency.
+ * refresh token for a short-lived access token (cached by GoogleOAuth), then
+ * runs reports. Uses the REST API directly to avoid a heavy SDK dependency.
  */
-class GoogleAnalyticsClient
+class GoogleAnalyticsClient extends AbstractHttpClient
 {
+    protected int $timeout = 30;
+
     public function __construct(
         private readonly string $refreshToken,
         private readonly string $propertyId,
@@ -23,26 +25,14 @@ class GoogleAnalyticsClient
         private readonly string $clientSecret,
     ) {}
 
+    protected function provider(): string
+    {
+        return 'Google Analytics';
+    }
+
     public function accessToken(): string
     {
-        try {
-            $response = Http::asForm()->timeout(20)->post('https://oauth2.googleapis.com/token', [
-                'client_id' => $this->clientId,
-                'client_secret' => $this->clientSecret,
-                'refresh_token' => $this->refreshToken,
-                'grant_type' => 'refresh_token',
-            ]);
-        } catch (ConnectionException) {
-            throw new IntegrationException('Could not reach Google. Please try again shortly.');
-        }
-
-        $token = $response->json('access_token');
-
-        if (! $response->successful() || ! is_string($token)) {
-            throw new IntegrationException('Google declined the connection. It may need to be reconnected.');
-        }
-
-        return $token;
+        return GoogleOAuth::accessToken($this->refreshToken, $this->clientId, $this->clientSecret);
     }
 
     /**
@@ -54,30 +44,29 @@ class GoogleAnalyticsClient
      */
     public function runReport(DateRange $range, array $metrics, array $dimensions = [], int $limit = 10): array
     {
-        try {
-            $response = Http::withToken($this->accessToken())->timeout(30)->post(
-                "https://analyticsdata.googleapis.com/v1beta/properties/{$this->propertyId}:runReport",
-                [
-                    'dateRanges' => [[
-                        'startDate' => $range->start->toDateString(),
-                        'endDate' => $range->end->toDateString(),
-                    ]],
-                    'metrics' => array_map(fn (string $m): array => ['name' => $m], $metrics),
-                    'dimensions' => array_map(fn (string $d): array => ['name' => $d], $dimensions),
-                    'limit' => $limit,
-                ],
-            );
-        } catch (ConnectionException) {
-            throw new IntegrationException('Could not reach Google Analytics. Please try again shortly.');
+        $token = $this->accessToken();
+
+        $response = $this->post(
+            "https://analyticsdata.googleapis.com/v1beta/properties/{$this->propertyId}:runReport",
+            [
+                'dateRanges' => [[
+                    'startDate' => $range->start->toDateString(),
+                    'endDate' => $range->end->toDateString(),
+                ]],
+                'metrics' => array_map(fn (string $m): array => ['name' => $m], $metrics),
+                'dimensions' => array_map(fn (string $d): array => ['name' => $d], $dimensions),
+                'limit' => $limit,
+            ],
+            configure: fn (PendingRequest $r): PendingRequest => $r->withToken($token),
+        );
+
+        if ($response->status() === 401) {
+            GoogleOAuth::forgetAccessToken($this->refreshToken, $this->clientId);
         }
 
-        if ($response->status() === 403) {
-            throw new IntegrationException('Google Analytics denied access to this property. Check the property ID and permissions.');
-        }
-
-        if ($response->failed()) {
-            throw new IntegrationException('Google Analytics returned an error (HTTP '.$response->status().').');
-        }
+        $this->guard($response, [
+            403 => 'Google Analytics denied access to this property. Check the property ID and permissions.',
+        ]);
 
         return (array) $response->json();
     }

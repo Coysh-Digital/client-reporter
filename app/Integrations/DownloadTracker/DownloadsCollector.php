@@ -25,7 +25,7 @@ class DownloadsCollector extends AbstractCollector
     {
         $client = (new DownloadTrackerIntegration)->client($connection);
 
-        $data = $client->get('report', [
+        $data = $client->fetch('report', [
             'from' => $range->start->toDateString(),
             'to' => $range->end->toDateString(),
         ]);

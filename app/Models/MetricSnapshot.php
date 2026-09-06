@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * load quickly and remain available if an external API is temporarily down.
  *
  * @property array<string, mixed> $payload
+ * @property bool $has_timeseries
  */
 class MetricSnapshot extends Model
 {
@@ -24,6 +25,7 @@ class MetricSnapshot extends Model
         'period_start',
         'period_end',
         'granularity',
+        'has_timeseries',
         'payload',
         'captured_at',
     ];
@@ -34,8 +36,21 @@ class MetricSnapshot extends Model
             'period_start' => 'date',
             'period_end' => 'date',
             'payload' => 'array',
+            'has_timeseries' => 'boolean',
             'captured_at' => 'datetime',
         ];
+    }
+
+    /**
+     * `has_timeseries` is derived from the payload on every save, so the
+     * site page can find the newest daily series in SQL without loading a
+     * single payload it does not need.
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (MetricSnapshot $snapshot): void {
+            $snapshot->has_timeseries = ! empty($snapshot->payload['timeseries'] ?? []);
+        });
     }
 
     /**

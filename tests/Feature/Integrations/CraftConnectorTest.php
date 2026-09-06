@@ -38,7 +38,7 @@ class CraftConnectorTest extends TestCase
     {
         Http::fake(['craft.test/*' => Http::response(['ok' => true, 'connector' => 'craft', 'version' => '1.0.0'])]);
 
-        (new SignedConnectorClient('https://craft.test', 'craft-secret', CraftIntegration::PATH_PREFIX))->get('verify');
+        (new SignedConnectorClient('https://craft.test', 'craft-secret', CraftIntegration::PATH_PREFIX))->fetch('verify');
 
         Http::assertSent(fn ($request) => str_contains($request->url(), '/client-reporter/v1/verify')
             && $request->hasHeader('X-CR-Signature'));

@@ -36,6 +36,7 @@ class WorkspaceIntegration extends Model
         'settings',
         'last_connected_at',
         'last_collected_at',
+        'last_attempted_at',
         'last_error',
     ];
 
@@ -49,6 +50,7 @@ class WorkspaceIntegration extends Model
             'settings' => 'array',
             'last_connected_at' => 'datetime',
             'last_collected_at' => 'datetime',
+            'last_attempted_at' => 'datetime',
         ];
     }
 

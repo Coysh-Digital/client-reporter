@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace App\Livewire\Reports;
 
+use App\Jobs\GenerateReport;
 use App\Models\Report;
-use App\Reporting\ReportGenerator;
-use App\Support\AuditLogger;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -20,15 +19,32 @@ class Show extends Component
         $this->report = $report->load('site.client', 'latestRender');
     }
 
-    public function generate(ReportGenerator $generator, AuditLogger $audit): void
+    public function generate(): void
     {
         $this->authorize('manage-reports');
 
-        $generator->generate($this->report);
-        $audit->log('report.generated', $this->report);
-
+        GenerateReport::queueFor($this->report, auth()->user());
         $this->report->refresh()->load('latestRender');
-        session()->flash('status', 'Report generated.');
+    }
+
+    public function retryGeneration(): void
+    {
+        $this->generate();
+    }
+
+    /**
+     * Polled while generation is in flight; refreshes the frozen render and
+     * the page once it lands.
+     */
+    public function pollGeneration(): void
+    {
+        $wasGenerating = $this->report->isGenerating();
+        $this->report->refresh()->load('latestRender');
+
+        if ($wasGenerating && ! $this->report->isGenerating() && ! $this->report->generationFailed()) {
+            session()->flash('status', 'Report generated.');
+            $this->redirectRoute('reports.show', $this->report, navigate: true);
+        }
     }
 
     public function render(): mixed

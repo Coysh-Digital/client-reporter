@@ -167,6 +167,20 @@ abstract class Integration
         return 0;
     }
 
+    /**
+     * Whether this integration feeds the generic Ecommerce report block, and
+     * from which collector. Return the collector key, a display name for the
+     * store platform and a priority (higher wins when a site has more than one
+     * source — a direct store API beats the same data relayed via a CMS
+     * plugin). Null (the default) means it provides no store data.
+     *
+     * @return array{collector_key: string, provider: string, priority: int}|null
+     */
+    public function providesEcommerce(): ?array
+    {
+        return null;
+    }
+
     public function key(): string
     {
         return $this->manifest()->key;

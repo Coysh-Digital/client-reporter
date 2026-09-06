@@ -4,19 +4,21 @@ declare(strict_types=1);
 
 namespace App\Integrations\GoogleAds;
 
-use App\Integrations\Support\IntegrationException;
+use App\Integrations\Support\AbstractHttpClient;
+use App\Integrations\Support\GoogleOAuth;
 use App\Support\DateRange;
-use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Http\Client\PendingRequest;
 
 /**
  * Read-only client for the Google Ads API (REST + GAQL). Exchanges a stored
- * refresh token for a short-lived access token, then runs a single
- * account-level query for the period's totals.
+ * refresh token for a short-lived access token (cached by GoogleOAuth), then
+ * runs a single account-level query for the period's totals.
  */
-class GoogleAdsClient
+class GoogleAdsClient extends AbstractHttpClient
 {
     private const API_VERSION = 'v17';
+
+    protected int $timeout = 30;
 
     public function __construct(
         private readonly string $refreshToken,
@@ -26,26 +28,14 @@ class GoogleAdsClient
         private readonly string $clientSecret,
     ) {}
 
+    protected function provider(): string
+    {
+        return 'Google Ads';
+    }
+
     public function accessToken(): string
     {
-        try {
-            $response = Http::asForm()->timeout(20)->post('https://oauth2.googleapis.com/token', [
-                'client_id' => $this->clientId,
-                'client_secret' => $this->clientSecret,
-                'refresh_token' => $this->refreshToken,
-                'grant_type' => 'refresh_token',
-            ]);
-        } catch (ConnectionException) {
-            throw new IntegrationException('Could not reach Google. Please try again shortly.');
-        }
-
-        $token = $response->json('access_token');
-
-        if (! $response->successful() || ! is_string($token)) {
-            throw new IntegrationException('Google declined the connection. It may need to be reconnected.');
-        }
-
-        return $token;
+        return GoogleOAuth::accessToken($this->refreshToken, $this->clientId, $this->clientSecret);
     }
 
     /**
@@ -60,25 +50,22 @@ class GoogleAdsClient
             ."FROM customer WHERE segments.date BETWEEN '{$range->start->toDateString()}' AND '{$range->end->toDateString()}'";
 
         $customerId = str_replace('-', '', $this->customerId);
+        $token = $this->accessToken();
 
-        try {
-            $response = Http::withToken($this->accessToken())
-                ->withHeaders(['developer-token' => $this->developerToken])
-                ->timeout(30)
-                ->post('https://googleads.googleapis.com/'.self::API_VERSION."/customers/{$customerId}/googleAds:search", [
-                    'query' => $query,
-                ]);
-        } catch (ConnectionException) {
-            throw new IntegrationException('Could not reach Google Ads. Please try again shortly.');
+        $response = $this->post(
+            'https://googleads.googleapis.com/'.self::API_VERSION."/customers/{$customerId}/googleAds:search",
+            ['query' => $query],
+            configure: fn (PendingRequest $r): PendingRequest => $r->withToken($token)->withHeaders(['developer-token' => $this->developerToken]),
+        );
+
+        if ($response->status() === 401) {
+            GoogleOAuth::forgetAccessToken($this->refreshToken, $this->clientId);
         }
 
-        if ($response->status() === 403 || $response->status() === 401) {
-            throw new IntegrationException('Google Ads denied access to this account. Check the customer ID, developer token and permissions.');
-        }
-
-        if ($response->failed()) {
-            throw new IntegrationException('Google Ads returned an error (HTTP '.$response->status().').');
-        }
+        $this->guard($response, [
+            401 => 'Google Ads denied access to this account. Check the customer ID, developer token and permissions.',
+            403 => 'Google Ads denied access to this account. Check the customer ID, developer token and permissions.',
+        ]);
 
         $costMicros = 0;
         $clicks = 0;

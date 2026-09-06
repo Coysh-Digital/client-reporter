@@ -57,7 +57,12 @@ class ReportComposer
         return $report;
     }
 
-    private function seedBlocks(Report $report, ?ReportTemplate $template): void
+    /**
+     * Seed a report's blocks from a template (or the default set), skipping
+     * any block the site cannot feed. Also used by the builder's "apply a
+     * template" action on an empty report.
+     */
+    public function seedBlocks(Report $report, ?ReportTemplate $template): void
     {
         $definitions = self::DEFAULT_BLOCKS;
 
@@ -69,9 +74,10 @@ class ReportComposer
         $availability = app(BlockAvailability::class);
         $connectedKeys = $availability->connectedKeys($report->site);
 
-        $position = 0;
+        $position = (int) $report->blocks()->max('position');
+        $position = $report->blocks()->exists() ? $position + 1 : 0;
         foreach (array_values($definitions) as $definition) {
-            $blockType = $registry->find($definition['type']);
+            $blockType = $registry->find($definition['type'] ?? '');
 
             // Only seed blocks the registry knows AND the site can actually feed.
             if ($blockType === null || ! $availability->isAvailable($blockType, $report->site, $connectedKeys)) {

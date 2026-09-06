@@ -53,22 +53,11 @@ class ReportStatusResolver
             }
 
             $out[$report->site_id] = [
-                'status' => $this->statusFor($report),
+                'status' => $report->periodStatus(),
                 'report' => $report,
             ];
         }
 
         return $out;
-    }
-
-    private function statusFor(Report $report): ReportPeriodStatus
-    {
-        if (! $report->isGenerated() && $report->status !== 'final') {
-            return ReportPeriodStatus::Draft;
-        }
-
-        $shares = (int) ($report->shares_count ?? 0);
-
-        return $shares > 0 ? ReportPeriodStatus::Sent : ReportPeriodStatus::Ready;
     }
 }

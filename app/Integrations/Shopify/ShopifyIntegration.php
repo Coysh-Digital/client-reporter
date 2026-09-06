@@ -81,6 +81,11 @@ class ShopifyIntegration extends Integration
         );
     }
 
+    public function providesEcommerce(): ?array
+    {
+        return ['collector_key' => 'shopify', 'provider' => 'Shopify', 'priority' => 60];
+    }
+
     /**
      * @return array<int, Collector>
      */

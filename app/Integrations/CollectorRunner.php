@@ -6,7 +6,9 @@ namespace App\Integrations;
 
 use App\Enums\ConnectionStatus;
 use App\Integrations\Contracts\Collector;
+use App\Integrations\Support\AuthenticationException;
 use App\Integrations\Support\CollectorResult;
+use App\Integrations\Support\RateLimitedException;
 use App\Models\CollectorRun;
 use App\Models\Metric;
 use App\Models\MetricSnapshot;
@@ -47,6 +49,11 @@ class CollectorRunner
 
     public function run(SiteIntegration $connection, Collector $collector, DateRange $range): CollectorRun
     {
+        // The queued marker has served its purpose once a worker is here.
+        if ($connection->collection_queued_at !== null) {
+            $connection->forceFill(['collection_queued_at' => null])->save();
+        }
+
         $run = $connection->collectorRuns()->create([
             'collector_key' => $collector->key(),
             'status' => 'running',
@@ -73,6 +80,7 @@ class CollectorRunner
                 'last_collected_at' => now(),
                 'last_attempted_at' => now(),
                 'last_error' => null,
+                'last_failure_kind' => null,
             ]);
         } catch (Throwable $e) {
             $message = $this->safeMessage($e);
@@ -84,10 +92,19 @@ class CollectorRunner
                 'error_message' => $message,
             ]);
 
+            // Rejected credentials stop scheduled collection until someone
+            // reconnects; anything else is worth another try next interval.
+            [$status, $kind] = match (true) {
+                $e instanceof AuthenticationException => [ConnectionStatus::AuthExpired, 'auth'],
+                $e instanceof RateLimitedException => [ConnectionStatus::NeedsAttention, 'rate_limit'],
+                default => [ConnectionStatus::NeedsAttention, 'failed'],
+            };
+
             $connection->update([
-                'status' => ConnectionStatus::NeedsAttention,
+                'status' => $status,
                 'last_attempted_at' => now(),
                 'last_error' => $message,
+                'last_failure_kind' => $kind,
             ]);
 
             Log::warning('Collector run failed', [

@@ -116,6 +116,12 @@ public function setupSteps(): array
 
 `collectors()` returns the units that fetch data on a schedule and persist it as metrics and snapshots. A collector implements `App\Integrations\Contracts\Collector`, declares a key and interval, and writes `metric` values plus an optional `snapshot` (structured JSON for tables like top pages). Mirror an existing collector — `app/Integrations/Plausible/PlausibleCollector.php` is a good template. Because the report blocks are category-based, emitting the standard `analytics.*` metrics and a matching snapshot means your provider renders in the generic analytics blocks with **no new block code**.
 
+### Talking to the provider
+
+Put the HTTP calls in a small client class that extends `App\Integrations\Support\AbstractHttpClient`. It gives you timeouts, retries on connection errors and 5xx responses, an identifiable user-agent, and — when the address came from the user (`baseUrl()` returns it) — the outbound URL guard that stops a connection being pointed at a private network. Implement `provider()` (the name used in error messages), call `$this->get()` / `$this->post()`, and pass the response through `$this->guard()`: a 401/403 raises an `AuthenticationException` (collection stops until someone reconnects), a 429 raises `RateLimitedException`, and anything else an `IntegrationException` with a message safe to show staff. Never build error messages from the raw response body or the request URL.
+
+If your integration supplies store data, implement `providesEcommerce()` so the shared Ecommerce report block can read it.
+
 ### Report blocks
 
 `reportBlocks()` returns any bespoke block types the integration adds. Most integrations return `[]` and rely on the shared, category-based blocks already registered in `config/client-reporter.php` (`report_blocks`). Only add a block when you need a presentation the shared blocks don't cover. See [Reports](../reports/README.md) for the block model.

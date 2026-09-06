@@ -21,34 +21,47 @@ use App\Support\DateRange;
 class MetricReader
 {
     /**
+     * Connections looked up so far, keyed by site and integration/category. A
+     * report resolves dozens of blocks against the same handful of
+     * connections; without this each block re-queried site_integrations.
+     *
+     * @var array<string, SiteIntegration|null>
+     */
+    private array $connections = [];
+
+    public function __construct(private readonly IntegrationRegistry $integrations) {}
+
+    /**
      * Where a site's ecommerce data lives. Store metrics either ride on a CMS
      * integration (WooCommerce under WordPress, Craft Commerce under Craft) or
-     * come from a standalone store platform (Shopify), so the generic Store
-     * block asks here rather than hard-coding a provider.
+     * come from a standalone store platform, so the generic Store block asks
+     * here. Each integration declares itself via {@see Integration::providesEcommerce()};
+     * the highest-priority connected one wins.
      *
      * @return array{integration_key: string, collector_key: string, provider: string}|null
      */
     public function ecommerceSource(Site $site): ?array
     {
-        $sources = [
-            // Direct WooCommerce REST connection is preferred over the same
-            // store's data arriving via the WordPress connector.
-            ['integration_key' => 'woocommerce', 'collector_key' => 'sales', 'provider' => 'WooCommerce'],
-            ['integration_key' => 'wordpress', 'collector_key' => 'woocommerce', 'provider' => 'WooCommerce'],
-            ['integration_key' => 'craft', 'collector_key' => 'commerce', 'provider' => 'Craft Commerce'],
-            ['integration_key' => 'shopify', 'collector_key' => 'shopify', 'provider' => 'Shopify'],
-            ['integration_key' => 'stripe', 'collector_key' => 'stripe', 'provider' => 'Stripe'],
-        ];
-
         $connected = $site->integrations()->pluck('integration_key')->all();
+        $best = null;
 
-        foreach ($sources as $source) {
-            if (in_array($source['integration_key'], $connected, true)) {
-                return $source;
+        foreach ($this->integrations->all() as $integration) {
+            $source = $integration->providesEcommerce();
+
+            if ($source === null || ! in_array($integration->key(), $connected, true)) {
+                continue;
+            }
+
+            if ($best === null || $source['priority'] > $best['priority']) {
+                $best = $source + ['integration_key' => $integration->key()];
             }
         }
 
-        return null;
+        return $best === null ? null : [
+            'integration_key' => $best['integration_key'],
+            'collector_key' => $best['collector_key'],
+            'provider' => $best['provider'],
+        ];
     }
 
     /**
@@ -56,7 +69,7 @@ class MetricReader
      */
     public function connectionFor(Site $site, string $integrationKey): ?SiteIntegration
     {
-        return $site->integrations()
+        return $this->connections["{$site->id}:key:{$integrationKey}"] ??= $site->integrations()
             ->where('integration_key', $integrationKey)
             ->orderByRaw('CASE status WHEN ? THEN 0 ELSE 1 END', [ConnectionStatus::Connected->value])
             ->first();
@@ -103,13 +116,15 @@ class MetricReader
      */
     public function connectionForCategory(Site $site, IntegrationCategory $category): ?SiteIntegration
     {
-        $keys = app(IntegrationRegistry::class)->keysInCategory($category);
+        $cacheKey = "{$site->id}:category:{$category->value}";
 
-        if ($keys === []) {
-            return null;
+        if (array_key_exists($cacheKey, $this->connections)) {
+            return $this->connections[$cacheKey];
         }
 
-        return $site->integrations()
+        $keys = $this->integrations->keysInCategory($category);
+
+        return $this->connections[$cacheKey] = $keys === [] ? null : $site->integrations()
             ->whereIn('integration_key', $keys)
             ->orderByRaw('CASE status WHEN ? THEN 0 ELSE 1 END', [ConnectionStatus::Connected->value])
             ->first();

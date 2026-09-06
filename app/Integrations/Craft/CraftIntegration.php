@@ -69,7 +69,7 @@ class CraftIntegration extends Integration
     public function verify(SiteIntegration $connection): VerificationResult
     {
         try {
-            $data = $this->client($connection)->get('verify');
+            $data = $this->client($connection)->fetch('verify');
         } catch (IntegrationException $e) {
             return VerificationResult::failure($e->getMessage());
         }
@@ -82,6 +82,11 @@ class CraftIntegration extends Integration
             'Connected to Craft '.($data['craft_version'] ?? '').'.',
             ['connector_version' => (string) ($data['version'] ?? '')],
         );
+    }
+
+    public function providesEcommerce(): ?array
+    {
+        return ['collector_key' => 'commerce', 'provider' => 'Craft Commerce', 'priority' => 80];
     }
 
     /**

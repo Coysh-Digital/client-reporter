@@ -52,6 +52,7 @@ class ReportDocument
      */
     public function fromRender(ReportRender $render): array
     {
+        $render->loadMissing('report.site.client');
         $branding = ResolvedBranding::fromArray($render->branding_snapshot);
         $blocks = [];
 

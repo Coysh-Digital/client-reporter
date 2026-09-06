@@ -28,7 +28,9 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $last_connected_at
  * @property Carbon|null $last_collected_at
  * @property Carbon|null $last_attempted_at
+ * @property Carbon|null $collection_queued_at
  * @property string|null $last_error
+ * @property string|null $last_failure_kind
  * @property string|null $connector_version
  */
 class SiteIntegration extends Model
@@ -48,7 +50,9 @@ class SiteIntegration extends Model
         'last_connected_at',
         'last_collected_at',
         'last_attempted_at',
+        'collection_queued_at',
         'last_error',
+        'last_failure_kind',
     ];
 
     protected $hidden = ['credentials'];
@@ -62,6 +66,7 @@ class SiteIntegration extends Model
             'last_connected_at' => 'datetime',
             'last_collected_at' => 'datetime',
             'last_attempted_at' => 'datetime',
+            'collection_queued_at' => 'datetime',
         ];
     }
 

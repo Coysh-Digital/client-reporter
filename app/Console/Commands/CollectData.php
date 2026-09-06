@@ -5,14 +5,18 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Enums\ConnectionStatus;
+use App\Integrations\CollectionSchedule;
 use App\Integrations\CollectorRunner;
 use App\Jobs\RunConnectorCollection;
+use App\Models\CollectorRun;
 use App\Models\Metric;
 use App\Models\MetricSnapshot;
+use App\Models\ReportRender;
 use App\Models\SiteIntegration;
 use App\Support\DateRange;
 use App\Support\Settings;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Drives scheduled data collection. By default it keeps the current month warm
@@ -31,8 +35,19 @@ class CollectData extends Command
 
     protected $description = 'Collect data from connected integrations';
 
-    public function handle(CollectorRunner $runner): int
+    /** A run still "running" after this long was killed with its worker. */
+    private const STALE_RUN_MINUTES = 15;
+
+    /** Collection-run history kept for the Activity page. */
+    private const RUN_RETENTION_DAYS = 90;
+
+    /** Frozen renders kept per report (the newest is the live one). */
+    private const RENDERS_PER_REPORT = 5;
+
+    public function handle(CollectorRunner $runner, CollectionSchedule $schedule): int
     {
+        $this->reapStaleRuns();
+
         $connections = SiteIntegration::query()
             ->whereIn('status', [ConnectionStatus::Connected->value, ConnectionStatus::NeedsAttention->value])
             ->whereHas('site', fn ($q) => $q->where('is_active', true))
@@ -47,14 +62,14 @@ class CollectData extends Command
         foreach ($connections as $connection) {
             // The previous month is stable, so history mode runs on its own daily
             // cadence and always collects; the current month respects the interval.
-            if (! $history && ! $this->option('force') && ! $this->isDue($connection)) {
+            if (! $history && ! $this->option('force') && ! $schedule->isDue($connection)) {
                 continue;
             }
 
             if ($this->option('sync')) {
                 $runner->collectAll($connection, $range);
             } else {
-                RunConnectorCollection::dispatch($connection, $range->start->toDateString(), $range->end->toDateString());
+                RunConnectorCollection::queueFor($connection, $range);
             }
 
             $dispatched++;
@@ -70,45 +85,79 @@ class CollectData extends Command
     }
 
     /**
-     * Whether a connection is due to be collected. Keyed off the last *attempt*
-     * (falling back to the last success for rows predating that column), so a
-     * connection that keeps failing backs off to the normal interval instead of
-     * being retried on every scheduler tick.
+     * A worker that is killed (out of memory, deploy restart) leaves its run
+     * stuck at "running" forever. Close those out so the Activity page and the
+     * connection's status reflect what actually happened.
      */
-    private function isDue(SiteIntegration $connection): bool
+    private function reapStaleRuns(): void
     {
-        $last = $connection->last_attempted_at ?? $connection->last_collected_at;
-        if ($last === null) {
-            return true;
+        $stale = CollectorRun::query()
+            ->where('status', 'running')
+            ->where('started_at', '<', now()->subMinutes(self::STALE_RUN_MINUTES))
+            ->get();
+
+        foreach ($stale as $run) {
+            $run->update([
+                'status' => 'failed',
+                'finished_at' => now(),
+                'error_message' => 'The worker stopped before this run finished.',
+            ]);
         }
 
-        $interval = (int) app(Settings::class)->get(
-            'collection_interval',
-            config('client-reporter.collection.default_interval', 360),
-        );
-
-        return $last->addMinutes($interval)->isPast();
+        if ($stale->isNotEmpty()) {
+            $this->warn("Closed {$stale->count()} stale collection run(s).");
+        }
     }
 
     /**
      * Delete metrics/snapshots collected before the retention window. Generated
      * reports keep their own frozen snapshots, so pruning only affects
      * re-generating reports for periods now beyond retention. Null = keep all.
+     * Run history and superseded renders are always pruned: neither is needed
+     * for a report to stay accurate.
      */
     private function pruneExpiredData(): void
     {
         $days = app(Settings::class)->get('collection_retention_days', config('client-reporter.collection.retention_days'));
 
-        if ($days === null || (int) $days <= 0) {
-            return;
+        if ($days !== null && (int) $days > 0) {
+            $cutoff = now()->subDays((int) $days);
+            $metrics = Metric::query()->where('captured_at', '<', $cutoff)->delete();
+            $snapshots = MetricSnapshot::query()->where('captured_at', '<', $cutoff)->delete();
+
+            if ($metrics > 0 || $snapshots > 0) {
+                $this->info("Pruned {$metrics} metric(s) and {$snapshots} snapshot(s) older than {$days} day(s).");
+            }
         }
 
-        $cutoff = now()->subDays((int) $days);
-        $metrics = Metric::query()->where('captured_at', '<', $cutoff)->delete();
-        $snapshots = MetricSnapshot::query()->where('captured_at', '<', $cutoff)->delete();
+        CollectorRun::query()->where('started_at', '<', now()->subDays(self::RUN_RETENTION_DAYS))->delete();
+        $this->pruneSupersededRenders();
+    }
 
-        if ($metrics > 0 || $snapshots > 0) {
-            $this->info("Pruned {$metrics} metric(s) and {$snapshots} snapshot(s) older than {$days} day(s).");
+    /**
+     * Every generation appends a frozen render; only the newest is ever read.
+     * Keep a few per report for safety and drop the rest.
+     */
+    private function pruneSupersededRenders(): void
+    {
+        $reportIds = ReportRender::query()
+            ->select('report_id')
+            ->groupBy('report_id')
+            ->havingRaw('count(*) > ?', [self::RENDERS_PER_REPORT])
+            ->pluck('report_id');
+
+        foreach ($reportIds as $reportId) {
+            $keep = ReportRender::query()
+                ->where('report_id', $reportId)
+                ->orderByDesc('rendered_at')
+                ->orderByDesc('id')
+                ->limit(self::RENDERS_PER_REPORT)
+                ->pluck('id');
+
+            DB::table('report_renders')
+                ->where('report_id', $reportId)
+                ->whereNotIn('id', $keep->all())
+                ->delete();
         }
     }
 }

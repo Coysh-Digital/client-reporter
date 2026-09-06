@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace App\Integrations\UptimeKuma;
 
-use App\Integrations\Support\IntegrationException;
-use App\Support\Http\OutboundUrl;
-use App\Support\Http\UnsafeUrlException;
-use Illuminate\Http\Client\ConnectionException;
+use App\Integrations\Support\AbstractHttpClient;
+use Illuminate\Http\Client\PendingRequest;
 
 /**
  * Reads monitor data from a self-hosted Uptime Kuma instance's
@@ -18,12 +16,27 @@ use Illuminate\Http\Client\ConnectionException;
  * own rolling sample history (for incident detection and a daily timeseries),
  * but prefers these real aggregates for the headline figures when present.
  */
-class UptimeKumaClient
+class UptimeKumaClient extends AbstractHttpClient
 {
     public function __construct(
-        private readonly string $baseUrl,
+        private readonly string $instanceUrl,
         private readonly string $apiKey,
     ) {}
+
+    protected function provider(): string
+    {
+        return 'Uptime Kuma';
+    }
+
+    protected function baseUrl(): ?string
+    {
+        return $this->instanceUrl;
+    }
+
+    protected function unreachableMessage(): string
+    {
+        return 'Could not reach the Uptime Kuma instance. Check the URL and that it is publicly reachable.';
+    }
 
     /**
      * Current status of every monitor exposed by the API key, optionally
@@ -128,25 +141,16 @@ class UptimeKumaClient
 
     private function fetch(): string
     {
-        try {
-            // Uptime Kuma's documented convention: the API key is sent as the
-            // basic-auth password; the username is ignored.
-            $response = app(OutboundUrl::class)->client(20)
-                ->withBasicAuth('', $this->apiKey)
-                ->get(OutboundUrl::check(rtrim($this->baseUrl, '/')).'/metrics');
-        } catch (UnsafeUrlException $e) {
-            throw new IntegrationException($e->getMessage());
-        } catch (ConnectionException) {
-            throw new IntegrationException('Could not reach the Uptime Kuma instance. Check the URL and that it is publicly reachable.');
-        }
+        // Uptime Kuma's documented convention: the API key is sent as the
+        // basic-auth password; the username is ignored.
+        $response = $this->get('/metrics', [], fn (PendingRequest $r): PendingRequest => $r->withBasicAuth('', $this->apiKey));
 
-        if (in_array($response->status(), [401, 403], true)) {
-            throw new IntegrationException('Uptime Kuma rejected the API key.');
-        }
-
-        if (! $response->successful()) {
-            throw new IntegrationException("Uptime Kuma returned an unexpected response ({$response->status()}).");
-        }
+        $this->guard($response, [
+            401 => 'Uptime Kuma rejected the API key.',
+            403 => 'Uptime Kuma rejected the API key.',
+        ] + ($response->successful() || in_array($response->status(), [401, 403], true) ? [] : [
+            $response->status() => "Uptime Kuma returned an unexpected response ({$response->status()}).",
+        ]));
 
         return (string) $response->body();
     }
