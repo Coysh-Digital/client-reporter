@@ -26,6 +26,9 @@ use Livewire\Component;
 #[Layout('components.layouts.guest')]
 class TwoFactorChallenge extends Component
 {
+    /** How long the password step stays valid before the challenge must restart. */
+    private const PENDING_TTL_SECONDS = 300;
+
     public string $code = '';
 
     public bool $recovery = false;
@@ -53,6 +56,8 @@ class TwoFactorChallenge extends Component
 
         $user = $this->pendingUser();
         if ($user === null) {
+            session()->forget(['auth.two_factor.pending_id', 'auth.two_factor.pending_at', 'auth.two_factor.remember']);
+
             return $this->redirectRoute('login', navigate: true);
         }
 
@@ -74,7 +79,7 @@ class TwoFactorChallenge extends Component
         RateLimiter::clear($this->throttleKey());
 
         $remember = (bool) session()->pull('auth.two_factor.remember', false);
-        session()->forget('auth.two_factor.pending_id');
+        session()->forget(['auth.two_factor.pending_id', 'auth.two_factor.pending_at']);
 
         Auth::login($user, $remember);
         session()->regenerate();
@@ -109,11 +114,23 @@ class TwoFactorChallenge extends Component
         return false;
     }
 
+    /**
+     * The half-authenticated user, provided the challenge was started recently
+     * and the account is still active with 2FA enabled. Anything else sends
+     * the visitor back to the password step.
+     */
     private function pendingUser(): ?User
     {
         $id = session('auth.two_factor.pending_id');
+        $startedAt = (int) session('auth.two_factor.pending_at', 0);
 
-        return $id !== null ? User::query()->whereKey($id)->first() : null;
+        if ($id === null || now()->timestamp - $startedAt > self::PENDING_TTL_SECONDS) {
+            return null;
+        }
+
+        $user = User::query()->whereKey($id)->first();
+
+        return $user !== null && $user->is_active && $user->hasTwoFactorEnabled() ? $user : null;
     }
 
     private function ensureIsNotRateLimited(): void

@@ -66,13 +66,15 @@ class AuthenticationTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $component = Livewire::test(Login::class)->set('email', $user->email)->set('password', 'nope');
+        $component = Livewire::test(Login::class)->set('email', $user->email);
 
+        // The password field is cleared after every attempt, as a person
+        // retrying would re-type it.
         for ($i = 0; $i < 5; $i++) {
-            $component->call('login');
+            $component->set('password', 'nope')->call('login');
         }
 
-        $component->call('login')->assertHasErrors('email');
+        $component->set('password', 'nope')->call('login')->assertHasErrors('email');
         $this->assertStringContainsString('seconds', collect($component->errors()->get('email'))->implode(' '));
     }
 

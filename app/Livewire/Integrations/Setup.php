@@ -129,6 +129,7 @@ class Setup extends Component
         // paste into the plugin.
         if ($integration->manifest()->authMethod === AuthMethod::ConnectorToken && empty($credentials['secret'])) {
             $credentials['secret'] = Str::random(48);
+            $this->revealConnectionCode($credentials['secret']);
         }
 
         $connection = $existing ?? new SiteIntegration([
@@ -222,11 +223,51 @@ class Setup extends Component
         return $this->isOAuth() && $connection !== null && empty($connection->credential('refresh_token'));
     }
 
+    /**
+     * The connection code is shown once — right after it is generated — and
+     * masked afterwards. Regenerating issues a fresh code (the plugin must be
+     * updated to match) and reveals it again.
+     */
     public function connectionCode(): ?string
+    {
+        $secret = session('connection_code');
+
+        return is_string($secret) && $secret !== '' ? $secret : null;
+    }
+
+    public function hasConnectionCode(): bool
     {
         $secret = $this->connection()?->credential('secret');
 
-        return is_string($secret) && $secret !== '' ? $secret : null;
+        return is_string($secret) && $secret !== '';
+    }
+
+    public function regenerateConnectionCode(AuditLogger $audit): void
+    {
+        $this->authorize('manage-integrations');
+
+        $connection = $this->connection();
+        if ($connection === null || ! $this->isConnectorBased()) {
+            return;
+        }
+
+        $credentials = $connection->credentials ?? [];
+        $credentials['secret'] = Str::random(48);
+
+        $connection->update([
+            'credentials' => $credentials,
+            'status' => ConnectionStatus::NotConnected,
+            'last_error' => null,
+        ]);
+
+        $audit->log('integration.connection_code_rotated', $connection, metadata: ['integration' => $connection->integration_key]);
+        $this->revealConnectionCode($credentials['secret']);
+    }
+
+    private function revealConnectionCode(string $secret): void
+    {
+        // Flashed: readable while this request renders and on the next one.
+        session()->flash('connection_code', $secret);
     }
 
     public function render(): mixed
@@ -239,6 +280,7 @@ class Setup extends Component
             'integration' => $integration,
             'isConnector' => $this->isConnectorBased(),
             'connectionCode' => $this->connectionCode(),
+            'hasConnectionCode' => $this->hasConnectionCode(),
             'needsOAuthConnect' => $this->needsOAuthConnect(),
             'fields' => $this->fields($integration, $connection),
             'workspaceConnection' => $connection?->usesWorkspace() ? $connection->workspaceIntegration : null,

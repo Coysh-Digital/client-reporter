@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Reporting\ReportGenerator;
 use App\Reporting\ReportShareService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -120,6 +121,73 @@ class SharingTest extends TestCase
             ->assertHasNoErrors();
 
         Mail::assertSent(ReportMail::class, fn (ReportMail $mail) => $mail->hasTo('client@acme.test'));
+    }
+
+    public function test_a_share_password_must_be_at_least_ten_characters(): void
+    {
+        $manager = User::factory()->manager()->create();
+        $report = $this->generatedReport();
+
+        Livewire::actingAs($manager)->test(SharePanel::class, ['report' => $report])
+            ->set('password', 'short')
+            ->call('createLink')
+            ->assertHasErrors('password');
+
+        Livewire::actingAs($manager)->test(SharePanel::class, ['report' => $report])
+            ->set('password', 'long-enough-secret')
+            ->call('createLink')
+            ->assertHasNoErrors();
+    }
+
+    public function test_a_link_is_revoked_after_repeated_wrong_passwords(): void
+    {
+        $report = $this->generatedReport();
+        $shares = app(ReportShareService::class);
+        $result = $shares->create($report, password: 'correct-horse-battery');
+        $unlock = route('public-report.unlock', ['token' => $result['token']]);
+
+        // The per-link rate limit is exercised separately; here only the
+        // revocation ceiling matters.
+        $this->withoutMiddleware(ThrottleRequests::class);
+
+        for ($i = 0; $i < 19; $i++) {
+            $this->post($unlock, ['password' => 'wrong-'.$i])->assertOk();
+        }
+
+        $this->post($unlock, ['password' => 'wrong-final'])->assertNotFound();
+
+        $this->assertNotNull($result['share']->refresh()->revoked_at);
+        $this->get($shares->url($result['token']))->assertNotFound();
+    }
+
+    public function test_password_guesses_are_rate_limited_per_link(): void
+    {
+        $report = $this->generatedReport();
+        $shares = app(ReportShareService::class);
+        $result = $shares->create($report, password: 'correct-horse-battery');
+        $unlock = route('public-report.unlock', ['token' => $result['token']]);
+
+        for ($i = 0; $i < 10; $i++) {
+            $this->post($unlock, ['password' => 'wrong'])->assertOk();
+        }
+
+        $this->post($unlock, ['password' => 'wrong'])->assertStatus(429);
+    }
+
+    public function test_an_unlocked_link_locks_again_after_a_while(): void
+    {
+        $report = $this->generatedReport();
+        $shares = app(ReportShareService::class);
+        $result = $shares->create($report, password: 'correct-horse-battery');
+        $url = $shares->url($result['token']);
+
+        $this->post(route('public-report.unlock', ['token' => $result['token']]), ['password' => 'correct-horse-battery'])
+            ->assertRedirect($url);
+        $this->get($url)->assertOk()->assertSee($report->site->client->name);
+
+        $this->travel(31)->minutes();
+
+        $this->get($url)->assertOk()->assertSee('This report is protected');
     }
 
     public function test_sharing_requires_a_generated_report(): void

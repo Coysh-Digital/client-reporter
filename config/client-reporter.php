@@ -186,6 +186,30 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Outbound requests
+    |--------------------------------------------------------------------------
+    |
+    | Client Reporter fetches from addresses that staff type in (site URLs,
+    | self-hosted analytics, companion plugins, import sources). By default a
+    | host must resolve to a public address, so the server can never be pointed
+    | at localhost, the LAN or a cloud metadata endpoint. If a service you
+    | connect genuinely lives on a private address (Matomo on the same network,
+    | say), list its hostname in `allowed_hosts`, or set `allow_private` to
+    | true to disable the check entirely. See docs/security.
+    |
+    */
+
+    'outbound' => [
+        'allow_private' => (bool) env('CLIENT_REPORTER_ALLOW_PRIVATE_URLS', false),
+
+        'allowed_hosts' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) env('CLIENT_REPORTER_ALLOWED_HOSTS', '')),
+        ))),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Companion connectors (WordPress / Craft plugins)
     |--------------------------------------------------------------------------
     |

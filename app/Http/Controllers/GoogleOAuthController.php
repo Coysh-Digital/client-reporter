@@ -9,9 +9,9 @@ use App\Integrations\Support\GoogleOAuth;
 use App\Models\SiteIntegration;
 use App\Models\WorkspaceIntegration;
 use App\Support\AuditLogger;
+use App\Support\OAuthState;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Http;
 
@@ -20,8 +20,9 @@ use Illuminate\Support\Facades\Http;
  * offline access so a refresh token is stored (encrypted) on the connection;
  * access tokens are fetched on demand during collection. The scope requested
  * depends on which Google integration is being connected. Works for both a
- * per-site connection and a workspace-wide one — the OAuth `state` carries which
- * kind and its id so the callback knows where to store the refresh token.
+ * per-site connection and a workspace-wide one — the target (which kind and
+ * its id) is held in the session for the duration of the round-trip and the
+ * OAuth `state` is a single-use nonce bound to it (see OAuthState).
  */
 class GoogleOAuthController
 {
@@ -59,7 +60,7 @@ class GoogleOAuthController
             'scope' => $scope,
             'access_type' => 'offline',
             'prompt' => 'consent',
-            'state' => Crypt::encryptString($state),
+            'state' => OAuthState::issue('google', $state),
         ]);
 
         return redirect('https://accounts.google.com/o/oauth2/v2/auth?'.$params);
@@ -69,11 +70,7 @@ class GoogleOAuthController
     {
         Gate::authorize('manage-integrations');
 
-        try {
-            [$type, $id] = explode(':', Crypt::decryptString((string) $request->query('state')), 2);
-        } catch (\Throwable) {
-            abort(403, 'Invalid OAuth state.');
-        }
+        [$type, $id] = array_pad(explode(':', OAuthState::consume($request, 'google'), 2), 2, '0');
 
         return $type === 'workspace'
             ? $this->handleWorkspaceCallback($request, $audit, (int) $id)
@@ -154,7 +151,7 @@ class GoogleOAuthController
 
     private function exchangeCode(string $code): ?string
     {
-        $response = Http::asForm()->post('https://oauth2.googleapis.com/token', [
+        $response = Http::asForm()->timeout(15)->post('https://oauth2.googleapis.com/token', [
             'code' => $code,
             'client_id' => config('services.google.client_id'),
             'client_secret' => config('services.google.client_secret'),

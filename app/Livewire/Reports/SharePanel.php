@@ -57,7 +57,7 @@ class SharePanel extends Component
 
         $this->validate([
             'expiryDays' => ['nullable', 'integer', 'min:1', 'max:3650'],
-            'password' => ['nullable', 'string', 'min:4', 'max:255'],
+            'password' => ['nullable', 'string', 'min:10', 'max:255'],
         ]);
 
         $result = $shares->create($this->report, $this->expiryDays, $this->password ?: null);

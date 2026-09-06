@@ -7,12 +7,12 @@ namespace App\Integrations;
 use App\Enums\ConnectionStatus;
 use App\Integrations\Contracts\Collector;
 use App\Integrations\Support\CollectorResult;
-use App\Integrations\Support\IntegrationException;
 use App\Models\CollectorRun;
 use App\Models\Metric;
 use App\Models\MetricSnapshot;
 use App\Models\SiteIntegration;
 use App\Support\DateRange;
+use App\Support\SafeError;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -147,14 +147,12 @@ class CollectorRunner
         return $written;
     }
 
+    /**
+     * Never surface arbitrary exception messages: they can leak URLs with
+     * tokens or other internals. Only deliberately written messages pass.
+     */
     private function safeMessage(Throwable $e): string
     {
-        if ($e instanceof IntegrationException) {
-            return mb_substr($e->getMessage(), 0, 500);
-        }
-
-        // Never surface arbitrary exception messages: they can leak URLs with
-        // tokens or other internals. Report the type only.
-        return 'Unexpected error during collection ('.class_basename($e).'). Check the service and try again.';
+        return SafeError::message($e, 'Unexpected error during collection');
     }
 }

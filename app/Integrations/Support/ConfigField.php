@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Integrations\Support;
 
+use App\Rules\PublicUrl;
+use Illuminate\Contracts\Validation\ValidationRule;
+
 /**
  * A single field in an integration's connection/setup form. Fields flagged
  * `secret` are stored in the encrypted credentials bag; the rest are stored as
@@ -48,20 +51,30 @@ readonly class ConfigField
     }
 
     /**
+     * A web address the application will fetch from. Validated as a public
+     * http(s) URL so a connection can never point the server at localhost or
+     * an internal network.
+     */
+    public static function url(string $key, string $label, bool $required = true, ?string $help = null, ?string $placeholder = null, string $scope = 'account'): self
+    {
+        return new self($key, $label, type: 'url', required: $required, help: $help, placeholder: $placeholder, scope: $scope);
+    }
+
+    /**
      * Laravel validation rules for this field.
      *
-     * @return array<int, string>
+     * @return array<int, string|ValidationRule>
      */
     public function validationRules(): array
     {
         $rules = [$this->required ? 'required' : 'nullable'];
 
-        $rules[] = match ($this->type) {
-            'url' => 'url',
-            'number' => 'numeric',
-            'select' => 'in:'.implode(',', array_keys($this->options)),
-            default => 'string',
-        };
+        $rules = array_merge($rules, match ($this->type) {
+            'url' => ['url:http,https', new PublicUrl],
+            'number' => ['numeric'],
+            'select' => ['in:'.implode(',', array_keys($this->options))],
+            default => ['string'],
+        });
 
         return array_merge($rules, $this->rules);
     }

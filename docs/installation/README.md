@@ -33,7 +33,7 @@ cp .env.example .env
 php artisan key:generate
 ```
 
-At the very least, set `APP_URL` in `.env` to the URL you'll serve the app from. You don't need to touch the database settings by hand — the install wizard writes those for you. And if you'd rather do the whole thing from the command line, `composer setup` runs `composer install`, copies `.env`, generates the key, runs migrations and builds assets in one go.
+At the very least, set `APP_URL` in `.env` to the URL you'll serve the app from. The example file ships with production-safe defaults (`APP_ENV=production`, `APP_DEBUG=false`, a secure-only session cookie), so if you're setting up a local development copy over plain `http://`, set `APP_ENV=local`, `APP_DEBUG=true` and `SESSION_SECURE_COOKIE=false`. If a reverse proxy or CDN sits in front of the app, set `TRUSTED_PROXIES` too (see [Security](../security/README.md)). You don't need to touch the database settings by hand — the install wizard writes those for you. And if you'd rather do the whole thing from the command line, `composer setup` runs `composer install`, copies `.env`, generates the key, runs migrations and builds assets in one go.
 
 ## 2. Point your web root at `public/`
 

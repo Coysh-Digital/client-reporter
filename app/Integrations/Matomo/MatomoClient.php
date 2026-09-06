@@ -6,8 +6,9 @@ namespace App\Integrations\Matomo;
 
 use App\Integrations\Support\IntegrationException;
 use App\Support\DateRange;
+use App\Support\Http\OutboundUrl;
+use App\Support\Http\UnsafeUrlException;
 use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Support\Facades\Http;
 
 /**
  * Read-only client for the Matomo Reporting API (works with Matomo Cloud or a
@@ -112,8 +113,10 @@ class MatomoClient
         ];
 
         try {
-            $response = Http::asForm()->timeout(20)
-                ->post(rtrim($this->baseUrl, '/').'/index.php?'.http_build_query($params), ['token_auth' => $this->token]);
+            $response = app(OutboundUrl::class)->client(20)->asForm()
+                ->post(OutboundUrl::check(rtrim($this->baseUrl, '/')).'/index.php?'.http_build_query($params), ['token_auth' => $this->token]);
+        } catch (UnsafeUrlException $e) {
+            throw new IntegrationException($e->getMessage());
         } catch (ConnectionException) {
             throw new IntegrationException('Could not reach Matomo. Please try again shortly.');
         }
@@ -147,8 +150,10 @@ class MatomoClient
         ], $extra);
 
         try {
-            $response = Http::asForm()->timeout(20)
-                ->post(rtrim($this->baseUrl, '/').'/index.php?'.http_build_query($params), ['token_auth' => $this->token]);
+            $response = app(OutboundUrl::class)->client(20)->asForm()
+                ->post(OutboundUrl::check(rtrim($this->baseUrl, '/')).'/index.php?'.http_build_query($params), ['token_auth' => $this->token]);
+        } catch (UnsafeUrlException $e) {
+            throw new IntegrationException($e->getMessage());
         } catch (ConnectionException) {
             throw new IntegrationException('Could not reach Matomo. Please try again shortly.');
         }

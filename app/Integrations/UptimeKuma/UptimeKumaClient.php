@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace App\Integrations\UptimeKuma;
 
 use App\Integrations\Support\IntegrationException;
+use App\Support\Http\OutboundUrl;
+use App\Support\Http\UnsafeUrlException;
 use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Support\Facades\Http;
 
 /**
  * Reads monitor data from a self-hosted Uptime Kuma instance's
@@ -130,9 +131,11 @@ class UptimeKumaClient
         try {
             // Uptime Kuma's documented convention: the API key is sent as the
             // basic-auth password; the username is ignored.
-            $response = Http::withBasicAuth('', $this->apiKey)
-                ->timeout(20)
-                ->get(rtrim($this->baseUrl, '/').'/metrics');
+            $response = app(OutboundUrl::class)->client(20)
+                ->withBasicAuth('', $this->apiKey)
+                ->get(OutboundUrl::check(rtrim($this->baseUrl, '/')).'/metrics');
+        } catch (UnsafeUrlException $e) {
+            throw new IntegrationException($e->getMessage());
         } catch (ConnectionException) {
             throw new IntegrationException('Could not reach the Uptime Kuma instance. Check the URL and that it is publicly reachable.');
         }

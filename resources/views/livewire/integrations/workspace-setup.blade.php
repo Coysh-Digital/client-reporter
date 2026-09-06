@@ -23,7 +23,7 @@
                 <div class="border-b border-line px-5 py-3"><h3 class="cr-eyebrow">How to connect {{ $manifest->name }}</h3></div>
                 <ol class="list-decimal space-y-1.5 px-5 py-4 pl-9 text-sm text-muted marker:font-semibold marker:text-accent">
                     @foreach ($integration->workspaceSetupSteps() as $step)
-                        <li>{!! $step !!}</li>
+                        <li>{{ \App\Support\Html::inline($step) }}</li>
                     @endforeach
                 </ol>
             </div>

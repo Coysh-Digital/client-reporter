@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Reporting\Blocks;
 
+use App\Models\ReportBlock;
 use App\Reporting\BlockTypeRegistry;
 use App\Reporting\Contracts\BlockType;
 use App\Reporting\Support\BlockContext;
@@ -52,8 +53,8 @@ class ContentsBlock extends BlockType
     public function resolve(BlockContext $context): array
     {
         $registry = app(BlockTypeRegistry::class);
-        $siblings = $context->block->report
-            ->blocks()
+        $siblings = ReportBlock::query()
+            ->where('report_id', $context->block->report_id)
             ->orderBy('position')
             ->get();
 

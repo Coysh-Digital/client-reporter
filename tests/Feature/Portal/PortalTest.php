@@ -63,6 +63,16 @@ class PortalTest extends TestCase
         $this->actingAs($user)->get(route('portal.report', $mine))->assertOk()->assertSee($client->name);
     }
 
+    public function test_a_client_cannot_open_a_report_that_is_no_longer_published(): void
+    {
+        $client = Client::factory()->create();
+        $mine = $this->generatedReportForClient($client);
+        $mine->update(['status' => 'draft']);
+        $user = User::factory()->client()->create(['client_id' => $client->id]);
+
+        $this->actingAs($user)->get(route('portal.report', $mine))->assertNotFound();
+    }
+
     public function test_staff_cannot_access_the_portal(): void
     {
         $staff = User::factory()->manager()->create();

@@ -25,4 +25,4 @@ use Laravel\Mcp\Facades\Mcp;
 Mcp::local('client-reporter', ClientReporterServer::class);
 
 Mcp::web('mcp', ClientReporterServer::class)
-    ->middleware(['auth:sanctum', 'ability:mcp:read']);
+    ->middleware(['auth:sanctum', 'ability:mcp:read', 'throttle:mcp']);

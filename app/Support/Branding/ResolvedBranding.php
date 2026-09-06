@@ -4,13 +4,24 @@ declare(strict_types=1);
 
 namespace App\Support\Branding;
 
+use App\Rules\SafeCss;
+use App\Support\GoogleFonts;
+
 /**
  * The fully-resolved, ready-to-render branding for a client-facing surface
  * (report, share page, email). Every field is populated: overrides have already
  * cascaded and sensible defaults fill any gaps, so views never need fallbacks.
+ *
+ * Anything a view injects into CSS goes through the *Stack()/safeCustomCss()
+ * accessors, which only ever emit values built from the font catalogue or CSS
+ * that passed the SafeCss check — never a stored string verbatim.
  */
 readonly class ResolvedBranding
 {
+    private const DEFAULT_HEADING_FAMILY = 'Source Serif 4';
+
+    private const DEFAULT_BODY_FAMILY = 'Hanken Grotesk';
+
     public function __construct(
         public string $agencyName,
         public ?string $tagline,
@@ -34,6 +45,42 @@ readonly class ResolvedBranding
     public function hasLogo(): bool
     {
         return $this->logoUrl !== null;
+    }
+
+    /**
+     * A CSS font-family stack safe to interpolate into a stylesheet: derived
+     * from the catalogue family, with the default family when none is known.
+     */
+    public function headingFontStack(): string
+    {
+        return GoogleFonts::cssStack(GoogleFonts::extractFamily($this->headingFont) ?? self::DEFAULT_HEADING_FAMILY);
+    }
+
+    public function bodyFontStack(): string
+    {
+        return GoogleFonts::cssStack(GoogleFonts::extractFamily($this->bodyFont) ?? self::DEFAULT_BODY_FAMILY);
+    }
+
+    /**
+     * The catalogue families to load from Google Fonts for this branding.
+     *
+     * @return array<int, string|null>
+     */
+    public function fontFamilies(): array
+    {
+        return [
+            GoogleFonts::extractFamily($this->headingFont) ?? self::DEFAULT_HEADING_FAMILY,
+            GoogleFonts::extractFamily($this->bodyFont) ?? self::DEFAULT_BODY_FAMILY,
+        ];
+    }
+
+    /**
+     * Agency custom CSS, or null when it fails the SafeCss check (values stored
+     * before validation existed are filtered here too).
+     */
+    public function safeCustomCss(): ?string
+    {
+        return SafeCss::filter($this->customCss);
     }
 
     /**

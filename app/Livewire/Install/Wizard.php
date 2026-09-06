@@ -14,12 +14,21 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Throwable;
 
+/**
+ * The browser installer. It runs before any account exists, so it is the one
+ * screen that must refuse to work twice: once `installed` is set it aborts
+ * from every entry point, including Livewire actions, not only the page route.
+ * Passwords entered on earlier steps are parked in the session rather than
+ * kept in component state, so they never round-trip in later responses.
+ */
 #[Layout('components.layouts.install')]
 #[Title('Install Client Reporter')]
 class Wizard extends Component
@@ -61,8 +70,10 @@ class Wizard extends Component
 
     public ?string $envNotWritable = null;
 
-    public function mount(): void
+    public function mount(Settings $settings): void
     {
+        $this->abortIfInstalled($settings);
+
         $this->app_url = (string) config('app.url');
         $this->db_port = '3306';
     }
@@ -117,11 +128,19 @@ class Wizard extends Component
         }
 
         if ($this->step === 2) {
+            $this->validate($this->databaseRules());
+
             if ($this->db_connection !== 'sqlite' && ! $this->dbTested) {
                 $this->testDatabase();
                 if (! $this->dbTested) {
                     return;
                 }
+            }
+
+            // Park the database password server-side for the final step.
+            if ($this->db_password !== '') {
+                session()->put('install.db_password', $this->db_password);
+                $this->db_password = '';
             }
         }
 
@@ -129,8 +148,11 @@ class Wizard extends Component
             $this->validate([
                 'admin_name' => ['required', 'string', 'max:255'],
                 'admin_email' => ['required', 'email', 'max:255'],
-                'admin_password' => ['required', 'string', 'min:8', 'confirmed'],
+                'admin_password' => ['required', 'string', Password::defaults(), 'confirmed'],
             ]);
+
+            session()->put('install.admin_password', $this->admin_password);
+            $this->reset('admin_password', 'admin_password_confirmation');
         }
 
         $this->step = min(4, $this->step + 1);
@@ -143,15 +165,21 @@ class Wizard extends Component
 
     public function install(Settings $settings): mixed
     {
-        $this->validate([
+        $this->abortIfInstalled($settings);
+
+        $this->validate(array_merge([
             'admin_name' => ['required', 'string', 'max:255'],
             'admin_email' => ['required', 'email', 'max:255'],
-            'admin_password' => ['required', 'string', 'min:8'],
             'agency_name' => ['required', 'string', 'max:255'],
-            'app_url' => ['required', 'url'],
+            'app_url' => ['required', 'url:http,https'],
             'primary_color' => ['required', 'regex:/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/'],
-            'db_connection' => [Rule::in(['sqlite', 'mysql', 'pgsql'])],
-        ]);
+        ], $this->databaseRules()));
+
+        $adminPassword = $this->adminPassword();
+        Validator::make(
+            ['admin_password' => $adminPassword],
+            ['admin_password' => ['required', 'string', Password::defaults()]],
+        )->validate();
 
         // 1. Persist configuration to .env (or surface copy/paste instructions).
         $env = new EnvWriter(app()->environmentFilePath());
@@ -178,7 +206,7 @@ class Wizard extends Component
         User::query()->create([
             'name' => $this->admin_name,
             'email' => $this->admin_email,
-            'password' => Hash::make($this->admin_password),
+            'password' => Hash::make($adminPassword),
             'role' => UserRole::Administrator,
             'is_active' => true,
         ]);
@@ -201,7 +229,48 @@ class Wizard extends Component
 
         Artisan::call('optimize:clear');
 
+        session()->forget(['install.db_password', 'install.admin_password']);
+
         return redirect()->route('login');
+    }
+
+    private function abortIfInstalled(Settings $settings): void
+    {
+        try {
+            $installed = $settings->isInstalled();
+        } catch (Throwable) {
+            $installed = false;
+        }
+
+        abort_if($installed, 404);
+    }
+
+    /**
+     * @return array<string, array<int, mixed>>
+     */
+    private function databaseRules(): array
+    {
+        $server = Rule::requiredIf(fn (): bool => $this->db_connection !== 'sqlite');
+
+        return [
+            'db_connection' => ['required', Rule::in(['sqlite', 'mysql', 'pgsql'])],
+            'db_host' => [$server, 'nullable', 'string', 'max:255', 'regex:/^[A-Za-z0-9.\-_:\[\]]+$/'],
+            'db_port' => [$server, 'nullable', 'integer', 'between:1,65535'],
+            'db_database' => [$server, 'nullable', 'string', 'max:255'],
+            'db_username' => [$server, 'nullable', 'string', 'max:255'],
+            'db_password' => ['nullable', 'string', 'max:255'],
+        ];
+    }
+
+    /** The password entered on the administrator step (parked in the session). */
+    private function adminPassword(): string
+    {
+        return $this->admin_password !== '' ? $this->admin_password : (string) session('install.admin_password', '');
+    }
+
+    private function dbPassword(): string
+    {
+        return $this->db_password !== '' ? $this->db_password : (string) session('install.db_password', '');
     }
 
     /**
@@ -219,7 +288,7 @@ class Wizard extends Component
             'port' => $this->db_port,
             'database' => $this->db_database,
             'username' => $this->db_username,
-            'password' => $this->db_password,
+            'password' => $this->dbPassword(),
             'charset' => $this->db_connection === 'pgsql' ? 'utf8' : 'utf8mb4',
             'prefix' => '',
         ];
@@ -241,7 +310,7 @@ class Wizard extends Component
                 'DB_PORT' => $this->db_port,
                 'DB_DATABASE' => $this->db_database,
                 'DB_USERNAME' => $this->db_username,
-                'DB_PASSWORD' => $this->db_password,
+                'DB_PASSWORD' => $this->dbPassword(),
             ];
         }
 

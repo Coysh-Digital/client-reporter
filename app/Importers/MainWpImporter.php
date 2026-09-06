@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace App\Importers;
 
 use App\Importers\Contracts\SiteImporter;
-use Illuminate\Support\Facades\Http;
+use App\Support\Http\OutboundUrl;
+use App\Support\Http\UnsafeUrlException;
 use Throwable;
 
 /**
@@ -55,12 +56,14 @@ class MainWpImporter implements SiteImporter
         }
 
         try {
-            $response = Http::acceptJson()
-                ->timeout(20)
+            $base = OutboundUrl::check($base);
+            $response = app(OutboundUrl::class)->client(20)->acceptJson()
                 ->get($base.'/wp-json/mainwp/v1/sites/all-sites', [
                     'consumer_key' => $ck,
                     'consumer_secret' => $cs,
                 ]);
+        } catch (UnsafeUrlException $e) {
+            throw new ImporterException($e->getMessage());
         } catch (Throwable $e) {
             throw new ImporterException('Could not reach the MainWP dashboard at '.$base.'.');
         }

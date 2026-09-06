@@ -40,7 +40,7 @@ class UmamiIntegration extends Integration
         return [
             ConfigField::apiKey('api_key', 'API key', 'A key from Umami Cloud → Settings → API, or your self-hosted instance.'),
             new ConfigField(key: 'website_id', label: 'Website ID', required: true, secret: false, help: 'The website UUID from its Umami settings.', placeholder: '00000000-0000-0000-0000-000000000000', scope: 'site'),
-            new ConfigField(key: 'base_url', label: 'API base URL', required: false, secret: false, help: 'Leave blank for Umami Cloud. Self-hosted: https://your-umami/api', placeholder: 'https://api.umami.is/v1'),
+            ConfigField::url('base_url', 'API base URL', required: false, help: 'Leave blank for Umami Cloud. Self-hosted: https://your-umami/api', placeholder: 'https://api.umami.is/v1'),
         ];
     }
 

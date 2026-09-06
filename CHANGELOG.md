@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Fixed a stored cross-site scripting hole in report branding: heading/body fonts must now come from the built-in catalogue and custom CSS is validated (no markup, `@import` or `url()`) and filtered again at render time, so nothing typed into the branding form can run script on a shared report, portal or preview page.
+- Added a strict `Content-Security-Policy` (no scripts), `nosniff`, `no-referrer`, `no-store` and `noindex` headers to every client-facing report page.
+- Added an outbound-request guard: every URL staff enter (site addresses, self-hosted analytics and monitoring, companion plugins, import sources) must be `http(s)` and resolve to a public address, with redirects re-checked hop by hop. Self-hosted services on a private network can be allow-listed with `CLIENT_REPORTER_ALLOWED_HOSTS` or `CLIENT_REPORTER_ALLOW_PRIVATE_URLS`. Cached site favicons are no longer stored as SVG.
+- Hardened the installer: it refuses to run again once installed (including via background requests), is rate limited, validates database settings, and no longer keeps the database or administrator password in the page between steps.
+- Bound OAuth connections (Google, Xero, FreeAgent) to the browser session with a single-use, ten-minute `state` nonce so a captured callback link cannot attach someone else's account.
+- Raised the minimum password length to 12 for the installer, user management and password reset; rate limited password-reset requests; cleared submitted passwords from form responses; and made the two-factor challenge expire after five minutes and re-check that the account is still active.
+- Share-link passwords must be at least 10 characters, guesses are rate limited per link, a link is revoked after 20 wrong guesses, and an unlock now lasts 30 minutes.
+- MCP API tokens now expire (30 days by default, `--expires-days` to change) and can be revoked with `client-reporter:mcp-token --revoke`; deactivating or deleting a user revokes their tokens, the endpoint is rate limited, and tools deny access rather than allow it when no user can be resolved.
+- Added `TRUSTED_PROXIES` support and host-header validation, so installs behind a proxy or CDN keep correct client addresses for rate limiting and the audit log.
+- Changed `.env.example` to production-safe defaults (`APP_ENV=production`, `APP_DEBUG=false`, `LOG_LEVEL=warning`, `SESSION_SECURE_COOKIE=true`).
+- The connector connection code is now shown once when generated and can be regenerated from the connection page; a deactivated user is signed out on their next action, not only their next page load; a client portal user can no longer open a report that has been reverted to draft; and integration setup steps from third-party extensions are rendered with a strict HTML allow-list.
 - Added an editable report language file: every fixed word and phrase on a client-facing report is now customisable (and translatable) via a git-ignored `config/report-language.local.php` that survives updates, deep-merged over the shipped `config/report-language.php` defaults. See [Branding → Report wording and translation](docs/branding/README.md#report-wording-and-translation).
 - Enlarged the Lighthouse score gauges and rendered the gauge and chart-axis numbers in a sans-serif face; report metric deltas now show as `+`/`-` prefixes.
 - Added opt-in weekly, monthly and quarterly report scheduling; `client-reporter:generate-scheduled` auto-generates each scheduled site's report once its period closes, ready to review and send.

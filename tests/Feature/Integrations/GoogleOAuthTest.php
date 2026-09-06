@@ -9,6 +9,7 @@ use App\Models\SiteIntegration;
 use App\Models\User;
 use App\Models\WorkspaceIntegration;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 /**
@@ -62,6 +63,61 @@ class GoogleOAuthTest extends TestCase
         $response = $this->actingAs($manager)->get(route('integrations.google.connect', $connection));
 
         $response->assertRedirectContains('https://accounts.google.com/o/oauth2/v2/auth');
+    }
+
+    public function test_the_callback_rejects_a_state_that_did_not_come_from_this_session(): void
+    {
+        config(['services.google.client_id' => 'id', 'services.google.client_secret' => 'secret']);
+        Http::fake();
+        $manager = User::factory()->manager()->create();
+        SiteIntegration::factory()->create(['integration_key' => 'google_analytics']);
+
+        $this->actingAs($manager)
+            ->get(route('integrations.google.callback', ['code' => 'abc', 'state' => 'forged-or-leaked']))
+            ->assertForbidden();
+
+        Http::assertNothingSent();
+    }
+
+    public function test_the_callback_state_is_single_use_and_bound_to_the_session(): void
+    {
+        config(['services.google.client_id' => 'id', 'services.google.client_secret' => 'secret']);
+        Http::fake(['oauth2.googleapis.com/*' => Http::response(['refresh_token' => 'rt-1', 'access_token' => 'at'])]);
+        $manager = User::factory()->manager()->create();
+        $connection = SiteIntegration::factory()->create(['integration_key' => 'google_analytics', 'credentials' => []]);
+
+        $redirect = $this->actingAs($manager)->get(route('integrations.google.connect', $connection));
+        parse_str((string) parse_url((string) $redirect->headers->get('Location'), PHP_URL_QUERY), $query);
+        $state = (string) $query['state'];
+
+        $this->assertSame($state, session('oauth.state.nonce'));
+
+        // The right state completes the flow and stores the refresh token.
+        $this->get(route('integrations.google.callback', ['code' => 'abc', 'state' => $state]))
+            ->assertRedirect(route('sites.show', $connection->site_id));
+        $this->assertSame('rt-1', $connection->refresh()->credential('refresh_token'));
+        $this->assertSame(ConnectionStatus::Connected, $connection->status);
+
+        // Replaying it is refused: the nonce was consumed.
+        $this->get(route('integrations.google.callback', ['code' => 'abc', 'state' => $state]))
+            ->assertForbidden();
+    }
+
+    public function test_an_expired_state_is_refused(): void
+    {
+        config(['services.google.client_id' => 'id', 'services.google.client_secret' => 'secret']);
+        Http::fake();
+        $manager = User::factory()->manager()->create();
+        $connection = SiteIntegration::factory()->create(['integration_key' => 'google_analytics']);
+
+        $redirect = $this->actingAs($manager)->get(route('integrations.google.connect', $connection));
+        parse_str((string) parse_url((string) $redirect->headers->get('Location'), PHP_URL_QUERY), $query);
+
+        $this->travel(11)->minutes();
+
+        $this->get(route('integrations.google.callback', ['code' => 'abc', 'state' => $query['state']]))
+            ->assertForbidden();
+        Http::assertNothingSent();
     }
 
     public function test_freeagent_connect_redirects_with_a_message_when_not_configured(): void

@@ -35,6 +35,8 @@ The following areas are of particular interest:
 - **Companion-connector authentication** — the HMAC-signed request scheme used between Client Reporter and the WordPress and Craft companion plugins.
 - **Encrypted credential storage** — how third-party service credentials are stored and protected at rest.
 - **Public report share tokens** — the tokens that grant access to shared, client-facing reports.
+- **Outbound request guarding** — the checks that stop staff-entered URLs (sites, self-hosted services, import sources) reaching private networks.
+- **Client-facing report rendering** — anything that lets agency branding or report content inject markup or scripts into a report page.
 
 ## Responsible disclosure
 

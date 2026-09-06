@@ -25,17 +25,27 @@
         </div>
     @endif
 
-    @if ($isConnector && $connectionCode)
+    @if ($isConnector && ($connectionCode || $hasConnectionCode))
         <div class="mb-4 cr-card border-accent/30 bg-accent-soft/40 px-5 py-4">
             <h3 class="text-sm font-semibold text-ink">Connection code</h3>
-            <ol class="mt-2 list-decimal space-y-1 pl-5 text-sm text-muted">
-                <li>Install the <strong>Client Reporter</strong> plugin on the {{ $manifest->name }} site.</li>
-                <li>Open its settings and paste the connection code below.</li>
-                <li>Come back here and press <strong>Save &amp; verify</strong>.</li>
-            </ol>
-            <input readonly value="{{ $connectionCode }}" onclick="this.select()"
-                   class="cr-input mt-3 font-mono text-xs" aria-label="Connection code">
-            <p class="mt-1 text-xs text-faint">Keep this secret. Anyone with it can read this site's report data.</p>
+            @if ($connectionCode)
+                <ol class="mt-2 list-decimal space-y-1 pl-5 text-sm text-muted">
+                    <li>Install the <strong>Client Reporter</strong> plugin on the {{ $manifest->name }} site.</li>
+                    <li>Open its settings and paste the connection code below.</li>
+                    <li>Come back here and press <strong>Save &amp; verify</strong>.</li>
+                </ol>
+                <input readonly value="{{ $connectionCode }}" onclick="this.select()"
+                       class="cr-input mt-3 font-mono text-xs" aria-label="Connection code">
+                <p class="mt-1 text-xs text-faint">Copy it now — it is shown only this once. Anyone with it can read this site's report data.</p>
+            @else
+                <p class="mt-1 text-sm text-muted">
+                    A connection code is set on this connection and in the plugin. It is not shown again;
+                    if it has been lost or exposed, generate a new one and paste it into the plugin.
+                </p>
+                <button type="button" wire:click="regenerateConnectionCode"
+                        wire:confirm="Generate a new connection code? The plugin will stop responding until the new code is pasted into its settings."
+                        class="cr-btn cr-btn-secondary mt-3">Generate a new connection code</button>
+            @endif
         </div>
     @endif
 
@@ -56,7 +66,7 @@
             <div class="border-b border-line px-5 py-3"><h3 class="cr-eyebrow">How to connect {{ $manifest->name }}</h3></div>
             <ol class="list-decimal space-y-1.5 px-5 py-4 pl-9 text-sm text-muted marker:font-semibold marker:text-accent">
                 @foreach ($integration->setupSteps() as $step)
-                    <li>{!! $step !!}</li>
+                    <li>{{ \App\Support\Html::inline($step) }}</li>
                 @endforeach
             </ol>
         </div>

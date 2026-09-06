@@ -28,6 +28,12 @@ class Index extends Component
         }
 
         $user->update(['is_active' => ! $user->is_active]);
+
+        // A deactivated account keeps no API access either.
+        if (! $user->is_active) {
+            $user->tokens()->delete();
+        }
+
         $audit->log($user->is_active ? 'user.activated' : 'user.deactivated', $user);
     }
 
@@ -44,6 +50,7 @@ class Index extends Component
         }
 
         $audit->log('user.deleted', $user, metadata: ['email' => $user->email]);
+        $user->tokens()->delete();
         $user->delete();
     }
 

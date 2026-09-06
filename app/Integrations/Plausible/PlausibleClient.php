@@ -6,9 +6,10 @@ namespace App\Integrations\Plausible;
 
 use App\Integrations\Support\IntegrationException;
 use App\Support\DateRange;
+use App\Support\Http\OutboundUrl;
+use App\Support\Http\UnsafeUrlException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
-use Illuminate\Support\Facades\Http;
 
 /**
  * Read-only client for the Plausible Stats API (works with plausible.io or a
@@ -69,7 +70,9 @@ class PlausibleClient
     public function sites(): array
     {
         try {
-            $response = $this->http()->get(rtrim($this->baseUrl, '/').'/api/v1/sites');
+            $response = $this->http()->get(OutboundUrl::check(rtrim($this->baseUrl, '/')).'/api/v1/sites');
+        } catch (UnsafeUrlException $e) {
+            throw new IntegrationException($e->getMessage());
         } catch (ConnectionException) {
             throw new IntegrationException('Could not reach Plausible. Please try again shortly.');
         }
@@ -94,11 +97,13 @@ class PlausibleClient
     private function request(string $path, array $params, DateRange $range): array
     {
         try {
-            $response = $this->http()->get(rtrim($this->baseUrl, '/').'/'.$path, array_merge([
+            $response = $this->http()->get(OutboundUrl::check(rtrim($this->baseUrl, '/')).'/'.$path, array_merge([
                 'site_id' => $this->siteId,
                 'period' => 'custom',
                 'date' => $range->start->toDateString().','.$range->end->toDateString(),
             ], $params));
+        } catch (UnsafeUrlException $e) {
+            throw new IntegrationException($e->getMessage());
         } catch (ConnectionException) {
             throw new IntegrationException('Could not reach Plausible. Please try again shortly.');
         }
@@ -116,6 +121,6 @@ class PlausibleClient
 
     private function http(): PendingRequest
     {
-        return Http::withToken($this->token)->timeout(20)->acceptJson();
+        return app(OutboundUrl::class)->client(20)->withToken($this->token)->acceptJson();
     }
 }

@@ -38,7 +38,7 @@ class MatomoIntegration extends Integration
     public function configFields(): array
     {
         return [
-            new ConfigField(key: 'base_url', label: 'Matomo URL', required: true, secret: false, help: 'Your Matomo address, e.g. https://analytics.example.com', placeholder: 'https://analytics.example.com'),
+            ConfigField::url('base_url', 'Matomo URL', required: true, help: 'Your Matomo address, e.g. https://analytics.example.com', placeholder: 'https://analytics.example.com'),
             ConfigField::apiKey('token', 'Auth token', 'A token from Matomo → Administration → Personal → Security → Auth tokens.'),
             new ConfigField(key: 'site_id', label: 'Site ID (idSite)', required: true, secret: false, help: 'The numeric site ID from Matomo → Websites.', placeholder: '1', scope: 'site'),
         ];

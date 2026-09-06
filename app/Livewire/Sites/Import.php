@@ -12,6 +12,8 @@ use App\Integrations\Support\IntegrationCategory;
 use App\Models\Client;
 use App\Models\Site;
 use App\Support\AuditLogger;
+use App\Support\Http\OutboundUrl;
+use App\Support\Http\UnsafeUrlException;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -74,10 +76,22 @@ class Import extends Component
         }
 
         foreach ($importer->configFields() as $field) {
-            if (($field['required'] ?? false) && trim($this->config[$field['name']] ?? '') === '') {
+            $value = trim($this->config[$field['name']] ?? '');
+
+            if (($field['required'] ?? false) && $value === '') {
                 $this->error = $field['label'].' is required.';
 
                 return;
+            }
+
+            if ($value !== '' && ($field['type'] ?? 'text') === 'url') {
+                try {
+                    OutboundUrl::check($value);
+                } catch (UnsafeUrlException $e) {
+                    $this->error = $field['label'].': '.$e->getMessage();
+
+                    return;
+                }
             }
         }
 

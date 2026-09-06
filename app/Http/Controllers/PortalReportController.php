@@ -22,6 +22,10 @@ class PortalReportController
 
         abort_unless($report->site->client_id === $user->client_id, 403);
 
+        // Only published (generated) reports exist as far as a client is
+        // concerned; a draft that once had a render is not theirs to see yet.
+        abort_unless($report->isGenerated() && $report->status === 'final', 404);
+
         $render = $report->latestRender;
         abort_if($render === null, 404);
 
