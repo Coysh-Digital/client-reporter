@@ -14,6 +14,8 @@ class InstallTemplatesCommandTest extends TestCase
 
     public function test_it_installs_the_templates_on_a_live_site(): void
     {
+        // A site set up before any out-of-the-box templates shipped.
+        ReportTemplate::query()->delete();
         $this->assertSame(0, ReportTemplate::query()->count());
 
         $this->artisan('client-reporter:install-templates')

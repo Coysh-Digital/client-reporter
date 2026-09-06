@@ -37,7 +37,7 @@ class TemplateTest extends TestCase
             ->call('save')
             ->assertHasNoErrors();
 
-        $template = ReportTemplate::query()->firstOrFail();
+        $template = ReportTemplate::query()->where('name', 'Standard care report')->firstOrFail();
         $this->assertSame('Standard care report', $template->name);
         $this->assertCount(2, $template->blocks);
         $this->assertSame('cover', $template->blocks[0]['type']);
@@ -82,7 +82,7 @@ class TemplateTest extends TestCase
             ->call('save')
             ->assertHasNoErrors();
 
-        $blocks = ReportTemplate::query()->firstOrFail()->blocks;
+        $blocks = ReportTemplate::query()->where('name', 'Reorderable')->firstOrFail()->blocks;
         $this->assertSame(['text', 'text', 'cover'], array_column($blocks, 'type'));
     }
 
@@ -120,7 +120,7 @@ class TemplateTest extends TestCase
                 ['type' => 'closing', 'heading' => 'Thanks'],
             ],
         ]);
-        $templateId = ReportTemplate::query()->value('id');
+        $templateId = ReportTemplate::query()->where('name', 'Full')->value('id');
 
         Livewire::actingAs($manager)->test(Create::class)
             ->set('site_id', $site->id)

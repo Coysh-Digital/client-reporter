@@ -68,21 +68,52 @@ class ReportTemplateSeeder extends Seeder
             ],
         ],
         'Full Digital Report' => [
-            'description' => 'Everything in one report: overview, traffic, search, uptime & performance and leads, each with an AI summary.',
+            'description' => 'Every section in one report — website, analytics, search, ecommerce, ads, leads, uptime, performance, downloads and billing, each with an AI summary where supported. Sections a site has no data for are left out when the report is generated.',
             'sections' => [
                 ['cover', 'Cover'],
                 ['contents', 'Contents'],
                 ['text', 'Introduction'],
                 ['website-overview', 'Website overview'],
+                ['cms.status', 'CMS status'],
+                ['cms.updates', 'Updates'],
+                ['craft.status', 'Craft status'],
+                ['craft.updates', 'Craft updates'],
+                ['analytics.summary', 'Analytics summary', true],
                 ['analytics.site_traffic', 'Site traffic', true],
+                ['analytics.chart', 'Visitors chart'],
+                ['analytics.top_pages', 'Top pages'],
+                ['analytics.sources', 'Traffic sources'],
+                ['analytics.countries', 'Top countries'],
+                ['analytics.devices', 'Top devices'],
+                ['analytics.events', 'Custom events'],
                 ['search.summary', 'Search performance', true],
-                ['uptime.overview', 'Uptime & performance', true],
+                ['ecommerce.summary', 'Store performance', true],
+                ['ads.summary', 'Ad performance', true],
                 ['forms.summary', 'Leads & signups', true],
+                ['uptime.overview', 'Uptime & performance', true],
+                ['uptime.summary', 'Uptime summary', true],
+                ['uptime.incidents', 'Incidents'],
+                ['uptime.certificates', 'SSL certificates'],
+                ['performance.summary', 'Core Web Vitals', true],
+                ['downloads.summary', 'Downloads', true],
+                ['billing.summary', 'Billing & invoices'],
                 ['ai.summary', 'Month in review'],
                 ['closing', 'Thank you'],
             ],
         ],
     ];
+
+    /**
+     * The stored definition (description + sections) for one out-of-the-box
+     * template, so a migration can build the same blocks without duplicating the
+     * section list. Throws if the name is unknown.
+     *
+     * @return array{description: string, sections: array<int, array{0: string, 1: string, 2?: bool}>}
+     */
+    public static function definition(string $name): array
+    {
+        return self::TEMPLATES[$name];
+    }
 
     public function run(): void
     {
@@ -93,7 +124,7 @@ class ReportTemplateSeeder extends Seeder
                 ['name' => $name],
                 [
                     'description' => $template['description'],
-                    'blocks' => $this->blocks($registry, $template['sections']),
+                    'blocks' => self::buildBlocks($registry, $template['sections']),
                 ],
             );
         }
@@ -107,7 +138,7 @@ class ReportTemplateSeeder extends Seeder
      * @param  array<int, array{0: string, 1: string, 2?: bool}>  $sections
      * @return array<int, array{type: string, heading: string, config: ?array<string, mixed>}>
      */
-    private function blocks(BlockTypeRegistry $registry, array $sections): array
+    public static function buildBlocks(BlockTypeRegistry $registry, array $sections): array
     {
         $blocks = [];
 

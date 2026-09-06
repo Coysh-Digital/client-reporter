@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- The built-in "Full Digital Report" template now includes every available section — website, CMS/Craft, the full analytics set, search, ecommerce, ads, leads, uptime, performance, downloads and billing — each with an AI summary where supported. A migration upgrades the template on existing installs (sections a site has no data for are still left out when a report is generated).
+
 - Reworked the client portal: an agency-branded shell (logo or name, colours and fonts, a Reports / Your profile / Security nav, and a footer with the agency's contact details), website cards with health and the latest report, reports grouped by year with a PDF download for each, and a per-website filter. A portal user's profile and security pages use the same shell, never the agency admin.
 - The sign-in, password and error pages carry the agency's branding once it has been set; the share-link password gate and "link no longer available" pages are branded for the agency the link belongs to, with the agency's contact email.
 - Report emails now use the agency's fonts and include a plain-text alternative.
