@@ -4,7 +4,6 @@
     <div x-show="open" @click.outside="open = false" x-cloak
          class="absolute right-0 z-20 mt-1 w-96 rounded-lg border border-line bg-surface p-4 shadow-xl">
         @error('generate') <div class="mb-3 rounded bg-warn-soft px-3 py-2 text-xs text-warn">{{ $message }}</div> @enderror
-        @if (session('share_status')) <div class="mb-3 rounded bg-ok-soft px-3 py-2 text-xs text-ok">{{ session('share_status') }}</div> @endif
 
         {{-- Share links --}}
         <h3 class="text-xs font-medium uppercase tracking-wide text-faint">Secure link</h3>

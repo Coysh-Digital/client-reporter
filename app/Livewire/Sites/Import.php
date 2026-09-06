@@ -137,6 +137,18 @@ class Import extends Component
         }
     }
 
+    /**
+     * Tick or untick every row that can still be imported.
+     */
+    public function selectAll(bool $include): void
+    {
+        foreach ($this->rows as $i => $row) {
+            if (! ($row['already'] ?? false)) {
+                $this->rows[$i]['include'] = $include;
+            }
+        }
+    }
+
     public function import(AuditLogger $audit): void
     {
         $this->authorize('manage-sites');

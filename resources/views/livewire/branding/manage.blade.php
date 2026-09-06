@@ -24,116 +24,98 @@
 
     <x-page-header :title="$scopeLabel" :subtitle="$subtitle" />
 
-    @if (session('status'))
-        <div class="mb-4 rounded-md bg-ok-soft px-3 py-2 text-sm text-ok">{{ session('status') }}</div>
-    @endif
 
     <form wire:submit="save" class="grid gap-6 lg:grid-cols-5">
         {{-- Editor --}}
         <div class="space-y-6 lg:col-span-3">
             <div class="cr-card px-6 py-5 space-y-4">
                 <h2 class="text-sm font-semibold text-ink">Identity</h2>
-                <div>
-                    <label for="agency_name" class="cr-label">Agency name</label>
+                <x-field label="Agency name" for="agency_name">
                     <input wire:model.live.debounce.400ms="agency_name" id="agency_name" type="text" class="cr-input"
                            placeholder="{{ $scope === 'global' ? config('client-reporter.name') : 'Inherit from agency' }}">
-                    @error('agency_name') <p class="mt-1.5 text-xs text-danger">{{ $message }}</p> @enderror
-                </div>
-                <div>
-                    <label for="tagline" class="cr-label">Tagline</label>
+                </x-field>
+                <x-field label="Tagline" for="tagline" optional>
                     <input wire:model.live.debounce.400ms="tagline" id="tagline" type="text" class="cr-input">
-                    @error('tagline') <p class="mt-1.5 text-xs text-danger">{{ $message }}</p> @enderror
-                </div>
+                </x-field>
 
                 <div class="grid gap-4 sm:grid-cols-2">
-                    <div>
-                        <label class="cr-label">Logo</label>
+                    <x-field label="Logo" for="logo" help="PNG, JPG or WebP up to 2 MB.">
                         @if ($profile->logoUrl())
                             <div class="mb-2 flex items-center gap-3">
-                                <img src="{{ $profile->logoUrl() }}" alt="Logo" class="h-10 rounded border border-line bg-white p-1">
-                                <button type="button" wire:click="removeLogo" class="text-xs text-danger hover:underline">Remove</button>
+                                <img src="{{ $profile->logoUrl() }}" alt="Current logo" class="h-10 rounded border border-line bg-white p-1">
+                                <x-button size="sm" variant="ghost" wire:click="removeLogo">Remove logo</x-button>
                             </div>
                         @endif
-                        <input wire:model="logo" type="file" accept="image/*" class="block w-full text-sm text-muted file:mr-3 file:rounded-md file:border-0 file:bg-accent-soft file:px-3 file:py-1.5 file:text-accent">
+                        <input wire:model="logo" id="logo" type="file" accept="image/*" class="block w-full text-sm text-muted file:mr-3 file:rounded-md file:border-0 file:bg-accent-soft file:px-3 file:py-1.5 file:text-accent">
                         <div wire:loading wire:target="logo" class="mt-1 text-xs text-muted">Uploading…</div>
-                        @error('logo') <p class="mt-1.5 text-xs text-danger">{{ $message }}</p> @enderror
-                    </div>
-                    <div>
-                        <label class="cr-label">Favicon</label>
+                    </x-field>
+                    <x-field label="Favicon" for="favicon" help="Square image up to 512 KB.">
                         @if ($profile->faviconUrl())
                             <div class="mb-2 flex items-center gap-3">
-                                <img src="{{ $profile->faviconUrl() }}" alt="Favicon" class="h-8 w-8 rounded border border-line bg-white p-1">
-                                <button type="button" wire:click="removeFavicon" class="text-xs text-danger hover:underline">Remove</button>
+                                <img src="{{ $profile->faviconUrl() }}" alt="Current favicon" class="h-8 w-8 rounded border border-line bg-white p-1">
+                                <x-button size="sm" variant="ghost" wire:click="removeFavicon">Remove favicon</x-button>
                             </div>
                         @endif
-                        <input wire:model="favicon" type="file" accept="image/*" class="block w-full text-sm text-muted file:mr-3 file:rounded-md file:border-0 file:bg-accent-soft file:px-3 file:py-1.5 file:text-accent">
-                        @error('favicon') <p class="mt-1.5 text-xs text-danger">{{ $message }}</p> @enderror
-                    </div>
+                        <input wire:model="favicon" id="favicon" type="file" accept="image/*" class="block w-full text-sm text-muted file:mr-3 file:rounded-md file:border-0 file:bg-accent-soft file:px-3 file:py-1.5 file:text-accent">
+                    </x-field>
                 </div>
             </div>
 
             <div class="cr-card px-6 py-5 space-y-4">
                 <h2 class="text-sm font-semibold text-ink">Colours &amp; typography</h2>
                 <div class="grid gap-4 sm:grid-cols-2">
-                    <div>
-                        <label for="primary_color" class="cr-label">Primary colour</label>
+                    <x-field label="Primary colour" for="primary_color">
                         <div class="flex items-center gap-2">
-                            <input wire:model.live="primary_color" id="primary_color" type="color" class="h-9 w-12 rounded border border-line-strong">
-                            <input wire:model.live.debounce.400ms="primary_color" type="text" class="cr-input" placeholder="#33406b">
+                            <input wire:model.live="primary_color" id="primary_color-swatch" type="color" aria-label="Primary colour picker" class="h-9 w-12 rounded border border-line-strong">
+                            <input wire:model.live.debounce.400ms="primary_color" id="primary_color" type="text" class="cr-input" placeholder="#33406b">
                         </div>
-                        @error('primary_color') <p class="mt-1.5 text-xs text-danger">{{ $message }}</p> @enderror
-                    </div>
-                    <div>
-                        <label for="secondary_color" class="cr-label">Secondary colour</label>
+                    </x-field>
+                    <x-field label="Secondary colour" for="secondary_color">
                         <div class="flex items-center gap-2">
-                            <input wire:model.live="secondary_color" id="secondary_color" type="color" class="h-9 w-12 rounded border border-line-strong">
-                            <input wire:model.live.debounce.400ms="secondary_color" type="text" class="cr-input" placeholder="#8a6a2c">
+                            <input wire:model.live="secondary_color" id="secondary_color-swatch" type="color" aria-label="Secondary colour picker" class="h-9 w-12 rounded border border-line-strong">
+                            <input wire:model.live.debounce.400ms="secondary_color" id="secondary_color" type="text" class="cr-input" placeholder="#8a6a2c">
                         </div>
-                        @error('secondary_color') <p class="mt-1.5 text-xs text-danger">{{ $message }}</p> @enderror
-                    </div>
+                    </x-field>
                 </div>
                 <div class="grid gap-4 sm:grid-cols-2">
                     <x-font-picker model="heading_font" label="Heading font" :current="$heading_font" wire:key="heading-font-picker" />
                     <x-font-picker model="body_font" label="Body font" :current="$body_font" wire:key="body-font-picker" />
                 </div>
                 <p class="mt-2 text-xs text-faint">Choose any Google Font. The report loads it automatically for your clients.</p>
-                <div>
-                    <label for="report_cover_style" class="cr-label">Report cover style</label>
+                <x-field label="Report cover style" for="report_cover_style">
                     <select wire:model.live="report_cover_style" id="report_cover_style" class="cr-input max-w-xs">
                         <option value="minimal">Minimal</option>
                         <option value="standard">Standard</option>
                         <option value="bold">Bold</option>
                     </select>
-                </div>
+                </x-field>
             </div>
 
             <div class="cr-card px-6 py-5 space-y-4">
                 <h2 class="text-sm font-semibold text-ink">Contact &amp; footers</h2>
                 <div class="grid gap-4 sm:grid-cols-2">
-                    <div><label for="website" class="cr-label">Website</label><input wire:model="website" id="website" type="url" class="cr-input" placeholder="https://">@error('website')<p class="mt-1.5 text-xs text-danger">{{ $message }}</p>@enderror</div>
-                    <div><label for="email" class="cr-label">Email</label><input wire:model="email" id="email" type="email" class="cr-input">@error('email')<p class="mt-1.5 text-xs text-danger">{{ $message }}</p>@enderror</div>
-                    <div><label for="phone" class="cr-label">Phone</label><input wire:model="phone" id="phone" type="text" class="cr-input"></div>
-                    <div><label for="address" class="cr-label">Address</label><input wire:model="address" id="address" type="text" class="cr-input"></div>
+                    <x-field label="Website" for="website"><input wire:model="website" id="website" type="url" class="cr-input" placeholder="https://"></x-field>
+                    <x-field label="Email" for="email"><input wire:model="email" id="email" type="email" class="cr-input"></x-field>
+                    <x-field label="Phone" for="phone"><input wire:model="phone" id="phone" type="tel" class="cr-input"></x-field>
+                    <x-field label="Address" for="address"><input wire:model="address" id="address" type="text" class="cr-input"></x-field>
                 </div>
-                <div>
-                    <label for="report_footer" class="cr-label">Report footer</label>
+                <x-field label="Report footer" for="report_footer" help="Printed at the foot of every report page.">
                     <textarea wire:model="report_footer" id="report_footer" rows="2" class="cr-input"></textarea>
-                </div>
-                <div>
-                    <label for="email_footer" class="cr-label">Email footer</label>
+                </x-field>
+                <x-field label="Email footer" for="email_footer" help="Added below report emails sent to clients.">
                     <textarea wire:model="email_footer" id="email_footer" rows="2" class="cr-input"></textarea>
-                </div>
+                </x-field>
             </div>
 
             <div class="cr-card px-6 py-5 space-y-3">
                 <h2 class="text-sm font-semibold text-ink">Custom CSS <span class="font-normal text-faint">(advanced)</span></h2>
-                <p class="text-xs text-muted">Applied only to client-facing report rendering. Use to fine-tune typography and spacing.</p>
-                <textarea wire:model="custom_css" rows="4" class="cr-input font-mono text-xs" placeholder=".report-cover h1 { letter-spacing: -0.02em; }"></textarea>
-                @error('custom_css') <p class="text-xs text-danger">{{ $message }}</p> @enderror
+                <x-field label="Report stylesheet" for="custom_css" help="Applied only to client-facing report rendering. Use it to fine-tune typography and spacing; imports, URLs and scripts are not allowed.">
+                    <textarea wire:model="custom_css" id="custom_css" rows="4" class="cr-input font-mono text-xs" placeholder=".report-cover h1 { letter-spacing: -0.02em; }"></textarea>
+                </x-field>
             </div>
 
-            <div class="flex items-center gap-3">
-                <button type="submit" class="cr-btn cr-btn-primary">Save branding</button>
+            <div class="sticky bottom-0 flex items-center gap-3 border-t border-line py-3" style="background:color-mix(in srgb, var(--color-paper) 92%, transparent);backdrop-filter:blur(6px);">
+                <x-button type="submit" variant="primary">Save branding</x-button>
                 <span wire:loading wire:target="save" class="text-sm text-muted">Saving…</span>
             </div>
         </div>
@@ -160,7 +142,7 @@
                             @else
                                 <div class="mb-6 text-lg font-semibold" style="color: {{ $primary }};font-family: {{ $headingFontPreview }};">{{ $displayName }}</div>
                             @endif
-                            <div class="text-[11px] font-semibold uppercase tracking-[0.09em]" style="color: {{ $secondary }};">Website report</div>
+                            <div class="text-2xs font-semibold uppercase tracking-[0.09em]" style="color: {{ $secondary }};">Website report</div>
                             <h3 class="mt-2 text-2xl font-semibold text-ink" style="font-family: {{ $headingFontPreview }};">{{ $client->name ?? 'Client name' }}</h3>
                             <p class="mt-1 text-sm text-faint tnum">clientsite.com · 1–31 August 2026</p>
                             @if ($tagline)<p class="mt-5 text-sm text-muted">{{ $tagline }}</p>@endif
@@ -173,12 +155,12 @@
                                 @else
                                     <div class="font-semibold text-white" style="font-family: {{ $headingFontPreview }};">{{ $displayName }}</div>
                                 @endif
-                                <span class="text-[10px] uppercase tracking-[0.14em]" style="color: rgba(255,255,255,.7);">Website report</span>
+                                <span class="text-2xs uppercase tracking-[0.14em]" style="color: rgba(255,255,255,.7);">Website report</span>
                             </div>
                             <h3 class="mt-10 font-semibold text-white" style="font-family: {{ $headingFontPreview }};font-size: {{ $isBold ? '34px' : '30px' }};line-height:1.04;">{{ $client->name ?? 'Client name' }}</h3>
                             <p class="mt-2.5 text-sm tnum" style="color: rgba(255,255,255,.72);">clientsite.com · 1–31 August 2026</p>
                             @if ($tagline)
-                                <p class="mt-6 border-t pt-4 text-[13px]" style="border-color: rgba(255,255,255,.16); color: rgba(255,255,255,.82);">{{ $tagline }}</p>
+                                <p class="mt-6 border-t pt-4 text-sm" style="border-color: rgba(255,255,255,.16); color: rgba(255,255,255,.82);">{{ $tagline }}</p>
                             @endif
                         </div>
                     @endif

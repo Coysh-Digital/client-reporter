@@ -1,14 +1,11 @@
 @php use App\Support\Format; @endphp
 <div>
-    @if (session('status'))
-        <div class="mb-4 rounded-md bg-ok-soft px-3 py-2 text-sm text-ok">{{ session('status') }}</div>
-    @endif
 
     <div class="mb-3 flex items-center justify-between">
         <h2 class="text-sm font-semibold text-ink">Billing</h2>
         @can('manage-clients')
             @unless ($showForm)
-                <button wire:click="startCreate" class="cr-btn cr-btn-secondary text-xs">+ Add invoice</button>
+                <x-button size="sm" icon="plus" wire:click="startCreate">Add invoice</x-button>
             @endunless
         @endcan
     </div>
@@ -27,7 +24,7 @@
                         <span wire:loading.remove wire:target="syncNow">Sync now</span>
                         <span wire:loading wire:target="syncNow">Syncing…</span>
                     </button>
-                    <button wire:click="disconnectBilling" wire:confirm="Stop syncing invoices for this client? Already-synced invoices are kept.">Disconnect</button>
+                    <x-confirm-button action="disconnectBilling" title="Stop syncing invoices?" message="Invoices already synced for this client are kept; new ones will no longer arrive." confirm="Disconnect" :danger="true">Disconnect</x-confirm-button>
                 </span>
             @endcan
         </div>
@@ -37,62 +34,46 @@
         @if ($showForm)
             <form wire:submit="save" class="cr-card mb-4 px-5 py-4 space-y-4">
                 <div class="grid gap-4 sm:grid-cols-2">
-                    <div>
-                        <label class="cr-label">Invoice number</label>
-                        <input wire:model="number" type="text" class="cr-input" placeholder="INV-000123">
-                        @error('number') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
-                    </div>
-                    <div>
-                        <label class="cr-label">Status</label>
-                        <select wire:model="status" class="cr-input">
+                    <x-field label="Invoice number" for="invoice-number" name="number" required>
+                        <input wire:model="number" id="invoice-number" type="text" class="cr-input" placeholder="INV-000123">
+                    </x-field>
+                    <x-field label="Status" for="invoice-status" name="status">
+                        <select wire:model="status" id="invoice-status" class="cr-input">
                             @foreach ($statuses as $s)
                                 <option value="{{ $s->value }}">{{ $s->label() }}</option>
                             @endforeach
                         </select>
-                    </div>
+                    </x-field>
                 </div>
 
-                <div>
-                    <label class="cr-label">Description <span class="text-faint">(optional)</span></label>
-                    <input wire:model="description" type="text" class="cr-input" placeholder="Monthly retainer">
-                    @error('description') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
+                <x-field label="Description" for="invoice-description" name="description" optional>
+                    <input wire:model="description" id="invoice-description" type="text" class="cr-input" placeholder="Monthly retainer">
+                </x-field>
+
+                <div class="grid gap-4 sm:grid-cols-3">
+                    <x-field label="Amount" for="invoice-amount" name="amount" required>
+                        <input wire:model="amount" id="invoice-amount" type="number" step="0.01" min="0" class="cr-input">
+                    </x-field>
+                    <x-field label="Currency" for="invoice-currency" name="currency">
+                        <input wire:model="currency" id="invoice-currency" type="text" maxlength="3" class="cr-input" placeholder="GBP">
+                    </x-field>
                 </div>
 
                 <div class="grid gap-4 sm:grid-cols-3">
-                    <div>
-                        <label class="cr-label">Amount</label>
-                        <input wire:model="amount" type="number" step="0.01" min="0" class="cr-input">
-                        @error('amount') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
-                    </div>
-                    <div>
-                        <label class="cr-label">Currency</label>
-                        <input wire:model="currency" type="text" maxlength="3" class="cr-input" placeholder="GBP">
-                        @error('currency') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
-                    </div>
-                    <div></div>
-                </div>
-
-                <div class="grid gap-4 sm:grid-cols-3">
-                    <div>
-                        <label class="cr-label">Issued</label>
-                        <input wire:model="issued_at" type="date" class="cr-input">
-                        @error('issued_at') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
-                    </div>
-                    <div>
-                        <label class="cr-label">Due <span class="text-faint">(optional)</span></label>
-                        <input wire:model="due_at" type="date" class="cr-input">
-                        @error('due_at') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
-                    </div>
-                    <div>
-                        <label class="cr-label">Paid on <span class="text-faint">(optional)</span></label>
-                        <input wire:model="paid_at" type="date" class="cr-input">
-                        @error('paid_at') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
-                    </div>
+                    <x-field label="Issued" for="invoice-issued" name="issued_at" required>
+                        <input wire:model="issued_at" id="invoice-issued" type="date" class="cr-input">
+                    </x-field>
+                    <x-field label="Due" for="invoice-due" name="due_at" optional>
+                        <input wire:model="due_at" id="invoice-due" type="date" class="cr-input">
+                    </x-field>
+                    <x-field label="Paid on" for="invoice-paid" name="paid_at" optional>
+                        <input wire:model="paid_at" id="invoice-paid" type="date" class="cr-input">
+                    </x-field>
                 </div>
 
                 <div class="flex items-center gap-3 border-t border-line pt-4">
-                    <button type="submit" class="cr-btn cr-btn-primary">{{ $editingId ? 'Save invoice' : 'Add invoice' }}</button>
-                    <button type="button" wire:click="cancel" class="cr-btn cr-btn-secondary">Cancel</button>
+                    <x-button type="submit" variant="primary">{{ $editingId ? 'Save invoice' : 'Add invoice' }}</x-button>
+                    <x-button wire:click="cancel">Cancel</x-button>
                 </div>
             </form>
         @endif
@@ -111,7 +92,7 @@
                                 {{ $invoice->isOverdue() ? 'Overdue' : $invoice->status->label() }}
                             </x-badge>
                             @if ($invoice->isSynced())
-                                <span class="text-[11px] text-faint">via {{ ucfirst($invoice->source) }}</span>
+                                <span class="text-2xs text-faint">via {{ ucfirst($invoice->source) }}</span>
                             @endif
                         </div>
                         <div class="mt-0.5 truncate text-xs text-muted">
@@ -123,12 +104,14 @@
                         <span class="tnum text-sm font-semibold text-ink">{{ Format::money((float) $invoice->amount, $invoice->currency) }}</span>
                         @can('manage-clients')
                             @unless ($invoice->isSynced())
-                                <div class="flex items-center gap-2 text-xs">
+                                <div class="flex items-center gap-1">
                                     @if ($invoice->status->value !== 'paid')
-                                        <button wire:click="markPaid({{ $invoice->id }})" class="text-muted hover:text-ink">Mark paid</button>
+                                        <x-button size="sm" variant="ghost" wire:click="markPaid({{ $invoice->id }})">Mark paid</x-button>
                                     @endif
-                                    <button wire:click="startEdit({{ $invoice->id }})" class="text-muted hover:text-ink">Edit</button>
-                                    <button wire:click="delete({{ $invoice->id }})" wire:confirm="Delete invoice {{ $invoice->number }}?" class="text-danger hover:underline">Delete</button>
+                                    <x-icon-button icon="pencil-square" wire:click="startEdit({{ $invoice->id }})" label="Edit invoice {{ $invoice->number }}" />
+                                    <x-confirm-button class="cr-btn-icon cr-btn-icon-danger" action="delete({{ $invoice->id }})" title="Delete invoice {{ $invoice->number }}?" message="This removes it from the client’s billing history and from the Billing report block." confirm="Delete invoice" :danger="true">
+                                        <x-icon name="trash-can" class="h-4 w-4" /><span class="sr-only">Delete invoice {{ $invoice->number }}</span>
+                                    </x-confirm-button>
                                 </div>
                             @endunless
                         @endcan
@@ -140,7 +123,7 @@
 
     @if ($recurringInvoices->isNotEmpty())
         <div class="mt-6">
-            <h3 class="mb-2 text-xs font-semibold uppercase tracking-wide text-faint">Upcoming (recurring)</h3>
+            <h3 class="cr-eyebrow mb-2">Upcoming (recurring)</h3>
             <div class="cr-card divide-y divide-line">
                 @foreach ($recurringInvoices as $recurring)
                     <div wire:key="recurring-{{ $recurring->id }}" class="flex items-center justify-between gap-4 px-5 py-3.5">

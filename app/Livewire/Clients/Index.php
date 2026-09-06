@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Livewire\Clients;
 
 use App\Enums\SiteHealth;
+use App\Livewire\Concerns\SortsAndFilters;
 use App\Models\Client;
 use App\Models\Site;
 use App\Support\AuditLogger;
@@ -21,18 +22,27 @@ use Livewire\WithPagination;
 #[Title('Clients')]
 class Index extends Component
 {
+    use SortsAndFilters;
     use WithPagination;
-
-    #[Url(as: 'q')]
-    public string $search = '';
 
     /** all | active | inactive */
     #[Url]
     public string $status = 'all';
 
-    public function updatingSearch(): void
+    /**
+     * @return array<string, string>
+     */
+    protected function sortable(): array
     {
-        $this->resetPage();
+        return ['name' => 'name', 'sites' => 'sites_count', 'status' => 'is_active'];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function searchable(): array
+    {
+        return ['name', 'company', 'contact_name', 'contact_email'];
     }
 
     public function setStatus(string $status): void
@@ -55,17 +65,12 @@ class Index extends Component
      */
     public function clients(): LengthAwarePaginator
     {
-        return Client::query()
+        $query = Client::query()
             ->withCount('sites')
-            ->when($this->search !== '', fn ($query) => $query->where(function ($q): void {
-                $q->where('name', 'like', "%{$this->search}%")
-                    ->orWhere('contact_name', 'like', "%{$this->search}%")
-                    ->orWhere('contact_email', 'like', "%{$this->search}%");
-            }))
             ->when($this->status === 'active', fn ($query) => $query->where('is_active', true))
-            ->when($this->status === 'inactive', fn ($query) => $query->where('is_active', false))
-            ->orderBy('name')
-            ->paginate(15);
+            ->when($this->status === 'inactive', fn ($query) => $query->where('is_active', false));
+
+        return $this->applySortAndSearch($query)->paginate(15);
     }
 
     /**

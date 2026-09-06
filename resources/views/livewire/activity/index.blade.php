@@ -2,9 +2,6 @@
     <x-page-header title="Activity"
                    subtitle="Background work — what's on the queue, recent collection runs, and failed jobs. Updates live." />
 
-    @if (session('status'))
-        <div class="mb-4 rounded-md bg-ok-soft px-3 py-2 text-sm text-ok">{{ session('status') }}</div>
-    @endif
 
     {{-- Summary tiles --}}
     <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -25,21 +22,12 @@
     </div>
 
     {{-- Tabs --}}
-    <div class="mt-5 flex items-center gap-1.5 text-sm">
-        @php
-            $tabs = [
+    <div class="mt-5">
+        <x-segmented :options="[
                 'runs' => 'Recent runs',
                 'queued' => 'Queued'.($queued > 0 ? ' ('.$queued.')' : ''),
                 'failed' => 'Failed jobs'.($failedJobsCount > 0 ? ' ('.$failedJobsCount.')' : ''),
-            ];
-        @endphp
-        @foreach ($tabs as $key => $label)
-            <button wire:click="setTab('{{ $key }}')" @class([
-                'rounded-md px-2.5 py-1 font-medium transition',
-                'bg-surface text-ink ring-1 ring-line shadow-sm' => $tab === $key,
-                'text-muted hover:text-ink' => $tab !== $key,
-            ])>{{ $label }}</button>
-        @endforeach
+            ]" :value="$tab" action="setTab" label="Activity view" />
     </div>
 
     {{-- Queued --}}
@@ -50,8 +38,7 @@
                                description="Queued background jobs appear here while they wait to run." />
             @else
                 <div class="mb-2 flex justify-end">
-                    <button wire:click="clearQueued" wire:confirm="Clear all pending queued jobs? Scheduled work will re-queue on its next cycle."
-                            class="text-xs text-danger hover:underline">Clear queued</button>
+                    <x-confirm-button action="clearQueued" title="Clear the pending queue?" message="Jobs still waiting are removed; anything a worker is already running is left alone. Scheduled work re-queues on its next cycle." confirm="Clear queued" :danger="true" class="cr-btn cr-btn-danger cr-btn-sm">Clear queued</x-confirm-button>
                 </div>
                 <div class="cr-card divide-y divide-line">
                     @foreach ($queuedJobs as $job)
@@ -76,8 +63,7 @@
                 <x-empty-state title="No failed jobs" description="Jobs that fail after their retries appear here. 🎉" />
             @else
                 <div class="mb-2 flex justify-end">
-                    <button wire:click="clearFailedJobs" wire:confirm="Dismiss all failed jobs?"
-                            class="text-xs text-danger hover:underline">Clear all failed</button>
+                    <x-confirm-button action="clearFailedJobs" title="Dismiss all failed jobs?" message="Their error details are removed from this list." confirm="Dismiss all" :danger="true" class="cr-btn cr-btn-danger cr-btn-sm">Clear all failed</x-confirm-button>
                 </div>
                 <div class="cr-card divide-y divide-line">
                     @foreach ($failedJobs as $job)
@@ -92,9 +78,9 @@
                                     <div class="mt-1.5 rounded bg-danger-soft px-2 py-1 text-xs text-danger">{{ Str::limit($job['exception'], 200) }}</div>
                                 @endif
                             </div>
-                            <div class="flex shrink-0 items-center gap-3 text-xs">
-                                <button wire:click="retryFailedJob('{{ $job['uuid'] }}')" class="text-muted hover:text-ink">Retry</button>
-                                <button wire:click="dismissFailedJob('{{ $job['uuid'] }}')" class="text-danger hover:underline">Dismiss</button>
+                            <div class="flex shrink-0 items-center gap-2">
+                                <x-button size="sm" wire:click="retryFailedJob('{{ $job['uuid'] }}')" icon="arrow-path">Retry</x-button>
+                                <x-button size="sm" variant="ghost" wire:click="dismissFailedJob('{{ $job['uuid'] }}')">Dismiss</x-button>
                             </div>
                         </div>
                     @endforeach

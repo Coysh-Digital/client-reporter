@@ -62,7 +62,7 @@
                                 <div class="flex items-start gap-3">
                                     <x-avatar :name="$m->name" size="lg" :icon="$m->iconUrl()" />
                                     <div class="min-w-0 flex-1">
-                                        <div class="text-[15px] font-semibold text-ink">{{ $m->name }}</div>
+                                        <div class="text-md font-semibold text-ink">{{ $m->name }}</div>
                                         @if ($providerName)
                                             <span class="mt-0.5 block text-xs text-faint">via {{ $providerName }}</span>
                                         @elseif ($onlyWorkspace && $connected > 0)
@@ -74,12 +74,12 @@
                                         @endif
                                     </div>
                                     @if ($ws && ! $onlyWorkspace)
-                                        <span class="rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-medium" style="color:var(--color-accent)">Workspace</span>
+                                        <span class="rounded-full bg-accent-soft px-2 py-0.5 text-2xs font-medium" style="color:var(--color-accent)">Workspace</span>
                                     @endif
                                 </div>
-                                <p class="mt-3 flex-1 text-[13.5px] leading-relaxed text-muted">{{ $m->description }}</p>
+                                <p class="mt-3 flex-1 text-sm leading-relaxed text-muted">{{ $m->description }}</p>
                                 @if ($connectUrl || ($onlyWorkspace && $canManage))
-                                    <div class="mt-3 text-[12.5px] font-semibold" style="color:var(--color-accent)">
+                                    <div class="mt-3 text-xs font-semibold" style="color:var(--color-accent)">
                                         @if ($providerName)
                                             Set up via {{ $providerName }}
                                         @elseif ($onlyWorkspace)
@@ -93,7 +93,7 @@
                             @if ($supportsWorkspace && ! $onlyWorkspace && $canManage)
                                 <a href="{{ $workspaceUrl }}"
                                    wire:navigate
-                                   class="flex items-center gap-1.5 px-1 text-[12px] text-muted transition hover:text-ink">
+                                   class="flex items-center gap-1.5 px-1 text-xs text-muted transition hover:text-ink">
                                     <x-icon :name="$ws ? 'plug' : 'plus'" class="h-3 w-3" />
                                     {{ $ws ? 'Workspace connection — manage & map sites' : 'Or connect once for the whole workspace' }}
                                 </a>

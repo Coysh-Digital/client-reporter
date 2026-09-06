@@ -1,27 +1,21 @@
 <div>
     @php $manifest = $integration->manifest(); @endphp
 
-    <div class="mb-2 text-sm text-muted">
-        <a href="{{ route('sites.show', $site) }}" wire:navigate class="hover:text-ink">{{ $site->name }}</a>
-        <span class="text-faint">/</span> Connect a service
-    </div>
+    <x-breadcrumbs :items="[['label' => 'Sites', 'href' => route('sites.index')], ['label' => $site->name, 'href' => route('sites.show', $site)], ['label' => $manifest->name]]" />
 
     <x-page-header :title="($connection ? 'Manage ' : 'Connect ') . $manifest->name"
                    :subtitle="$manifest->description" />
 
     @error('verification')
-        <div class="mb-4 rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">{{ $message }}</div>
+        <x-alert variant="danger" class="mb-4">{{ $message }}</x-alert>
     @enderror
 
-    @if (session('status'))
-        <div class="mb-4 rounded-md bg-ok-soft px-3 py-2 text-sm text-ok">{{ session('status') }}</div>
-    @endif
 
     @if ($needsOAuthConnect && $connection)
         <div class="mb-4 cr-card border-accent/30 bg-accent-soft/40 px-5 py-4">
             <h3 class="text-sm font-semibold text-ink">Connect your account</h3>
             <p class="mt-1 text-sm text-muted">Authorise access so Client Reporter can read this property's analytics.</p>
-            <a href="{{ route('integrations.google.connect', $connection) }}" class="cr-btn cr-btn-primary mt-3">Connect Google account</a>
+            <x-button variant="primary" :href="route('integrations.google.connect', $connection)" :navigate="false" class="mt-3">Connect Google account</x-button>
         </div>
     @endif
 
@@ -34,17 +28,20 @@
                     <li>Open its settings and paste the connection code below.</li>
                     <li>Come back here and press <strong>Save &amp; verify</strong>.</li>
                 </ol>
-                <input readonly value="{{ $connectionCode }}" onclick="this.select()"
-                       class="cr-input mt-3 font-mono text-xs" aria-label="Connection code">
+                <div class="mt-3 flex items-center gap-2" x-data="{ copied: false, copy() { navigator.clipboard?.writeText($refs.code.value).then(() => { this.copied = true; setTimeout(() => this.copied = false, 2000); }); } }">
+                    <input readonly value="{{ $connectionCode }}" x-ref="code" x-on:click="$el.select()"
+                           class="cr-input font-mono text-xs" aria-label="Connection code">
+                    <x-button icon="clipboard-document" x-on:click="copy()" aria-live="polite">
+                        <span x-show="!copied">Copy</span><span x-show="copied" x-cloak>Copied</span>
+                    </x-button>
+                </div>
                 <p class="mt-1 text-xs text-faint">Copy it now — it is shown only this once. Anyone with it can read this site's report data.</p>
             @else
                 <p class="mt-1 text-sm text-muted">
                     A connection code is set on this connection and in the plugin. It is not shown again;
                     if it has been lost or exposed, generate a new one and paste it into the plugin.
                 </p>
-                <button type="button" wire:click="regenerateConnectionCode"
-                        wire:confirm="Generate a new connection code? The plugin will stop responding until the new code is pasted into its settings."
-                        class="cr-btn cr-btn-secondary mt-3">Generate a new connection code</button>
+                <x-confirm-button action="regenerateConnectionCode" title="Generate a new connection code?" message="The plugin stops responding until the new code is pasted into its settings." confirm="Generate new code" class="cr-btn cr-btn-secondary mt-3">Generate a new connection code</x-confirm-button>
             @endif
         </div>
     @endif
@@ -56,35 +53,29 @@
                 This site uses the shared <strong>{{ $workspaceConnection->name }}</strong> connection — its credentials are
                 managed once for every site. You can still choose what this site maps to below.
             </p>
-            <a href="{{ route('integrations.workspace.edit', $workspaceConnection) }}" wire:navigate
-               class="mt-3 inline-block text-sm font-semibold" style="color:var(--color-accent)">Manage the workspace connection →</a>
+            <a href="{{ route('integrations.workspace.edit', $workspaceConnection) }}" wire:navigate class="cr-link mt-3 inline-block text-sm">Manage the workspace connection →</a>
         </div>
     @endif
 
     @if ($integration->setupSteps() !== [] && ! $workspaceConnection)
-        <div class="mb-4 max-w-xl overflow-hidden rounded-xl border border-line bg-surface">
-            <div class="border-b border-line px-5 py-3"><h3 class="cr-eyebrow">How to connect {{ $manifest->name }}</h3></div>
+        <details class="cr-panel mb-4 max-w-xl" open>
+            <summary class="cr-panel-header cursor-pointer select-none"><h3 class="cr-eyebrow">How to connect {{ $manifest->name }}</h3></summary>
             <ol class="list-decimal space-y-1.5 px-5 py-4 pl-9 text-sm text-muted marker:font-semibold marker:text-accent">
                 @foreach ($integration->setupSteps() as $step)
                     <li>{{ \App\Support\Html::inline($step) }}</li>
                 @endforeach
             </ol>
-        </div>
+        </details>
     @endif
 
     <form wire:submit="save" class="cr-card max-w-xl px-6 py-6 space-y-5">
-        <div>
-            <label for="name" class="cr-label">Connection name</label>
+        <x-field label="Connection name" for="name" required>
             <input wire:model="name" id="name" type="text" class="cr-input" required>
-            @error('name') <p class="mt-1.5 text-xs text-danger">{{ $message }}</p> @enderror
-        </div>
+        </x-field>
 
         @foreach ($fields as $field)
-            <div wire:key="field-{{ $field->key }}">
-                <label for="field-{{ $field->key }}" class="cr-label">
-                    {{ $field->label }}
-                    @unless ($field->required) <span class="text-faint">(optional)</span> @endunless
-                </label>
+            <x-field :label="$field->label" :for="'field-'.$field->key" :name="'values.'.$field->key" :optional="! $field->required" wire:key="field-{{ $field->key }}"
+                     :help="trim(($field->help ?? '').(($field->secret && $connection) ? ' Leave blank to keep the saved value.' : '')) ?: null">
 
                 @if ($field->type === 'select')
                     <select wire:model="values.{{ $field->key }}" id="field-{{ $field->key }}" class="cr-input">
@@ -102,19 +93,15 @@
                            @if ($field->placeholder) placeholder="{{ $field->placeholder }}" @endif
                            @if ($field->secret && $connection) autocomplete="off" @endif>
                 @endif
-
-                @if ($field->help) <p class="mt-1 text-xs text-faint">{{ $field->help }}</p> @endif
-                @if ($field->secret && $connection) <p class="mt-1 text-xs text-faint">Leave blank to keep the saved value.</p> @endif
-                @error("values.{$field->key}") <p class="mt-1.5 text-xs text-danger">{{ $message }}</p> @enderror
-            </div>
+            </x-field>
         @endforeach
 
         <div class="flex items-center gap-3 border-t border-line pt-5">
-            <button type="submit" class="cr-btn cr-btn-primary">
+            <x-button type="submit" variant="primary">
                 <span wire:loading.remove wire:target="save">{{ $connection ? 'Save & verify' : 'Connect & verify' }}</span>
                 <span wire:loading wire:target="save">Verifying…</span>
-            </button>
-            <a href="{{ route('sites.show', $site) }}" wire:navigate class="cr-btn cr-btn-secondary">Cancel</a>
+            </x-button>
+            <x-button :href="route('sites.show', $site)">Cancel</x-button>
         </div>
     </form>
 </div>

@@ -1,7 +1,4 @@
 <div {{ $report->isGenerating() ? 'wire:poll.3s=pollGeneration' : '' }}>
-    @if (session('status'))
-        <div class="mb-4 rounded-md bg-ok-soft px-3 py-2 text-sm text-ok">{{ session('status') }}</div>
-    @endif
 
     @if ($report->generationFailed())
         <div class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md bg-danger-soft px-4 py-3 text-sm text-danger">

@@ -1,7 +1,4 @@
 <div>
-    @if (session('status'))
-        <div class="mb-4 rounded-md bg-ok-soft px-3 py-2 text-sm text-ok">{{ session('status') }}</div>
-    @endif
 
     <div class="mb-2 flex items-center gap-2 text-sm text-muted">
         @if ($site->faviconUrl())
@@ -83,11 +80,9 @@
 
             @can('manage-sites')
                 <div class="cr-card px-5 py-4">
-                    <h3 class="text-xs font-medium uppercase tracking-wide text-faint">Danger zone</h3>
+                    <h3 class="cr-eyebrow">Danger zone</h3>
                     <p class="mt-2 text-sm text-muted">Deleting a site removes its integrations, data and reports.</p>
-                    <button wire:click="delete"
-                            wire:confirm="Delete {{ $site->name }} and all its data? This cannot be undone."
-                            class="cr-btn cr-btn-secondary mt-3 text-danger">Delete site</button>
+                    <x-confirm-button action="delete" title="Delete {{ $site->name }}?" message="Its integrations, collected data and every report are removed. This cannot be undone." confirm="Delete site" :danger="true" class="cr-btn cr-btn-danger mt-3">Delete site</x-confirm-button>
                 </div>
             @endcan
         </div>

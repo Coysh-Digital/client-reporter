@@ -39,7 +39,7 @@
                        x-on:input="active = 0"
                        type="text" placeholder="Search clients, sites and reports…"
                        class="w-full border-0 bg-transparent p-0 text-sm text-ink outline-none placeholder:text-faint">
-                <span class="rounded border border-line px-1.5 py-px text-[11px] text-faint">Esc</span>
+                <span class="rounded border border-line px-1.5 py-px text-2xs text-faint">Esc</span>
             </div>
 
             <div class="max-h-[46vh] overflow-y-auto py-1">
@@ -53,7 +53,7 @@
                         $groupIcons = ['Clients' => 'building-user', 'Sites' => 'globe', 'Reports' => 'file-chart-column'];
                     @endphp
                     @foreach ($results as $group)
-                        <p class="px-4 pb-1 pt-3 text-[10.5px] font-bold uppercase tracking-[0.08em] text-faint">{{ $group['group'] }}</p>
+                        <p class="px-4 pb-1 pt-3 text-2xs font-bold uppercase tracking-[0.08em] text-faint">{{ $group['group'] }}</p>
                         @foreach ($group['items'] as $item)
                             <a href="{{ $item['url'] }}" wire:navigate data-result
                                x-on:click="hide()"

@@ -108,7 +108,7 @@ class SharePanel extends Component
         }
 
         $audit->log('report.emailed', $this->report, metadata: ['to' => $this->emailTo]);
-        session()->flash('share_status', 'Report emailed to '.$this->emailTo.'.');
+        $this->dispatch('toast', message: 'Report emailed to '.$this->emailTo.'.', type: 'ok');
         $this->emailMessage = '';
     }
 

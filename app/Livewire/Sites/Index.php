@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Livewire\Sites;
 
+use App\Livewire\Concerns\SortsAndFilters;
+use App\Models\Client;
 use App\Models\Site;
 use App\Support\Dashboard\SiteHealthResolver;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -18,25 +20,65 @@ use Livewire\WithPagination;
 #[Title('Sites')]
 class Index extends Component
 {
+    use SortsAndFilters;
     use WithPagination;
 
     /** Selectable page sizes for the results-per-page control. */
     public const PER_PAGE_OPTIONS = [15, 30, 50, 100];
 
-    #[Url(as: 'q')]
-    public string $search = '';
-
     #[Url]
     public int $perPage = 15;
 
-    public function updatingSearch(): void
-    {
-        $this->resetPage();
-    }
+    /** all | active | inactive */
+    #[Url]
+    public string $status = 'all';
+
+    #[Url]
+    public ?int $client = null;
+
+    #[Url]
+    public string $cms = '';
 
     public function updatingPerPage(): void
     {
         $this->resetPage();
+    }
+
+    public function updatingStatus(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingClient(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingCms(): void
+    {
+        $this->resetPage();
+    }
+
+    public function setStatus(string $status): void
+    {
+        $this->status = in_array($status, ['all', 'active', 'inactive'], true) ? $status : 'all';
+        $this->resetPage();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function sortable(): array
+    {
+        return ['name' => 'name', 'client' => 'client.name', 'cms' => 'cms_type', 'status' => 'is_active'];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function searchable(): array
+    {
+        return ['name', 'url', 'client.name'];
     }
 
     /**
@@ -44,15 +86,14 @@ class Index extends Component
      */
     public function sites(): LengthAwarePaginator
     {
-        return Site::query()
+        $query = Site::query()
             ->with('client')
-            ->when($this->search !== '', fn ($query) => $query->where(function ($q): void {
-                $q->where('name', 'like', "%{$this->search}%")
-                    ->orWhere('url', 'like', "%{$this->search}%")
-                    ->orWhereHas('client', fn ($c) => $c->where('name', 'like', "%{$this->search}%"));
-            }))
-            ->orderBy('name')
-            ->paginate($this->pageSize());
+            ->when($this->status === 'active', fn ($query) => $query->where('is_active', true))
+            ->when($this->status === 'inactive', fn ($query) => $query->where('is_active', false))
+            ->when($this->client !== null, fn ($query) => $query->where('client_id', $this->client))
+            ->when($this->cms !== '', fn ($query) => $query->where('cms_type', $this->cms));
+
+        return $this->applySortAndSearch($query)->paginate($this->pageSize());
     }
 
     /**
@@ -73,6 +114,8 @@ class Index extends Component
         return view('livewire.sites.index', [
             'sites' => $sites,
             'health' => $resolver->forSites($active),
+            'clients' => Client::query()->orderBy('name')->get(['id', 'name']),
+            'cmsTypes' => Site::query()->whereNotNull('cms_type')->distinct()->orderBy('cms_type')->pluck('cms_type')->all(),
         ]);
     }
 }
