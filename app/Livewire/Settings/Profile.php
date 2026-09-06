@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
-use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -20,7 +19,6 @@ use Livewire\Component;
  * this page (client-portal users included); changing the password requires
  * the current one.
  */
-#[Layout('components.layouts.app')]
 #[Title('Your profile')]
 class Profile extends Component
 {
@@ -89,6 +87,6 @@ class Profile extends Component
 
     public function render(): mixed
     {
-        return view('livewire.settings.profile');
+        return view('livewire.settings.profile')->layout(auth()->user()?->isClient() ? 'components.layouts.portal' : 'components.layouts.app');
     }
 }

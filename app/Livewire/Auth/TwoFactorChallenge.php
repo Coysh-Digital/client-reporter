@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Title;
 use Livewire\Component;
 
 /**
@@ -24,6 +25,7 @@ use Livewire\Component;
  * session (never the password).
  */
 #[Layout('components.layouts.guest')]
+#[Title('Two-factor authentication')]
 class TwoFactorChallenge extends Component
 {
     /** How long the password step stays valid before the challenge must restart. */

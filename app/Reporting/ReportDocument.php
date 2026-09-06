@@ -21,7 +21,7 @@ class ReportDocument
     ) {}
 
     /**
-     * @return array{report: Report, branding: ResolvedBranding, blocks: array<int, array<string, mixed>>}
+     * @return array{report: Report, branding: ResolvedBranding, blocks: array<int, array<string, mixed>>, frozen: bool}
      */
     public function live(Report $report): array
     {
@@ -44,11 +44,11 @@ class ReportDocument
             ];
         }
 
-        return ['report' => $report, 'branding' => $branding, 'blocks' => $blocks];
+        return ['report' => $report, 'branding' => $branding, 'blocks' => $blocks, 'frozen' => false];
     }
 
     /**
-     * @return array{report: Report, branding: ResolvedBranding, blocks: array<int, array<string, mixed>>}
+     * @return array{report: Report, branding: ResolvedBranding, blocks: array<int, array<string, mixed>>, frozen: bool}
      */
     public function fromRender(ReportRender $render): array
     {
@@ -68,7 +68,7 @@ class ReportDocument
             ];
         }
 
-        return ['report' => $render->report, 'branding' => $branding, 'blocks' => $blocks];
+        return ['report' => $render->report, 'branding' => $branding, 'blocks' => $blocks, 'frozen' => true];
     }
 
     private function viewFor(string $type): string

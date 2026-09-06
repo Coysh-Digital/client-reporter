@@ -69,6 +69,26 @@ php artisan test                                        # tests
 
 Please make sure `composer check` passes before you open a pull request.
 
+### Coverage
+
+```bash
+composer coverage    # HTML report in storage/coverage, summary on stdout
+```
+
+Needs PCOV or Xdebug installed for the PHP you run tests with.
+
+### Screenshots
+
+A Playwright script signs in and captures every admin screen at desktop and phone widths, which is the quickest way to eyeball a design change or refresh the documentation images:
+
+```bash
+npm run shots                       # every screen → storage/app/screenshots
+npm run shots -- dashboard clients  # just those screens
+SHOTS_DOCS=1 npm run shots          # also refresh docs/images/*.png
+```
+
+It reads `SHOTS_URL`, `SHOTS_EMAIL`, `SHOTS_PASSWORD`, `SHOTS_CHROME` and `SHOTS_OUT` from the environment (defaults suit a DDEV install with the seeded admin) and needs a local Chrome or Chromium.
+
 ## Project structure
 
 The application code lives under `app/`:

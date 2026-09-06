@@ -5,34 +5,19 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\Report;
-use App\Reporting\ReportDocument;
-use App\Support\Settings;
+use App\Reporting\ReportPdf;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Str;
-use Spatie\LaravelPdf\Facades\Pdf;
 use Spatie\LaravelPdf\PdfBuilder;
-use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Streams a report as a PDF. Uses the configured driver — dompdf by default so
- * it works on any shared host with no binaries; VPS users may switch to
- * Browsershot for pixel-perfect output.
+ * Streams a report as a PDF for staff.
  */
 class ReportPdfController
 {
-    public function __invoke(Report $report, ReportDocument $document): PdfBuilder|Response
+    public function __invoke(Report $report, ReportPdf $pdf): PdfBuilder
     {
         Gate::authorize('access-admin');
 
-        $render = $report->latestRender;
-
-        if ($render === null) {
-            abort(404, 'This report has not been generated yet.');
-        }
-
-        return Pdf::view('reports.document', $document->fromRender($render))
-            ->driver(app(Settings::class)->get('pdf_driver', config('client-reporter.pdf.driver', 'dompdf')))
-            ->name(Str::slug($report->title).'.pdf')
-            ->download();
+        return $pdf->download($report) ?? abort(404, 'This report has not been generated yet.');
     }
 }

@@ -8,6 +8,7 @@ use App\Mail\ReportMail;
 use App\Models\Report;
 use App\Models\ReportShare;
 use App\Reporting\ReportDocument;
+use App\Reporting\ReportPdf;
 use App\Reporting\ReportShareService;
 use App\Support\AuditLogger;
 use App\Support\Branding\BrandingResolver;
@@ -123,7 +124,7 @@ class SharePanel extends Component
         $path = Storage::disk('local')->path('tmp/report-'.$this->report->id.'-'.uniqid().'.pdf');
 
         Pdf::view('reports.document', $document->fromRender($render))
-            ->driver(app(Settings::class)->get('pdf_driver', config('client-reporter.pdf.driver', 'dompdf')))
+            ->driver(app(ReportPdf::class)->driver())
             ->save($path);
 
         return $path;

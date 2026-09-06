@@ -15,9 +15,10 @@
     $firstDate = $series[0]['date'] ?? null;
     $lastDate = ! empty($series) ? ($series[count($series) - 1]['date'] ?? null) : null;
     $hasCompare = ! empty($compareSeries);
+    $alt = $alt ?? \App\Support\ReportLang::get('common.chart_alt', ['from' => (string) $firstDate, 'to' => (string) $lastDate, 'points' => count($series)]);
 @endphp
 @if ($uri !== '')
-    <img src="{{ $uri }}" alt="" style="display:block;width:100%;height:auto;margin-top:14px;" />
+    <img src="{{ $uri }}" alt="{{ $alt }}" style="display:block;width:100%;height:auto;margin-top:14px;" />
     @if ($firstDate || $lastDate || $hasCompare)
         <table style="width:100%;border-collapse:collapse;margin-top:6px;">
             <tr class="muted" style="font-size:11px;">

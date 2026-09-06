@@ -65,6 +65,12 @@
         .block-heading-source-badge { display: inline-block; padding: 3px 11px; border-radius: 999px; background: #f3ecdf; font-size: 11px; font-weight: 600; color: #4a463d; vertical-align: middle; }
         .block-heading-source-logo { display: inline-block; height: 18px; max-width: 108px; vertical-align: middle; }
         .table-scroll { overflow-x: auto; }
+        /* PDF pagination: keep tiles, callouts, table rows and a heading with
+           its first lines together; never start a page with an orphaned title. */
+        .metric-tile, .insight, .ai-summary, .block-heading-row, .contents-item, table.data tr, table.bars tr { page-break-inside: avoid; }
+        h1, h2, h3, .block-heading-row { page-break-after: avoid; }
+        /* Long URLs and file names must wrap rather than push a table off the page. */
+        table.data td, .commentary, .insight, .ai-summary { overflow-wrap: anywhere; word-wrap: break-word; }
         /* Callouts: an editorial accent bar in a brand colour. */
         .insight { background: #faf7ef; border: 1px solid #efe7d3; border-left: 3px solid var(--brand-secondary); border-radius: 7px; padding: 12px 16px 12px 18px; margin: 0 0 20px; font-size: 13.5px; line-height: 1.6; color: #4a4638; }
         .insight-label { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--brand-secondary); margin-bottom: 4px; }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\FreeAgentOAuthController;
 use App\Http\Controllers\GoogleOAuthController;
 use App\Http\Controllers\PortalReportController;
+use App\Http\Controllers\PortalReportPdfController;
 use App\Http\Controllers\PublicReportController;
 use App\Http\Controllers\ReportPdfController;
 use App\Http\Controllers\ReportPreviewController;
@@ -62,6 +63,7 @@ Route::middleware(['throttle:60,1', 'report-headers'])->group(function () {
 Route::middleware(['auth', 'active', 'can:access-portal'])->prefix('portal')->group(function () {
     Route::get('/', Portal\Dashboard::class)->name('portal.dashboard');
     Route::get('/reports/{report}', PortalReportController::class)->middleware('report-headers')->name('portal.report');
+    Route::get('/reports/{report}/pdf', PortalReportPdfController::class)->name('portal.report.pdf');
 });
 
 /*

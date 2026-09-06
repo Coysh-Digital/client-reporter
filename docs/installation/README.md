@@ -72,6 +72,18 @@ All the background work — data collection, queued jobs, the daily update check
 
 That single entry is all you need on shared hosting: the scheduler queues due data collections hourly and drains the database queue every minute, so there's no persistent worker process to keep alive. On a VPS you can instead run a persistent `php artisan queue:work` (or Horizon) if you want — see [Shared hosting](../shared-hosting/README.md) and [Configuration](../configuration/README.md#queue-processing).
 
+## Backups
+
+Three things make up a complete backup, and all three matter:
+
+| What | Where | Why |
+| --- | --- | --- |
+| The database | `database/database.sqlite`, or a dump of your MySQL/PostgreSQL database | Clients, sites, collected data, reports and users |
+| `.env` | The project root | Holds `APP_KEY`, which decrypts every stored integration credential, the AI provider key and users' two-factor secrets. **Without it the database is not restorable.** |
+| `storage/app/public/` | The project root | Uploaded logos and favicons, cached site favicons |
+
+Take them together, keep them somewhere other than the server, and test a restore once. A restore is the reverse: put the three back, then run `php artisan storage:link` and `php artisan optimize:clear`.
+
 ## Post-install checklist
 
 - [ ] You can log in as the Administrator.
@@ -80,6 +92,7 @@ That single entry is all you need on shared hosting: the scheduler queues due da
 - [ ] Mail is configured if you plan to email reports or use password resets — see [Configuration](../configuration/README.md#mail).
 - [ ] Review the admin **Settings** page (PDF driver, update checks, collection interval, retention, share-link expiry) — see [Configuration](../configuration/README.md#admin-settings-page).
 - [ ] Add your first client, site and integration, then generate a report. See [Configuration](../configuration/README.md) and the [Integrations](../integrations/README.md) docs.
+- [ ] Decide where backups go — see [Backups](#backups) above.
 
 ## Where to next
 

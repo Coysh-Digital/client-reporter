@@ -7,6 +7,8 @@ namespace App\Http\Controllers;
 use App\Models\ReportShare;
 use App\Reporting\ReportDocument;
 use App\Reporting\ReportShareService;
+use App\Support\Branding\BrandingResolver;
+use App\Support\Branding\ResolvedBranding;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -33,17 +35,17 @@ class PublicReportController
         $share = $shares->resolve($token);
 
         if ($share === null) {
-            return response()->view('reports.public-unavailable', [], 404);
+            return $this->unavailable(null);
         }
 
         if ($share->requiresPassword() && ! $this->isUnlocked($share)) {
-            return view('reports.public-password', ['token' => $token, 'failed' => false]);
+            return view('reports.public-password', ['token' => $token, 'failed' => false, 'branding' => $this->brandingFor($share)]);
         }
 
         $render = $share->report->latestRender;
 
         if ($render === null) {
-            return response()->view('reports.public-unavailable', [], 404);
+            return $this->unavailable($share);
         }
 
         $share->forceFill(['views' => $share->views + 1, 'last_viewed_at' => now()])->save();
@@ -67,16 +69,33 @@ class PublicReportController
             if ($share->failed_unlocks >= self::MAX_FAILED_UNLOCKS) {
                 $share->forceFill(['revoked_at' => now()])->save();
 
-                return response()->view('reports.public-unavailable', [], 404);
+                return $this->unavailable($share);
             }
 
-            return view('reports.public-password', ['token' => $token, 'failed' => true]);
+            return view('reports.public-password', ['token' => $token, 'failed' => true, 'branding' => $this->brandingFor($share)]);
         }
 
         $share->forceFill(['failed_unlocks' => 0])->save();
         session()->put($this->sessionKey($share), now()->timestamp);
 
         return redirect()->route('public-report', ['token' => $token]);
+    }
+
+    /**
+     * The gate pages wear the agency's branding for the report's site when the
+     * link is known, and the agency default otherwise — never the product's.
+     */
+    private function brandingFor(?ReportShare $share): ResolvedBranding
+    {
+        $resolver = app(BrandingResolver::class);
+        $site = $share?->report?->site;
+
+        return $site !== null ? $resolver->forSite($site) : $resolver->resolve([$resolver->global()]);
+    }
+
+    private function unavailable(?ReportShare $share): Response
+    {
+        return response()->view('reports.public-unavailable', ['branding' => $this->brandingFor($share)], 404);
     }
 
     private function isUnlocked(ReportShare $share): bool
