@@ -11,7 +11,6 @@ use App\Support\TwoFactor as Totp;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
-use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -20,7 +19,6 @@ use Livewire\Component;
  * account: scan/enter a TOTP secret, confirm a code, and save one-time recovery
  * codes. Disabling requires the account password.
  */
-#[Layout('components.layouts.app')]
 #[Title('Two-factor authentication')]
 class TwoFactor extends Component
 {
@@ -152,6 +150,6 @@ class TwoFactor extends Component
 
     public function render(): mixed
     {
-        return view('livewire.settings.two-factor');
+        return view('livewire.settings.two-factor')->layout(auth()->user()?->isClient() ? 'components.layouts.portal' : 'components.layouts.app');
     }
 }

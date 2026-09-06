@@ -139,6 +139,18 @@ CLIENT_REPORTER_CONNECTOR_TIMESTAMP_TOLERANCE=300
 CLIENT_REPORTER_UPDATE_CHECK=true
 ```
 
+## Retention and disk growth
+
+Collected data accumulates. What is kept, and what trims it:
+
+- **Metrics and snapshots** (the per-period figures and per-day series each collector writes) are kept forever unless you set **Retention** on the Settings page, in which case anything older than that many days is pruned by the daily `client-reporter:collect` run. Generated reports keep their own frozen copy of the data, so pruning never changes a report a client has already received.
+- **Collection run history** (the Activity page) is pruned automatically after 90 days.
+- **Report renders** — each generation freezes a render; the newest five per report are kept and older ones are removed automatically.
+- **Cached favicons and uploaded logos** live in `storage/app/public/` and are small.
+- **Queue and failed-job tables** are cleared as jobs complete; failed jobs stay until you retry or dismiss them from the Activity page.
+
+An SQLite install for a few dozen sites typically stays well under 100 MB a year with retention left blank; set retention to 365–730 days if disk space matters more than long-range history.
+
 ## Report wording
 
 The fixed words and phrases on your client-facing reports live in `config/report-language.php` (the shipped defaults) and can be reworded or translated in a git-ignored `config/report-language.local.php` that survives updates. This is covered in full under [Branding → Report wording and translation](../branding/README.md#report-wording-and-translation).

@@ -14,10 +14,12 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password as PasswordRule;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Title;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 
 #[Layout('components.layouts.guest')]
+#[Title('Choose a password')]
 class ResetPassword extends Component
 {
     public string $token = '';

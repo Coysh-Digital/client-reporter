@@ -8,10 +8,12 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Title;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 
 #[Layout('components.layouts.guest')]
+#[Title('Forgot your password?')]
 class ForgotPassword extends Component
 {
     #[Validate('required|string|email')]

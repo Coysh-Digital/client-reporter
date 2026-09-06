@@ -39,6 +39,8 @@ return [
         'unknown' => 'Unknown',
         'this_period' => 'This period',
         'previous_period' => 'Previous period',
+        // Alternative text for line charts (screen readers, and PDF readers that expose it).
+        'chart_alt' => 'Line chart of :points daily values from :from to :to',
         'php_version' => 'PHP version',
         'incident_reason_down' => 'Down',
         'monitor_fallback' => 'Monitor',

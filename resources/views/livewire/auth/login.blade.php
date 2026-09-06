@@ -1,6 +1,6 @@
 <div class="cr-card px-6 py-7">
     <h1 class="text-lg font-semibold text-ink">Sign in</h1>
-    <p class="mt-1 text-sm text-muted">Access your agency dashboard.</p>
+    <p class="mt-1 text-sm text-muted">Sign in to continue.</p>
 
     <form wire:submit="login" class="mt-6 space-y-4">
         <div>

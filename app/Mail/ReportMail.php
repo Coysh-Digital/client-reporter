@@ -49,7 +49,7 @@ class ReportMail extends Mailable
 
     public function content(): Content
     {
-        return new Content(view: 'emails.report');
+        return new Content(view: 'emails.report', text: 'emails.report-text');
     }
 
     /**

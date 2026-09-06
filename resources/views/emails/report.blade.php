@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $report->title }}</title>
 </head>
-<body style="margin:0; background:#f4f2ee; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:#1b1a18;">
+<body style="margin:0; background:#f4f2ee; font-family:{{ str_replace('"', "'", $branding->bodyFontStack()) }}; color:#1b1a18;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f2ee; padding:28px 12px;">
         <tr>
             <td align="center">
@@ -21,7 +21,7 @@
                                 <div style="font-size:18px; font-weight:600; color:{{ $branding->primaryColor }}; margin-bottom:20px;">{{ $branding->agencyName }}</div>
                             @endif
 
-                            <h1 style="font-size:20px; margin:0 0 6px;">{{ $report->title }}</h1>
+                            <h1 style="font-family:{{ str_replace('"', "'", $branding->headingFontStack()) }}; font-size:20px; margin:0 0 6px;">{{ $report->title }}</h1>
                             <p style="color:#6c675f; font-size:14px; margin:0 0 20px;">{{ $report->site->name }} &middot; {{ $report->dateRange()->label() }}</p>
 
                             @if ($customMessage)
