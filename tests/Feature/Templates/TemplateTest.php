@@ -67,6 +67,37 @@ class TemplateTest extends TestCase
         $this->assertCount(2, $template->blocks);
     }
 
+    public function test_a_manager_can_reorder_and_duplicate_template_sections(): void
+    {
+        $manager = User::factory()->manager()->create();
+
+        Livewire::actingAs($manager)->test(Form::class)
+            ->set('name', 'Reorderable')
+            ->call('addBlock', 'cover')
+            ->call('addBlock', 'text')
+            // Move the text block above the cover.
+            ->call('moveBlock', 1, 'up')
+            // Duplicate the (now first) text block.
+            ->call('duplicateBlock', 0)
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $blocks = ReportTemplate::query()->firstOrFail()->blocks;
+        $this->assertSame(['text', 'text', 'cover'], array_column($blocks, 'type'));
+    }
+
+    public function test_moving_a_section_out_of_bounds_is_a_no_op(): void
+    {
+        $manager = User::factory()->manager()->create();
+
+        Livewire::actingAs($manager)->test(Form::class)
+            ->call('addBlock', 'cover')
+            ->call('addBlock', 'text')
+            ->call('moveBlock', 0, 'up')   // already at the top
+            ->call('moveBlock', 1, 'down') // already at the bottom
+            ->assertCount('blocks', 2);
+    }
+
     public function test_deleting_a_template(): void
     {
         $manager = User::factory()->manager()->create();

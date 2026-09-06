@@ -60,6 +60,26 @@ class Form extends Component
         $this->blocks = array_values($this->blocks);
     }
 
+    public function duplicateBlock(int $index): void
+    {
+        if (! isset($this->blocks[$index])) {
+            return;
+        }
+
+        $copy = $this->blocks[$index];
+        array_splice($this->blocks, $index + 1, 0, [$copy]);
+    }
+
+    public function moveBlock(int $index, string $direction): void
+    {
+        $target = $direction === 'up' ? $index - 1 : $index + 1;
+        if (! isset($this->blocks[$index], $this->blocks[$target])) {
+            return;
+        }
+
+        [$this->blocks[$index], $this->blocks[$target]] = [$this->blocks[$target], $this->blocks[$index]];
+    }
+
     /**
      * @param  array<int, int>  $order
      */
