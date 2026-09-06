@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Livewire\Integrations;
 
-use App\Integrations\Contracts\Integration;
-use App\Integrations\IntegrationRegistry;
+use App\Integrations\CollectionSchedule;
 use App\Jobs\RunConnectorCollection;
 use App\Models\Metric;
+use App\Models\MetricSnapshot;
 use App\Models\Site;
 use App\Models\SiteIntegration;
-use App\Models\WorkspaceIntegration;
 use App\Support\AuditLogger;
+use App\Support\ConnectionState;
 use App\Support\DateRange;
 use App\Support\Format;
 use App\Support\MetricLabel;
@@ -20,13 +20,15 @@ use Livewire\Attributes\On;
 use Livewire\Component;
 
 /**
- * The integrations panel on a site page: shows connected services with their
- * health and lets staff connect, collect, manage or disconnect them.
+ * The connected-services list on a site page: one compact row per connection
+ * with its state, timing, a headline figure and a sparkline. Everything is
+ * resolved in a handful of bulk queries regardless of how many connections a
+ * site has.
  */
 class SitePanel extends Component
 {
-    /** Enough for 24 periods of a provider with ~10 metrics each. */
-    private const MAX_METRIC_ROWS = 240;
+    /** Points kept for the sparkline (roughly a month of daily values). */
+    private const SPARKLINE_POINTS = 30;
 
     public Site $site;
 
@@ -46,14 +48,13 @@ class SitePanel extends Component
         $this->authorize('manage-integrations');
 
         $connection = $this->site->integrations()->findOrFail($connectionId);
-        $range = DateRange::thisMonth();
 
         // Queue it rather than collecting in-request — some providers (e.g. GA4)
-        // are slow, and blocking makes the page look frozen. Progress shows on
-        // the Activity page.
-        RunConnectorCollection::queueFor($connection, $range);
+        // are slow, and blocking makes the page look frozen. The row shows
+        // "Syncing" until the worker reports back.
+        RunConnectorCollection::queueFor($connection, DateRange::thisMonth());
 
-        $this->dispatch('toast', message: 'Collection queued — running in the background. See Activity for progress.', type: 'ok');
+        $this->dispatch('toast', message: 'Collection queued — this row updates when it finishes. See Activity for details.', type: 'ok');
     }
 
     public function disconnect(int $connectionId, AuditLogger $audit): void
@@ -65,111 +66,133 @@ class SitePanel extends Component
         $connection->delete();
 
         $this->dispatch('toast', message: 'Service disconnected.', type: 'ok');
+        $this->dispatch('integration-updated');
     }
 
-    public function render(): mixed
+    public function render(CollectionSchedule $schedule): mixed
     {
-        $registry = app(IntegrationRegistry::class);
-        $connections = $this->site->integrations()->orderBy('name')->get();
+        /** @var Collection<int, SiteIntegration> $connections */
+        $connections = $this->site->integrations()->with('latestRun')->orderBy('name')->get();
 
-        // Hide services that can't (or shouldn't) be connected here: already
-        // connected on this site, connected once for the whole workspace, or
-        // workspace-only integrations (billing/accounting).
-        $hidden = $connections->pluck('integration_key')
-            ->merge(WorkspaceIntegration::query()->pluck('integration_key'))
-            ->all();
-
-        $available = [];
-        foreach ($registry->byCategory() as $category => $items) {
-            $items = array_values(array_filter(
-                $items,
-                fn (Integration $i): bool => ! in_array($i->key(), $hidden, true) && ! $i->onlyWorkspaceScope(),
-            ));
-            if ($items !== []) {
-                $available[$category] = $items;
-            }
-        }
+        $states = $connections->mapWithKeys(
+            fn (SiteIntegration $c): array => [$c->id => ConnectionState::from($c, $schedule)],
+        );
 
         return view('livewire.integrations.site-panel', [
             'connections' => $connections,
-            'available' => $available,
-            'insights' => $connections->mapWithKeys(
-                fn (SiteIntegration $connection): array => [$connection->id => $this->insightFor($connection)],
-            )->all(),
+            'states' => $states->all(),
+            'headlines' => $this->headlines($connections),
+            'trends' => $this->trends($connections),
+            'polling' => $states->contains(fn (ConnectionState $s): bool => $s->syncing),
         ]);
     }
 
     /**
-     * A compact snapshot for one connection: its latest-period metrics as chips,
-     * a headline metric charted across every period collected so far, and — when
-     * the provider reports per-day history — a daily line chart of that trend.
+     * One headline figure per connection: the integration's own choice of
+     * metric, else the category default, else the largest value collected —
+     * for this month, falling back to last month.
      *
-     * @return array{chips: array<int, array{label: string, value: string}>, chart: array{label: string, labels: array<int, string>, data: array<int, float>}, line: array{label: string, labels: array<int, string>, data: array<int, float>}|null}|null
+     * @param  Collection<int, SiteIntegration>  $connections
+     * @return array<int, array{label: string, value: string, period: string}>
      */
-    private function insightFor(SiteIntegration $connection): ?array
+    private function headlines(Collection $connections): array
     {
-        // Bounded: the newest couple of years of periods, not every row ever
-        // collected. Rows come back newest-first and are re-sorted ascending.
-        /** @var Collection<int, Metric> $metrics */
-        $metrics = $connection->metrics()
-            ->orderByDesc('period_start')
-            ->limit(self::MAX_METRIC_ROWS)
-            ->get()
-            ->sortBy('period_start')
-            ->values();
-        if ($metrics->isEmpty()) {
-            return null;
+        if ($connections->isEmpty()) {
+            return [];
         }
 
-        $latestPeriod = $metrics->max('period_start');
-        $latest = $metrics->where('period_start', $latestPeriod);
+        $current = DateRange::thisMonth();
+        $previous = DateRange::lastMonth();
 
-        // Headline = the largest latest value, which naturally surfaces the
-        // count that matters (pageviews, visitors, impressions…) over rates.
-        $headlineKey = (string) $latest->sortByDesc('value')->first()?->metric_key;
-        $series = $metrics->where('metric_key', $headlineKey)->sortBy('period_start')->values();
+        $rows = Metric::query()
+            ->whereIn('site_integration_id', $connections->pluck('id')->all())
+            ->where(function ($q) use ($current, $previous): void {
+                $q->whereDate('period_start', $current->start->toDateString())
+                    ->orWhereDate('period_start', $previous->start->toDateString());
+            })
+            ->get(['site_integration_id', 'metric_key', 'value', 'unit', 'period_start'])
+            ->groupBy('site_integration_id');
 
-        return [
-            'chips' => $latest->map(fn (Metric $metric): array => [
-                'label' => MetricLabel::for($metric->metric_key),
-                'value' => $this->formatMetric($metric),
-            ])->values()->all(),
-            'chart' => [
-                'label' => MetricLabel::for($headlineKey),
-                'labels' => $series->map(fn (Metric $metric): string => $metric->period_start->format('M Y'))->all(),
-                'data' => $series->map(fn (Metric $metric): float => round($metric->value, 2))->all(),
-            ],
-            'line' => $this->dailyLineFor($connection),
-        ];
+        $out = [];
+        foreach ($connections as $connection) {
+            /** @var Collection<int, Metric> $metrics */
+            $metrics = $rows->get($connection->id, collect());
+            if ($metrics->isEmpty()) {
+                continue;
+            }
+
+            $integration = $connection->integration();
+            $preferred = $integration?->headlineMetric() ?? $integration?->manifest()->category->defaultHeadlineMetric();
+
+            foreach ([$current, $previous] as $period) {
+                $inPeriod = $metrics->filter(fn (Metric $m): bool => $m->period_start->toDateString() === $period->start->toDateString());
+                if ($inPeriod->isEmpty()) {
+                    continue;
+                }
+
+                $metric = $preferred !== null ? $inPeriod->firstWhere('metric_key', $preferred) : null;
+                $metric ??= $inPeriod->sortByDesc('value')->first();
+
+                $out[$connection->id] = [
+                    'label' => MetricLabel::for($metric->metric_key),
+                    'value' => $this->formatMetric($metric),
+                    'period' => $period->start->format('M Y'),
+                ];
+                break;
+            }
+        }
+
+        return $out;
     }
 
     /**
-     * A daily line chart from the connection's most recent snapshot that carries
-     * a per-day timeseries (analytics visitors, uptime, Lighthouse score, search
-     * clicks, store revenue…), or null when the provider reports no daily data.
+     * The newest per-day series for each connection that has one: a sparkline
+     * (last 30 points) plus the full series for the expandable chart.
      *
-     * @return array{label: string, labels: array<int, string>, data: array<int, float>}|null
+     * @param  Collection<int, SiteIntegration>  $connections
+     * @return array<int, array{label: string, labels: array<int, string>, data: array<int, float>, spark: array<int, float>}>
      */
-    private function dailyLineFor(SiteIntegration $connection): ?array
+    private function trends(Collection $connections): array
     {
-        // One row, chosen in SQL: the newest snapshot that carries a series.
-        $snapshot = $connection->snapshots()
-            ->where('has_timeseries', true)
-            ->orderByDesc('period_start')
-            ->first();
-
-        if ($snapshot === null) {
-            return null;
+        if ($connections->isEmpty()) {
+            return [];
         }
 
-        /** @var array<int, array{date?: string, value?: int|float}> $series */
-        $series = $snapshot->payload['timeseries'];
+        // Pick the newest timeseries snapshot per connection without loading payloads…
+        $candidates = MetricSnapshot::query()
+            ->whereIn('site_integration_id', $connections->pluck('id')->all())
+            ->where('has_timeseries', true)
+            ->orderByDesc('period_start')
+            ->orderByDesc('id')
+            ->get(['id', 'site_integration_id', 'collector_key', 'period_start'])
+            ->unique('site_integration_id');
 
-        return [
-            'label' => $this->dailyLabel($snapshot->collector_key),
-            'labels' => array_map(fn (array $p): string => (string) ($p['date'] ?? ''), $series),
-            'data' => array_map(fn (array $p): float => round((float) ($p['value'] ?? 0), 2), $series),
-        ];
+        if ($candidates->isEmpty()) {
+            return [];
+        }
+
+        // …then load just those rows' payloads.
+        $snapshots = MetricSnapshot::query()->whereIn('id', $candidates->pluck('id')->all())->get();
+
+        $out = [];
+        foreach ($snapshots as $snapshot) {
+            /** @var array<int, array{date?: string, value?: int|float}> $series */
+            $series = $snapshot->payload['timeseries'] ?? [];
+            if (count($series) < 2) {
+                continue;
+            }
+
+            $data = array_map(fn (array $p): float => round((float) ($p['value'] ?? 0), 2), $series);
+
+            $out[$snapshot->site_integration_id] = [
+                'label' => $this->dailyLabel($snapshot->collector_key),
+                'labels' => array_map(fn (array $p): string => (string) ($p['date'] ?? ''), $series),
+                'data' => $data,
+                'spark' => array_slice($data, -self::SPARKLINE_POINTS),
+            ];
+        }
+
+        return $out;
     }
 
     /**
@@ -189,9 +212,13 @@ class SitePanel extends Component
 
     private function formatMetric(Metric $metric): string
     {
-        return match ($metric->unit) {
-            '%' => Format::percent($metric->value, 1),
-            'seconds' => Format::duration($metric->value),
+        $unit = (string) $metric->unit;
+
+        return match (true) {
+            $unit === '%' => Format::percent($metric->value, 2),
+            $unit === 'seconds' => Format::duration($metric->value),
+            $unit === 'ms' => Format::number($metric->value).' ms',
+            preg_match('/^[A-Z]{3}$/', $unit) === 1 => Format::money($metric->value, $unit),
             default => Format::number($metric->value),
         };
     }

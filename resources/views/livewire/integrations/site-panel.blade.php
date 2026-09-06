@@ -1,70 +1,73 @@
-<div>
-
-    {{-- Connected services --}}
-    @if ($connections->isNotEmpty())
-        <div class="mb-6 cr-card divide-y divide-line">
+<div {{ $polling ? 'wire:poll.10s' : '' }}>
+    @if ($connections->isEmpty())
+        <x-empty-state icon="plug" title="No integrations connected"
+                       description="Connect analytics, uptime and CMS services to start collecting data for this site.">
+            @can('manage-integrations')
+                <x-slot:action>
+                    <x-button variant="primary" icon="plus" x-on:click="$dispatch('open-add-integration')">Add integration</x-button>
+                </x-slot:action>
+            @endcan
+        </x-empty-state>
+    @else
+        <div class="cr-panel divide-y divide-line">
             @foreach ($connections as $connection)
-                @php $manifest = $connection->integration()?->manifest(); @endphp
-                <div wire:key="conn-{{ $connection->id }}" class="px-5 py-4">
-                    <div class="flex items-start justify-between gap-4">
-                        <div class="min-w-0">
-                            <div class="flex items-center gap-2">
-                                <span class="font-medium text-ink">{{ $connection->name }}</span>
-                                <x-badge :variant="$connection->status->badge()">{{ $connection->status->label() }}</x-badge>
-                                @if ($connection->usesWorkspace())
-                                    <span class="rounded-full bg-accent-soft px-2 py-0.5 text-2xs font-medium" style="color:var(--color-accent)">Workspace</span>
-                                @endif
-                            </div>
-                            <div class="mt-0.5 text-xs text-muted">
-                                {{ $manifest?->name ?? $connection->integration_key }}
-                                @if ($connection->last_collected_at)
-                                    · Last collected {{ $connection->last_collected_at->diffForHumans() }}
-                                @endif
-                            </div>
-                            @if ($connection->last_error)
-                                <p class="mt-2 rounded bg-danger-soft px-2 py-1 text-xs text-danger">{{ $connection->last_error }}</p>
-                            @endif
+                @php
+                    $manifest = $connection->integration()?->manifest();
+                    $state = $states[$connection->id];
+                    $headline = $headlines[$connection->id] ?? null;
+                    $trend = $trends[$connection->id] ?? null;
+                @endphp
+                <div wire:key="conn-{{ $connection->id }}" x-data="{ open: false }" class="px-5 py-3.5">
+                    <div class="flex items-center gap-4">
+                        <x-avatar :name="$manifest?->name ?? $connection->integration_key" size="lg" :icon="$manifest?->iconUrl()" aria-hidden="true" />
 
-                            @php $insight = $insights[$connection->id] ?? null; @endphp
-                            @if ($insight)
-                                <div class="mt-3">
-                                    <div class="flex flex-wrap gap-2">
-                                        @foreach ($insight['chips'] as $chip)
-                                            <div class="rounded-md bg-paper px-2.5 py-1.5">
-                                                <div class="text-2xs text-faint">{{ $chip['label'] }}</div>
-                                                <div class="tnum text-sm font-semibold text-ink">{{ $chip['value'] }}</div>
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                    @if (($insight['line'] ?? null) && count($insight['line']['data']) > 1)
-                                        <div class="mt-3 max-w-md" wire:ignore>
-                                            <p class="mb-1 text-2xs text-faint">{{ $insight['line']['label'] }}</p>
-                                            <div class="h-40" x-data="crLineChart(@js($insight['line']))">
-                                                <canvas x-ref="canvas"></canvas>
-                                            </div>
-                                        </div>
-                                    @endif
-                                    <div class="mt-3 max-w-md" wire:ignore>
-                                        <p class="mb-1 text-2xs text-faint">{{ $insight['chart']['label'] }} · by period</p>
-                                        <div class="h-40" x-data="crBarChart(@js($insight['chart']))">
-                                            <canvas x-ref="canvas"></canvas>
-                                        </div>
-                                    </div>
-                                </div>
+                        <div class="min-w-0 flex-1">
+                            <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                <span class="truncate text-md font-semibold text-ink">{{ $connection->name }}</span>
+                                <span class="text-xs text-faint">{{ $manifest?->name ?? $connection->integration_key }}</span>
+                                @if ($connection->usesWorkspace())
+                                    <x-badge variant="accent">Workspace</x-badge>
+                                @endif
+                            </div>
+                            <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                                <x-status-dot :variant="$state->variant" :label="$state->label" :class="$state->syncing ? 'animate-pulse' : ''" />
+                                <span class="text-xs text-faint">{{ $state->timing() }}</span>
+                            </div>
+                            @if ($state->detail)
+                                <p class="mt-1.5 text-xs" style="color:var(--color-{{ $state->variant }});">{{ $state->detail }}</p>
                             @endif
                         </div>
+
+                        @if ($headline || $trend)
+                            <button type="button" x-on:click="open = !open" x-bind:aria-expanded="open ? 'true' : 'false'"
+                                    class="hidden shrink-0 items-center gap-3 rounded-lg px-2 py-1 text-right transition hover:bg-paper sm:flex"
+                                    aria-label="{{ $trend ? 'Show the daily trend for '.$connection->name : 'Headline figure for '.$connection->name }}">
+                                @if ($headline)
+                                    <span>
+                                        <span class="tnum block text-md font-semibold text-ink">{{ $headline['value'] }}</span>
+                                        <span class="block text-2xs text-faint">{{ $headline['label'] }} · {{ $headline['period'] }}</span>
+                                    </span>
+                                @endif
+                                @if ($trend)
+                                    <x-sparkline :points="$trend['spark']" :label="$trend['label']" />
+                                @endif
+                            </button>
+                        @endif
+
                         @can('manage-integrations')
                             <div class="flex shrink-0 items-center gap-1">
-                                <x-button size="sm" variant="ghost" wire:click="collectNow({{ $connection->id }})" wire:loading.attr="disabled">
-                                    <span wire:loading.remove wire:target="collectNow({{ $connection->id }})">Collect now</span>
-                                    <span wire:loading wire:target="collectNow({{ $connection->id }})">Collecting…</span>
-                                </x-button>
                                 <x-dropdown>
                                     <x-slot:trigger>
                                         <button type="button" class="cr-btn-icon" aria-label="Actions for {{ $connection->name }}">
                                             <x-icon name="ellipsis-horizontal" class="h-4 w-4" />
                                         </button>
                                     </x-slot:trigger>
+                                    @if ($state->action === 'reconnect')
+                                        <x-dropdown-item :href="route('integrations.edit', $connection)" icon="key">Reconnect</x-dropdown-item>
+                                    @endif
+                                    <x-dropdown-item wire:click="collectNow({{ $connection->id }})" icon="arrow-path" :disabled="$state->syncing">
+                                        {{ $state->syncing ? 'Collecting…' : ($state->action === 'retry' ? 'Retry now' : 'Collect now') }}
+                                    </x-dropdown-item>
                                     <x-dropdown-item :href="route('integrations.edit', $connection)" icon="pencil-square">Manage</x-dropdown-item>
                                     <div class="cr-menu-separator"></div>
                                     <x-confirm-button role="menuitem" class="cr-menu-item cr-menu-item-danger"
@@ -78,39 +81,19 @@
                             </div>
                         @endcan
                     </div>
+
+                    @if ($trend)
+                        <div x-show="open" x-cloak class="mt-3 pl-[54px]">
+                            <div class="rounded-lg border border-line bg-paper/40 p-3" wire:ignore>
+                                <p class="mb-2 text-2xs font-semibold uppercase tracking-wide text-faint">{{ $trend['label'] }}</p>
+                                <div class="h-40" x-data="crLineChart(@js($trend))">
+                                    <canvas x-ref="canvas" role="img" aria-label="{{ $trend['label'] }}, {{ count($trend['data']) }} daily values from {{ $trend['labels'][0] }} to {{ end($trend['labels']) }}"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
                 </div>
             @endforeach
         </div>
-    @else
-        <x-empty-state class="mb-6" title="No integrations connected"
-                       description="Connect analytics, uptime and CMS services to start collecting data for this site." />
     @endif
-
-    {{-- Available services --}}
-    @can('manage-integrations')
-        <div class="cr-card px-5 py-4">
-            <h3 class="text-xs font-medium uppercase tracking-wide text-faint">Connect a service</h3>
-            @if ($available === [])
-                <p class="mt-3 text-sm text-muted">Every available service is already connected — here or once for the whole workspace.</p>
-            @endif
-            <div class="mt-3 space-y-4">
-                @foreach ($available as $category => $integrations)
-                    <div>
-                        <p class="mb-1.5 text-xs font-medium text-muted">{{ \App\Integrations\Support\IntegrationCategory::from($category)->label() }}</p>
-                        <div class="grid gap-2 sm:grid-cols-2">
-                            @foreach ($integrations as $integration)
-                                @php $m = $integration->manifest(); @endphp
-                                <a href="{{ route('sites.integrations.connect', ['site' => $site, 'key' => $m->key]) }}" wire:navigate
-                                   wire:key="avail-{{ $m->key }}"
-                                   class="flex items-center justify-between rounded-md border border-line px-3 py-2 text-sm hover:border-line-strong hover:bg-paper">
-                                    <span class="font-medium text-ink">{{ $m->name }}</span>
-                                    <span class="text-xs text-accent">Connect →</span>
-                                </a>
-                            @endforeach
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        </div>
-    @endcan
 </div>

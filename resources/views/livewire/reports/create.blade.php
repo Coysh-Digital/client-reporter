@@ -26,7 +26,7 @@
         </x-field>
 
         <div class="grid gap-4 sm:grid-cols-3">
-            <x-field label="Period" for="preset">
+            <x-field label="Period" for="preset" help="Choosing a period fills in the dates.">
                 <select wire:model.live="preset" id="preset" class="cr-input">
                     @foreach (\App\Support\DateRange::presets() as $key => $label)
                         <option value="{{ $key }}">{{ $label }}</option>

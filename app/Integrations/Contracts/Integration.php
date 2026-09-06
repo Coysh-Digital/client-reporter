@@ -181,6 +181,16 @@ abstract class Integration
         return null;
     }
 
+    /**
+     * The metric key that best summarises this integration at a glance (shown
+     * with a sparkline on the site page). Null falls back to the category's
+     * default, then to the largest value collected.
+     */
+    public function headlineMetric(): ?string
+    {
+        return null;
+    }
+
     public function key(): string
     {
         return $this->manifest()->key;

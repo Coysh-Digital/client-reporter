@@ -1,4 +1,4 @@
-<div>
+<div x-data="crUnsavedGuard()" x-on:input="touch()" x-on:change="touch()" x-on:saved.window="clean()">
     @php
         $scopeLabel = match ($scope) {
             'site' => 'Site branding · ' . $site->name,
@@ -22,7 +22,15 @@
         <link href="{{ $previewFontUrl }}" rel="stylesheet">
     @endif
 
+    @php $inherited = $scope === 'global' ? null : app(\App\Support\Branding\BrandingResolver::class)->global(); @endphp
     <x-page-header :title="$scopeLabel" :subtitle="$subtitle" />
+
+    @if ($inherited)
+        <x-alert variant="info" class="mb-6">
+            Blank fields inherit the agency branding{{ $inherited->agency_name ? ' for '.$inherited->agency_name : '' }}. Fill one in to override it for this {{ $scope }} only.
+            <x-slot:action><a href="{{ route('branding.edit') }}" wire:navigate class="font-medium underline">Edit agency branding</a></x-slot:action>
+        </x-alert>
+    @endif
 
 
     <form wire:submit="save" class="grid gap-6 lg:grid-cols-5">
@@ -30,12 +38,12 @@
         <div class="space-y-6 lg:col-span-3">
             <div class="cr-card px-6 py-5 space-y-4">
                 <h2 class="text-sm font-semibold text-ink">Identity</h2>
-                <x-field label="Agency name" for="agency_name">
+                <x-field label="Agency name" for="agency_name" :help="$inherited && $agency_name === '' ? 'Inherits “'.($inherited->agency_name ?: config('client-reporter.name')).'” from the agency branding.' : null">
                     <input wire:model.live.debounce.400ms="agency_name" id="agency_name" type="text" class="cr-input"
-                           placeholder="{{ $scope === 'global' ? config('client-reporter.name') : 'Inherit from agency' }}">
+                           placeholder="{{ $inherited ? ($inherited->agency_name ?: config('client-reporter.name')) : config('client-reporter.name') }}">
                 </x-field>
-                <x-field label="Tagline" for="tagline" optional>
-                    <input wire:model.live.debounce.400ms="tagline" id="tagline" type="text" class="cr-input">
+                <x-field label="Tagline" for="tagline" optional :help="$inherited && $tagline === '' && $inherited->tagline ? 'Inherits “'.$inherited->tagline.'”.' : null">
+                    <input wire:model.live.debounce.400ms="tagline" id="tagline" type="text" class="cr-input" placeholder="{{ $inherited?->tagline ?? '' }}">
                 </x-field>
 
                 <div class="grid gap-4 sm:grid-cols-2">
@@ -67,13 +75,13 @@
                     <x-field label="Primary colour" for="primary_color">
                         <div class="flex items-center gap-2">
                             <input wire:model.live="primary_color" id="primary_color-swatch" type="color" aria-label="Primary colour picker" class="h-9 w-12 rounded border border-line-strong">
-                            <input wire:model.live.debounce.400ms="primary_color" id="primary_color" type="text" class="cr-input" placeholder="#33406b">
+                            <input wire:model.live.debounce.400ms="primary_color" id="primary_color" type="text" class="cr-input" placeholder="{{ $inherited?->primary_color ?: '#33406b' }}">
                         </div>
                     </x-field>
                     <x-field label="Secondary colour" for="secondary_color">
                         <div class="flex items-center gap-2">
                             <input wire:model.live="secondary_color" id="secondary_color-swatch" type="color" aria-label="Secondary colour picker" class="h-9 w-12 rounded border border-line-strong">
-                            <input wire:model.live.debounce.400ms="secondary_color" id="secondary_color" type="text" class="cr-input" placeholder="#8a6a2c">
+                            <input wire:model.live.debounce.400ms="secondary_color" id="secondary_color" type="text" class="cr-input" placeholder="{{ $inherited?->secondary_color ?: '#8a6a2c' }}">
                         </div>
                     </x-field>
                 </div>
@@ -125,9 +133,9 @@
             <div class="sticky top-6">
                 <p class="cr-eyebrow mb-2">Report cover preview</p>
                 @php
-                    $primary = preg_match('/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $primary_color) ? $primary_color : '#33406b';
-                    $secondary = preg_match('/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $secondary_color) ? $secondary_color : '#8a6a2c';
-                    $displayName = $agency_name ?: ($scope === 'global' ? config('client-reporter.name') : ($client->name ?? config('client-reporter.name')));
+                    $primary = preg_match('/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $primary_color) ? $primary_color : ($inherited?->primary_color ?: '#33406b');
+                    $secondary = preg_match('/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $secondary_color) ? $secondary_color : ($inherited?->secondary_color ?: '#8a6a2c');
+                    $displayName = $agency_name ?: ($inherited?->agency_name ?: config('client-reporter.name'));
                     $logoPreview = $logo ? $logo->temporaryUrl() : $profile->logoUrl();
                     $headingFontPreview = $heading_font ?: "'Source Serif 4', Georgia, serif";
                     $isMinimal = $report_cover_style === 'minimal';

@@ -101,6 +101,15 @@ return [
             'expire' => 60,
             'throttle' => 60,
         ],
+
+        // Invitation links for newly created accounts: same flow as a reset,
+        // separate table, three-day lifetime.
+        'invites' => [
+            'provider' => 'users',
+            'table' => 'invite_tokens',
+            'expire' => 4320,
+            'throttle' => 60,
+        ],
     ],
 
     /*

@@ -82,6 +82,7 @@ class TwoFactorChallenge extends Component
         session()->forget(['auth.two_factor.pending_id', 'auth.two_factor.pending_at']);
 
         Auth::login($user, $remember);
+        $user->recordLogin();
         session()->regenerate();
 
         $audit->log('auth.login.success', $user, metadata: ['two_factor' => true]);

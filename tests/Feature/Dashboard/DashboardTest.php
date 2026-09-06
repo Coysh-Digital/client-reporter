@@ -46,6 +46,20 @@ class DashboardTest extends TestCase
         Livewire::actingAs($admin)->test(Dashboard::class)
             ->assertSet('period', 'this_month')
             ->call('setPeriod', 'last_30_days')
-            ->assertSet('period', 'last_30_days');
+            ->assertSet('period', 'last_30_days')
+            ->call('setPeriod', 'last_90_days')
+            ->assertSet('period', 'last_90_days')
+            ->call('setPeriod', 'nonsense')
+            ->assertSet('period', 'this_month');
+    }
+
+    public function test_the_period_is_read_from_the_url(): void
+    {
+        $admin = User::factory()->administrator()->create();
+
+        $this->actingAs($admin)->get('/dashboard?period=last_90_days')
+            ->assertOk()
+            ->assertSee('aria-pressed="true"', false)
+            ->assertSee('Last 90 days');
     }
 }

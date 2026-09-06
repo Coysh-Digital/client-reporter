@@ -76,6 +76,7 @@ class Login extends Component
         }
 
         Auth::login($user, $this->remember);
+        $user->recordLogin();
         session()->regenerate();
 
         $audit->log('auth.login.success', $user);

@@ -28,6 +28,7 @@
                     <x-th sort="name" :current="$this->currentSort()" :direction="$this->currentDirection()">Name</x-th>
                     <x-th sort="role" :current="$this->currentSort()" :direction="$this->currentDirection()">Role</x-th>
                     <x-th sort="status" :current="$this->currentSort()" :direction="$this->currentDirection()">Status</x-th>
+                    <x-th sort="last_login" :current="$this->currentSort()" :direction="$this->currentDirection()">Last sign-in</x-th>
                     <x-th><span class="sr-only">Actions</span></x-th>
                 </tr>
             </thead>
@@ -56,6 +57,7 @@
                                 <x-badge variant="danger">Inactive</x-badge>
                             @endif
                         </x-td>
+                        <x-td nowrap><span class="text-xs text-muted">{{ $user->last_login_at?->diffForHumans() ?? 'Never' }}</span></x-td>
                         <x-td align="right" nowrap>
                             <x-dropdown>
                                 <x-slot:trigger>

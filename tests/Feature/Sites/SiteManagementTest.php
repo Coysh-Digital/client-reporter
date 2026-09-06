@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Sites;
 
+use App\Enums\ConnectionStatus;
 use App\Livewire\Sites\Form;
 use App\Livewire\Sites\Show;
 use App\Models\Client;
+use App\Models\Report;
 use App\Models\Site;
+use App\Models\SiteIntegration;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -87,5 +90,34 @@ class SiteManagementTest extends TestCase
         $viewer = User::factory()->viewer()->create();
 
         $this->actingAs($viewer)->get('/sites/create')->assertForbidden();
+    }
+
+    public function test_the_site_page_shows_a_health_strip_and_links_to_every_report(): void
+    {
+        $manager = User::factory()->manager()->create();
+        $site = Site::factory()->create(['name' => 'Harbour Site']);
+        SiteIntegration::factory()->for($site)->create(['status' => ConnectionStatus::AuthExpired, 'last_error' => 'Token revoked']);
+        Report::factory()->count(7)->create(['site_id' => $site->id]);
+
+        $this->actingAs($manager)->get(route('sites.show', $site))
+            ->assertOk()
+            ->assertSee('<title>Harbour Site · Client Reporter</title>', false)
+            ->assertSee('Down')
+            ->assertSee('1 needs attention')
+            ->assertSee('Authentication expired')
+            ->assertSee('View all 7 reports')
+            ->assertSee(route('reports.index', ['site' => $site->id]), false)
+            ->assertSee('Add an integration');
+    }
+
+    public function test_a_viewer_sees_the_site_without_management_controls(): void
+    {
+        $viewer = User::factory()->viewer()->create();
+        $site = Site::factory()->create();
+
+        $this->actingAs($viewer)->get(route('sites.show', $site))
+            ->assertOk()
+            ->assertDontSee('Add integration')
+            ->assertDontSee('Danger zone');
     }
 }

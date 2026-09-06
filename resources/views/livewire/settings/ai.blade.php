@@ -1,4 +1,4 @@
-<div>
+<div x-data="crUnsavedGuard()" x-on:input="touch()" x-on:change="touch()" x-on:saved.window="clean()">
     <x-page-header title="AI summaries" subtitle="Optionally add AI-written summaries to your reports." eyebrow="Workspace">
         <x-slot:actions>
             <x-button wire:click="test">

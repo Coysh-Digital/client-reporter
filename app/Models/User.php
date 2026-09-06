@@ -23,6 +23,7 @@ use Laravel\Sanctum\HasApiTokens;
  * @property UserRole $role
  * @property int|null $client_id
  * @property bool $is_active
+ * @property Carbon|null $last_login_at
  * @property string|null $two_factor_secret
  * @property array<int, string>|null $two_factor_recovery_codes
  * @property Carbon|null $two_factor_confirmed_at
@@ -47,6 +48,7 @@ class User extends Authenticatable
             'two_factor_secret' => 'encrypted',
             'two_factor_recovery_codes' => 'encrypted:array',
             'two_factor_confirmed_at' => 'datetime',
+            'last_login_at' => 'datetime',
         ];
     }
 
@@ -67,6 +69,14 @@ class User extends Authenticatable
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);
+    }
+
+    /**
+     * Note a successful sign-in (shown to administrators on the users list).
+     */
+    public function recordLogin(): void
+    {
+        $this->forceFill(['last_login_at' => now()])->saveQuietly();
     }
 
     public function isAdministrator(): bool

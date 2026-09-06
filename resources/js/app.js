@@ -144,6 +144,37 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
+    // Unsaved-changes guard for settings-style forms: warns before the tab is
+    // closed or a wire:navigate link is followed while edits are pending. The
+    // component clears it by dispatching a `saved` browser event.
+    Alpine.data('crUnsavedGuard', () => ({
+        dirty: false,
+        init() {
+            this.onUnload = (event) => {
+                if (!this.dirty) return;
+                event.preventDefault();
+                event.returnValue = '';
+            };
+            this.onNavigate = (event) => {
+                if (this.dirty && !window.confirm('You have unsaved changes. Leave this page anyway?')) {
+                    event.preventDefault();
+                }
+            };
+            window.addEventListener('beforeunload', this.onUnload);
+            document.addEventListener('livewire:navigate', this.onNavigate);
+        },
+        destroy() {
+            window.removeEventListener('beforeunload', this.onUnload);
+            document.removeEventListener('livewire:navigate', this.onNavigate);
+        },
+        touch() {
+            this.dirty = true;
+        },
+        clean() {
+            this.dirty = false;
+        },
+    }));
+
     // Sidebar collapse, remembered per browser.
     Alpine.data('crShell', () => ({
         mobileNav: false,
@@ -174,41 +205,10 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
-    // A small Alpine wrapper around Chart.js for the per-integration mini
-    // charts on the site page. The canvas lives inside a wire:ignore block so
-    // Livewire never clobbers it; Alpine creates the chart on init and tears it
-    // down on destroy (including across wire:navigate visits).
-    Alpine.data('crBarChart', (config) => ({
-        chart: null,
-        init() {
-            this.chart = new Chart(this.$refs.canvas, {
-                type: 'bar',
-                data: {
-                    labels: config.labels,
-                    datasets: [{
-                        label: config.label,
-                        data: config.data,
-                        backgroundColor: accentColour(),
-                        borderRadius: 4,
-                        maxBarThickness: 48,
-                    }],
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, ticks: { precision: 0 } },
-                        x: { grid: { display: false } },
-                    },
-                },
-            });
-        },
-        destroy() {
-            this.chart?.destroy();
-        },
-    }));
-
+    // A small Alpine wrapper around Chart.js for the daily trend on the site
+    // page. The canvas lives inside a wire:ignore block so Livewire never
+    // clobbers it; Alpine creates the chart on init and tears it down on
+    // destroy (including across wire:navigate visits).
     Alpine.data('crLineChart', (config) => ({
         chart: null,
         init() {

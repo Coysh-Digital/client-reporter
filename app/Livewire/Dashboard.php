@@ -10,31 +10,34 @@ use App\Support\DateRange;
 use App\Support\UpdateChecker;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 #[Layout('components.layouts.app')]
 #[Title('Dashboard')]
 class Dashboard extends Component
 {
-    /** Selected dashboard period: this_month | last_30_days. */
+    public const PERIODS = ['this_month' => 'This month', 'last_30_days' => 'Last 30 days', 'last_90_days' => 'Last 90 days'];
+
+    /** Selected dashboard period; kept in the URL so a refresh or shared link lands on the same view. */
+    #[Url(keep: false)]
     public string $period = 'this_month';
 
     public function setPeriod(string $period): void
     {
-        $this->period = in_array($period, ['this_month', 'last_30_days'], true) ? $period : 'this_month';
+        $this->period = array_key_exists($period, self::PERIODS) ? $period : 'this_month';
     }
 
     public function render(DashboardData $dashboard, ActivityFeed $activity, UpdateChecker $updates): mixed
     {
         // "This month" compares against the calendar last month (the window the
-        // collector warms); a rolling 30-day view compares to the prior 30 days.
-        if ($this->period === 'last_30_days') {
-            $range = DateRange::last30Days();
-            $comparison = $range->previous();
-        } else {
-            $range = DateRange::thisMonth();
-            $comparison = DateRange::lastMonth();
-        }
+        // collector warms); rolling views compare to the prior window of the
+        // same length.
+        [$range, $comparison] = match ($this->period) {
+            'last_30_days' => [$r = DateRange::last30Days(), $r->previous()],
+            'last_90_days' => [$r = DateRange::last90Days(), $r->previous()],
+            default => [DateRange::thisMonth(), DateRange::lastMonth()],
+        };
 
         return view('livewire.dashboard', [
             'data' => $dashboard->build($range, $comparison),

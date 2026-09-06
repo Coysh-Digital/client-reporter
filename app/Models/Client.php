@@ -8,6 +8,7 @@ use Database\Factories\ClientFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 
@@ -52,6 +53,26 @@ class Client extends Model
     public function portalUsers(): HasMany
     {
         return $this->hasMany(User::class);
+    }
+
+    /**
+     * Every integration connection across this client's sites.
+     *
+     * @return HasManyThrough<SiteIntegration, Site, $this>
+     */
+    public function integrations(): HasManyThrough
+    {
+        return $this->hasManyThrough(SiteIntegration::class, Site::class);
+    }
+
+    /**
+     * Every report across this client's sites.
+     *
+     * @return HasManyThrough<Report, Site, $this>
+     */
+    public function reports(): HasManyThrough
+    {
+        return $this->hasManyThrough(Report::class, Site::class);
     }
 
     /**
