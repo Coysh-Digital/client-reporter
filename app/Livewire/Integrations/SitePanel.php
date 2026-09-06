@@ -53,7 +53,7 @@ class SitePanel extends Component
         // the Activity page.
         RunConnectorCollection::queueFor($connection, $range);
 
-        session()->flash('panel_status', 'Collection queued — running in the background. See Activity for progress.');
+        $this->dispatch('toast', message: 'Collection queued — running in the background. See Activity for progress.', type: 'ok');
     }
 
     public function disconnect(int $connectionId, AuditLogger $audit): void
@@ -64,7 +64,7 @@ class SitePanel extends Component
         $audit->log('integration.disconnected', $connection, metadata: ['integration' => $connection->integration_key]);
         $connection->delete();
 
-        session()->flash('panel_status', 'Service disconnected.');
+        $this->dispatch('toast', message: 'Service disconnected.', type: 'ok');
     }
 
     public function render(): mixed

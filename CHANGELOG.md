@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Reworked the shared design system: one set of Blade components (buttons, fields, checkboxes and switches, segmented controls, menus, dialogs, tables, tabs, breadcrumbs, alerts and toasts) now backs every admin screen, with visible keyboard focus everywhere, reduced-motion support and higher-contrast secondary text.
+- Replaced the browser's plain `confirm()` prompts with one styled confirmation dialog that names what is being deleted and what goes with it; row actions on lists moved into an accessible overflow menu.
+- Made every list searchable and sortable with the state kept in the URL: clients (status), sites (status, client, CMS), reports (status, client, site), users (role, now paginated) and templates (now paginated, showing how many scheduled sites use each one, with a Duplicate action).
+- Added a "Your profile" page for every account, including client portal users, to change name, email and password; the user menu in the sidebar links to it, to security settings and to sign out.
+- Improved the app shell: page titles in the browser tab, a skip link, labelled navigation landmarks, a collapsible sidebar that remembers its state, an Escape-closable mobile menu, and branded error pages.
+- Every form field now has a properly associated label, help text and error message; icon-only buttons carry accessible names; in-place actions confirm with a toast instead of a page banner.
+- Import sites gained select-all/none and a selected count; the connector connection code has a copy button; the report builder's section actions are labelled buttons with an overflow menu and autosave feedback.
 - Changed report generation to run in the background: the builder and report pages queue a job, show progress while it runs, and land on the finished report; a failure shows a retryable, safe error instead of a broken page. Scheduled reports are queued one job per site and a failed one is retried on the next run.
 - Made data collection resilient: collection jobs retry transient failures with backoff, are unique per connection and period (a backed-up queue no longer stacks duplicates), time out under the scheduler worker's window, and runs left "running" by a killed worker are closed automatically. Billing sync and favicon fetches are queued one job per item.
 - Added a shared HTTP client for every integration (timeouts, retries on connection errors and 5xx, an identifiable user-agent, consistent safe error messages). Google access tokens are now cached for their lifetime instead of being re-exchanged on every call.

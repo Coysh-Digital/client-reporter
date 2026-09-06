@@ -109,7 +109,7 @@ class InvoicePanel extends Component
         $invoice->fill($validated)->save();
 
         $this->cancel();
-        session()->flash('status', 'Invoice saved.');
+        $this->dispatch('toast', message: 'Invoice saved.', type: 'ok');
     }
 
     public function markPaid(int $invoiceId): void
@@ -124,7 +124,7 @@ class InvoicePanel extends Component
             'paid_at' => Carbon::today(),
         ]);
 
-        session()->flash('status', 'Invoice marked paid.');
+        $this->dispatch('toast', message: 'Invoice marked paid.', type: 'ok');
     }
 
     public function delete(int $invoiceId): void
@@ -136,7 +136,7 @@ class InvoicePanel extends Component
 
         $invoice->delete();
 
-        session()->flash('status', 'Invoice deleted.');
+        $this->dispatch('toast', message: 'Invoice deleted.', type: 'ok');
     }
 
     public function syncNow(BillingSyncer $syncer): void
@@ -150,9 +150,9 @@ class InvoicePanel extends Component
 
         try {
             $count = $syncer->syncOne($link);
-            session()->flash('status', "Synced {$count} invoice(s) from {$link->workspaceIntegration->name}.");
+            $this->dispatch('toast', message: "Synced {$count} invoice(s) from {$link->workspaceIntegration->name}.", type: 'ok');
         } catch (IntegrationException $e) {
-            session()->flash('status', 'Sync failed: '.$e->getMessage());
+            $this->dispatch('toast', message: 'Sync failed: '.$e->getMessage(), type: 'error');
         }
     }
 
@@ -162,7 +162,7 @@ class InvoicePanel extends Component
 
         $this->client->billingConnection?->delete();
 
-        session()->flash('status', 'Billing connection removed. Already-synced invoices were kept.');
+        $this->dispatch('toast', message: 'Billing connection removed. Already-synced invoices were kept.', type: 'ok');
     }
 
     public function render(): mixed

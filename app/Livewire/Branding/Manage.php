@@ -161,7 +161,7 @@ class Manage extends Component
         $this->favicon = null;
 
         $audit->log('branding.updated', $this->profile, metadata: ['scope' => $this->scope]);
-        session()->flash('status', 'Branding saved.');
+        $this->dispatch('toast', message: 'Branding saved.', type: 'ok');
     }
 
     public function removeLogo(): void

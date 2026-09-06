@@ -1,11 +1,11 @@
 <div>
     @if ($update['update_available'] ?? false)
-        <div class="mb-6 flex items-center justify-between rounded-lg bg-info-soft px-4 py-3 text-sm text-info">
-            <span>Client Reporter {{ $update['latest'] }} is available (you're on {{ $update['current'] }}).</span>
+        <x-alert variant="info" class="mb-6">
+            Client Reporter {{ $update['latest'] }} is available (you're on {{ $update['current'] }}).
             @if ($update['url'] ?? null)
-                <a href="{{ $update['url'] }}" target="_blank" rel="noopener" class="font-medium underline">Release notes &amp; upgrade</a>
+                <x-slot:action><a href="{{ $update['url'] }}" target="_blank" rel="noopener" class="font-medium underline">Release notes &amp; upgrade</a></x-slot:action>
             @endif
-        </div>
+        </x-alert>
     @endif
 
     @php
@@ -19,7 +19,7 @@
     {{-- Greeting --}}
     <div class="mb-7 flex flex-wrap items-end justify-between gap-4">
         <div>
-            <div class="text-[12.5px] font-semibold uppercase tracking-wide text-faint">{{ now()->isoFormat('dddd, D MMMM YYYY') }}</div>
+            <div class="text-xs font-semibold uppercase tracking-wide text-faint">{{ now()->isoFormat('dddd, D MMMM YYYY') }}</div>
             <h1 class="mt-1.5 font-serif text-3xl font-semibold tracking-tight text-ink">{{ $greeting }}, {{ auth()->user()->name }}</h1>
             <p class="mt-1.5 text-sm text-muted">
                 {{ $portfolio['sitesHealthy'] }} of {{ $portfolio['sitesTotal'] }} {{ Str::plural('site', $portfolio['sitesTotal']) }} healthy.
@@ -30,16 +30,7 @@
                 @endif
             </p>
         </div>
-        <div class="flex gap-0.5 rounded-lg border border-line bg-surface p-0.5">
-            @foreach (['this_month' => 'This month', 'last_30_days' => 'Last 30 days'] as $key => $label)
-                <button type="button" wire:click="setPeriod('{{ $key }}')"
-                        @class([
-                            'rounded-md px-3 py-1.5 text-[13px] font-medium transition',
-                            'bg-accent text-white' => $period === $key,
-                            'text-muted hover:text-ink' => $period !== $key,
-                        ])>{{ $label }}</button>
-            @endforeach
-        </div>
+        <x-segmented :options="['this_month' => 'This month', 'last_30_days' => 'Last 30 days']" :value="$period" action="setPeriod" variant="solid" label="Dashboard period" />
     </div>
 
     {{-- Portfolio metric row --}}
@@ -51,7 +42,7 @@
         <div class="border-b border-line px-5 py-4 lg:border-b-0 lg:border-r">
             <div class="cr-eyebrow">Clients</div>
             <div class="tnum mt-2 font-serif text-3xl font-semibold text-ink">{{ $portfolio['clients'] }}</div>
-            <div class="mt-1 text-[12.5px] text-faint">across {{ $portfolio['sitesTotal'] }} {{ Str::plural('website', $portfolio['sitesTotal']) }}</div>
+            <div class="mt-1 text-xs text-faint">across {{ $portfolio['sitesTotal'] }} {{ Str::plural('website', $portfolio['sitesTotal']) }}</div>
         </div>
         <div class="border-b border-line px-5 py-4 lg:border-b-0 lg:border-r">
             <div class="cr-eyebrow">Sites healthy</div>
@@ -66,44 +57,44 @@
             <div class="cr-eyebrow">Integrations</div>
             <div class="tnum mt-2 font-serif text-3xl font-semibold text-ink">{{ $portfolio['integrations'] }}</div>
             @if ($portfolio['integrationsNeedReconnect'] > 0)
-                <div class="mt-1 text-[12.5px]" style="color:var(--color-danger);">{{ $portfolio['integrationsNeedReconnect'] }} need reconnecting</div>
+                <div class="mt-1 text-xs" style="color:var(--color-danger);">{{ $portfolio['integrationsNeedReconnect'] }} need reconnecting</div>
             @else
-                <div class="mt-1 text-[12.5px] text-faint">All connected</div>
+                <div class="mt-1 text-xs text-faint">All connected</div>
             @endif
         </div>
         <div class="px-5 py-4">
             <div class="cr-eyebrow">Reports to send</div>
             <div class="tnum mt-2 font-serif text-3xl font-semibold text-ink">{{ $portfolio['reportsToPrepare'] }}</div>
             @if ($portfolio['sitesScheduled'] > 0)
-                <div class="mt-1 text-[12.5px] text-faint">{{ $portfolio['sitesScheduled'] }} {{ Str::plural('site', $portfolio['sitesScheduled']) }} on a schedule</div>
+                <div class="mt-1 text-xs text-faint">{{ $portfolio['sitesScheduled'] }} {{ Str::plural('site', $portfolio['sitesScheduled']) }} on a schedule</div>
             @else
-                <div class="mt-1 text-[12.5px] text-faint">No sites scheduled</div>
+                <div class="mt-1 text-xs text-faint">No sites scheduled</div>
             @endif
         </div>
     </div>
 
     {{-- Needs attention --}}
     @if ($needCount > 0)
-        <section class="mb-6 overflow-hidden rounded-xl border" style="border-color:#e7ddc9;background:#fdfbf7;">
-            <div class="flex items-center justify-between px-5 py-3.5" style="border-bottom:1px solid #efe6d3;">
+        <section class="cr-panel mb-6 border-warn/30" style="background:color-mix(in srgb, var(--color-warn-soft) 40%, var(--color-surface));">
+            <div class="cr-panel-header">
                 <div class="flex items-center gap-2.5">
-                    <span style="width:7px;height:7px;border-radius:999px;background:var(--color-warn);box-shadow:0 0 0 3px #f7efe1;"></span>
-                    <h2 class="text-[13px] font-bold uppercase tracking-wide" style="color:var(--color-secondary);">Needs attention</h2>
-                    <span class="tnum cr-badge" style="background:var(--color-warn-soft);color:var(--color-warn);">{{ $needCount }}</span>
+                    <span class="inline-flex h-2 w-2 rounded-full ring-4 ring-warn-soft" style="background:var(--color-warn);" aria-hidden="true"></span>
+                    <h2 class="cr-eyebrow" style="color:var(--color-secondary);">Needs attention</h2>
+                    <x-badge variant="warn" class="tnum">{{ $needCount }}</x-badge>
                 </div>
             </div>
-            <div>
+            <div class="divide-y divide-line">
                 @foreach ($needs as $item)
-                    <div class="flex items-center gap-3.5 px-5 py-3.5" @if (! $loop->last) style="border-bottom:1px solid #f2ede3;" @endif>
-                        <x-status-dot :variant="$item['variant']" />
+                    <div class="flex items-center gap-3.5 px-5 py-3.5">
+                        <x-status-dot :variant="$item['variant']" :label="ucfirst($item['variant'] === 'danger' ? 'urgent' : ($item['variant'] === 'warn' ? 'warning' : 'info'))" class="w-20 shrink-0" />
                         <div class="min-w-0 flex-1">
                             <div class="text-sm font-semibold text-ink">{{ $item['title'] }}</div>
-                            <div class="truncate text-[12.5px] text-faint">{{ $item['subtitle'] }}</div>
+                            <div class="truncate text-xs text-faint">{{ $item['subtitle'] }}</div>
                         </div>
                         @if ($item['when'])
                             <span class="hidden whitespace-nowrap text-xs text-faint sm:inline">{{ $item['when'] }}</span>
                         @endif
-                        <a href="{{ $item['actionUrl'] }}" wire:navigate class="whitespace-nowrap text-[12.5px] font-semibold" style="color:var(--color-accent);">{{ $item['actionLabel'] }} →</a>
+                        <a href="{{ $item['actionUrl'] }}" wire:navigate class="cr-link whitespace-nowrap text-xs">{{ $item['actionLabel'] }} →</a>
                     </div>
                 @endforeach
             </div>
@@ -123,7 +114,7 @@
                 <div>
                     @foreach ($data['reportsThisPeriod'] as $row)
                         <div class="flex items-center gap-3 px-5 py-3" @if (! $loop->last) style="border-bottom:1px solid var(--color-line);" @endif>
-                            <span class="flex-1 truncate text-[13.5px] font-semibold text-ink">{{ $row['client'] }}</span>
+                            <span class="flex-1 truncate text-sm font-semibold text-ink">{{ $row['client'] }}</span>
                             <x-status-dot :variant="$row['status']->badge()" :label="$row['status']->label()" />
                             <a href="{{ $row['actionUrl'] }}" wire:navigate class="text-xs font-semibold" style="color:var(--color-accent);">{{ $row['status']->actionLabel() }}</a>
                         </div>
@@ -143,10 +134,10 @@
                     @foreach ($data['notableChanges'] as $row)
                         <div class="flex items-center justify-between gap-3 px-5 py-3" @if (! $loop->last) style="border-bottom:1px solid var(--color-line);" @endif>
                             <span class="min-w-0">
-                                <span class="block truncate text-[13.5px] font-semibold text-ink">{{ $row['site'] }}</span>
+                                <span class="block truncate text-sm font-semibold text-ink">{{ $row['site'] }}</span>
                                 <span class="text-xs text-faint">{{ $row['metricLabel'] }}</span>
                             </span>
-                            <span class="tnum whitespace-nowrap text-[13.5px] font-bold" style="color:var(--color-{{ $row['variant'] }});">{{ $row['text'] }}</span>
+                            <span class="tnum whitespace-nowrap text-sm font-bold" style="color:var(--color-{{ $row['variant'] }});">{{ $row['text'] }}</span>
                         </div>
                     @endforeach
                 </div>
@@ -162,8 +153,8 @@
                 @foreach ($activity as $event)
                     <div class="flex items-center gap-3.5 py-2">
                         <span class="tnum w-24 shrink-0 text-xs text-faint">{{ $event['when']->diffForHumans(null, true) }} ago</span>
-                        <x-status-dot :variant="$event['variant']" />
-                        <span class="text-[13.5px]" style="color:#4b473f;">
+                        <x-status-dot :variant="$event['variant']" :label="$event['variant'] === 'danger' ? 'Failed' : ($event['variant'] === 'ok' ? 'OK' : 'Info')" class="w-16 shrink-0" />
+                        <span class="text-sm text-muted">
                             {{ $event['label'] }}
                             @if ($event['entity'])
                                 @if ($event['entityUrl'])

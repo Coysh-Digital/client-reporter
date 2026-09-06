@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Livewire\Reports;
 
+use App\Livewire\Concerns\SortsAndFilters;
+use App\Models\Client;
 use App\Models\Report;
+use App\Models\Site;
 use App\Support\AuditLogger;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Livewire\Attributes\Layout;
@@ -17,11 +20,52 @@ use Livewire\WithPagination;
 #[Title('Reports')]
 class Index extends Component
 {
+    use SortsAndFilters;
     use WithPagination;
 
     /** all | draft | final */
     #[Url]
     public string $status = 'all';
+
+    #[Url]
+    public ?int $site = null;
+
+    #[Url]
+    public ?int $client = null;
+
+    public function updatingSite(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingClient(): void
+    {
+        $this->resetPage();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function sortable(): array
+    {
+        return ['period' => 'range_start', 'title' => 'title', 'site' => 'site.name', 'status' => 'status', 'generated' => 'generated_at'];
+    }
+
+    /**
+     * @return array{0: string, 1: string}
+     */
+    protected function defaultSort(): array
+    {
+        return ['period', 'desc'];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function searchable(): array
+    {
+        return ['title', 'site.name'];
+    }
 
     public function setStatus(string $status): void
     {
@@ -43,15 +87,21 @@ class Index extends Component
      */
     public function reports(): LengthAwarePaginator
     {
-        return Report::query()
+        $query = Report::query()
             ->with('site.client')
             ->when($this->status !== 'all', fn ($query) => $query->where('status', $this->status))
-            ->latest()
-            ->paginate(15);
+            ->when($this->site !== null, fn ($query) => $query->where('site_id', $this->site))
+            ->when($this->client !== null, fn ($query) => $query->whereHas('site', fn ($s) => $s->where('client_id', $this->client)));
+
+        return $this->applySortAndSearch($query)->orderByDesc('id')->paginate(15);
     }
 
     public function render(): mixed
     {
-        return view('livewire.reports.index', ['reports' => $this->reports()]);
+        return view('livewire.reports.index', [
+            'reports' => $this->reports(),
+            'clients' => Client::query()->orderBy('name')->get(['id', 'name']),
+            'sites' => Site::query()->when($this->client !== null, fn ($q) => $q->where('client_id', $this->client))->orderBy('name')->get(['id', 'name']),
+        ]);
     }
 }

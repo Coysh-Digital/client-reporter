@@ -39,8 +39,9 @@ Route::middleware('guest')->group(function () {
 
 Route::post('/logout', LogoutController::class)->middleware('auth')->name('logout');
 
-// Each user manages their own two-factor setup, regardless of role.
+// Each user manages their own profile and two-factor setup, regardless of role.
 Route::middleware(['auth', 'active'])->group(function () {
+    Route::get('/settings/profile', Settings\Profile::class)->name('settings.profile');
     Route::get('/settings/two-factor', Settings\TwoFactor::class)->name('settings.two-factor');
 });
 

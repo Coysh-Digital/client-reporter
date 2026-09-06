@@ -1,19 +1,19 @@
 <div class="cr-card px-7 py-7">
     {{-- Step indicator --}}
-    <div class="mb-6 flex items-center gap-2 text-xs">
+    <ol class="mb-6 flex flex-wrap items-center gap-2 text-xs" aria-label="Installation steps">
         @foreach (['Requirements', 'Database', 'Administrator', 'Agency'] as $i => $label)
-            <div class="flex items-center gap-2">
+            <li class="flex items-center gap-2" @if ($step === $i + 1) aria-current="step" @endif>
                 <span @class([
                     'flex h-6 w-6 items-center justify-center rounded-full font-medium',
                     'bg-accent text-white' => $step === $i + 1,
                     'bg-ok-soft text-ok' => $step > $i + 1,
                     'bg-paper text-faint' => $step < $i + 1,
-                ])>{{ $step > $i + 1 ? '✓' : $i + 1 }}</span>
+                ]) aria-hidden="true">{{ $step > $i + 1 ? '✓' : $i + 1 }}</span>
                 <span class="{{ $step === $i + 1 ? 'text-ink' : 'text-faint' }}">{{ $label }}</span>
-                @if (! $loop->last) <span class="text-line-strong">—</span> @endif
-            </div>
+                @if (! $loop->last) <span class="text-line-strong" aria-hidden="true">—</span> @endif
+            </li>
         @endforeach
-    </div>
+    </ol>
 
     {{-- Step 1: Requirements --}}
     @if ($step === 1)
@@ -33,10 +33,10 @@
             @endforeach
         </ul>
         @unless ($this->requirementsMet())
-            <p class="mt-4 rounded bg-danger-soft px-3 py-2 text-sm text-danger">Please resolve the required items before continuing.</p>
+            <x-alert variant="danger" class="mt-4">Please resolve the required items before continuing.</x-alert>
         @endunless
         <div class="mt-6 flex justify-end">
-            <button wire:click="next" @disabled(! $this->requirementsMet()) class="cr-btn cr-btn-primary">Continue</button>
+            <x-button variant="primary" wire:click="next" :disabled="! $this->requirementsMet()">Continue</x-button>
         </div>
     @endif
 
@@ -45,33 +45,32 @@
         <h1 class="text-lg font-semibold text-ink">Database</h1>
         <p class="mt-1 text-sm text-muted">SQLite needs no setup and is perfect for smaller installs.</p>
         <div class="mt-4 space-y-4">
-            <div>
-                <label class="cr-label">Database type</label>
-                <select wire:model.live="db_connection" class="cr-input">
+            <x-field label="Database type" for="db_connection">
+                <select wire:model.live="db_connection" id="db_connection" class="cr-input">
                     <option value="sqlite">SQLite (recommended for shared hosting)</option>
                     <option value="mysql">MySQL / MariaDB</option>
                     <option value="pgsql">PostgreSQL</option>
                 </select>
-            </div>
+            </x-field>
             @if ($db_connection !== 'sqlite')
                 <div class="grid gap-3 sm:grid-cols-2">
-                    <div><label class="cr-label">Host</label><input wire:model="db_host" class="cr-input"></div>
-                    <div><label class="cr-label">Port</label><input wire:model="db_port" class="cr-input"></div>
-                    <div><label class="cr-label">Database</label><input wire:model="db_database" class="cr-input"></div>
-                    <div><label class="cr-label">Username</label><input wire:model="db_username" class="cr-input"></div>
-                    <div class="sm:col-span-2"><label class="cr-label">Password</label><input wire:model="db_password" type="password" class="cr-input"></div>
+                    <x-field label="Host" for="db_host"><input wire:model="db_host" id="db_host" class="cr-input"></x-field>
+                    <x-field label="Port" for="db_port"><input wire:model="db_port" id="db_port" inputmode="numeric" class="cr-input"></x-field>
+                    <x-field label="Database" for="db_database"><input wire:model="db_database" id="db_database" class="cr-input"></x-field>
+                    <x-field label="Username" for="db_username"><input wire:model="db_username" id="db_username" class="cr-input"></x-field>
+                    <x-field label="Password" for="db_password" class="sm:col-span-2"><input wire:model="db_password" id="db_password" type="password" autocomplete="off" class="cr-input"></x-field>
                 </div>
-                <button wire:click="testDatabase" class="cr-btn cr-btn-secondary">Test connection</button>
+                <x-button wire:click="testDatabase">Test connection</x-button>
                 @if ($dbTestResult === 'ok')
-                    <p class="rounded bg-ok-soft px-3 py-2 text-sm text-ok">Connected successfully.</p>
+                    <x-alert variant="ok">Connected successfully.</x-alert>
                 @elseif ($dbTestResult)
-                    <p class="rounded bg-danger-soft px-3 py-2 text-sm text-danger">{{ $dbTestResult }}</p>
+                    <x-alert variant="danger">{{ $dbTestResult }}</x-alert>
                 @endif
             @endif
         </div>
         <div class="mt-6 flex justify-between">
-            <button wire:click="back" class="cr-btn cr-btn-secondary">Back</button>
-            <button wire:click="next" class="cr-btn cr-btn-primary">Continue</button>
+            <x-button wire:click="back">Back</x-button>
+            <x-button variant="primary" wire:click="next">Continue</x-button>
         </div>
     @endif
 
@@ -79,16 +78,16 @@
     @if ($step === 3)
         <h1 class="text-lg font-semibold text-ink">Create your administrator</h1>
         <div class="mt-4 space-y-4">
-            <div><label class="cr-label">Name</label><input wire:model="admin_name" class="cr-input">@error('admin_name')<p class="mt-1 text-xs text-danger">{{ $message }}</p>@enderror</div>
-            <div><label class="cr-label">Email</label><input wire:model="admin_email" type="email" class="cr-input">@error('admin_email')<p class="mt-1 text-xs text-danger">{{ $message }}</p>@enderror</div>
+            <x-field label="Name" for="admin_name" required><input wire:model="admin_name" id="admin_name" autocomplete="name" class="cr-input"></x-field>
+            <x-field label="Email" for="admin_email" required><input wire:model="admin_email" id="admin_email" type="email" autocomplete="email" class="cr-input"></x-field>
             <div class="grid gap-3 sm:grid-cols-2">
-                <div><label class="cr-label">Password</label><input wire:model="admin_password" type="password" class="cr-input">@error('admin_password')<p class="mt-1 text-xs text-danger">{{ $message }}</p>@enderror</div>
-                <div><label class="cr-label">Confirm password</label><input wire:model="admin_password_confirmation" type="password" class="cr-input"></div>
+                <x-field label="Password" for="admin_password" required help="At least 12 characters with letters and numbers."><input wire:model="admin_password" id="admin_password" type="password" autocomplete="new-password" class="cr-input"></x-field>
+                <x-field label="Confirm password" for="admin_password_confirmation" required><input wire:model="admin_password_confirmation" id="admin_password_confirmation" type="password" autocomplete="new-password" class="cr-input"></x-field>
             </div>
         </div>
         <div class="mt-6 flex justify-between">
-            <button wire:click="back" class="cr-btn cr-btn-secondary">Back</button>
-            <button wire:click="next" class="cr-btn cr-btn-primary">Continue</button>
+            <x-button wire:click="back">Back</x-button>
+            <x-button variant="primary" wire:click="next">Continue</x-button>
         </div>
     @endif
 
@@ -97,32 +96,29 @@
         <h1 class="text-lg font-semibold text-ink">Your agency</h1>
         <p class="mt-1 text-sm text-muted">This is the default branding for client-facing reports. You can refine it later.</p>
         <div class="mt-4 space-y-4">
-            <div><label class="cr-label">Agency name</label><input wire:model="agency_name" class="cr-input">@error('agency_name')<p class="mt-1 text-xs text-danger">{{ $message }}</p>@enderror</div>
-            <div><label class="cr-label">Application URL</label><input wire:model="app_url" class="cr-input">@error('app_url')<p class="mt-1 text-xs text-danger">{{ $message }}</p>@enderror</div>
-            <div>
-                <label class="cr-label">Brand colour</label>
+            <x-field label="Agency name" for="agency_name" required><input wire:model="agency_name" id="agency_name" class="cr-input"></x-field>
+            <x-field label="Application URL" for="app_url" required help="The address people use to open Client Reporter, including https://."><input wire:model="app_url" id="app_url" type="url" class="cr-input"></x-field>
+            <x-field label="Brand colour" for="primary_color">
                 <div class="flex items-center gap-2">
-                    <input wire:model="primary_color" type="color" class="h-9 w-12 rounded border border-line-strong">
-                    <input wire:model="primary_color" type="text" class="cr-input max-w-[140px]">
+                    <input wire:model="primary_color" id="primary_color-swatch" type="color" aria-label="Brand colour picker" class="h-9 w-12 rounded border border-line-strong">
+                    <input wire:model="primary_color" id="primary_color" type="text" class="cr-input max-w-[140px]">
                 </div>
-                @error('primary_color')<p class="mt-1 text-xs text-danger">{{ $message }}</p>@enderror
-            </div>
+            </x-field>
         </div>
 
         @if ($envNotWritable)
-            <div class="mt-4 rounded bg-warn-soft px-3 py-3 text-sm text-warn">
-                <p class="font-medium">Your .env file isn't writable.</p>
-                <p class="mt-1">Add these lines to your <code>.env</code>, then run the install again:</p>
+            <x-alert variant="warn" title="Your .env file isn't writable." class="mt-4">
+                <p>Add these lines to your <code>.env</code>, then run the install again:</p>
                 <pre class="mt-2 overflow-x-auto rounded bg-white/60 p-2 text-xs text-ink">{{ $envNotWritable }}</pre>
-            </div>
+            </x-alert>
         @endif
 
         <div class="mt-6 flex justify-between">
-            <button wire:click="back" class="cr-btn cr-btn-secondary">Back</button>
-            <button wire:click="install" wire:loading.attr="disabled" class="cr-btn cr-btn-primary">
+            <x-button wire:click="back">Back</x-button>
+            <x-button variant="primary" wire:click="install" wire:loading.attr="disabled">
                 <span wire:loading.remove wire:target="install">Install Client Reporter</span>
                 <span wire:loading wire:target="install">Installing…</span>
-            </button>
+            </x-button>
         </div>
     @endif
 </div>

@@ -45,21 +45,21 @@ class Index extends Component
         // Only jobs still waiting: one a worker has reserved is mid-flight and
         // would be deleted from under it.
         DB::table('jobs')->whereNull('reserved_at')->delete();
-        session()->flash('status', 'Cleared the pending queue.');
+        $this->dispatch('toast', message: 'Cleared the pending queue.', type: 'ok');
     }
 
     public function clearFailedJobs(): void
     {
         $this->authorize('manage-integrations');
         DB::table('failed_jobs')->delete();
-        session()->flash('status', 'Cleared all failed jobs.');
+        $this->dispatch('toast', message: 'Cleared all failed jobs.', type: 'ok');
     }
 
     public function dismissFailedJob(string $uuid): void
     {
         $this->authorize('manage-integrations');
         DB::table('failed_jobs')->where('uuid', $uuid)->delete();
-        session()->flash('status', 'Failed job dismissed.');
+        $this->dispatch('toast', message: 'Failed job dismissed.', type: 'ok');
     }
 
     public function retryFailedJob(string $uuid): void
@@ -75,7 +75,7 @@ class Index extends Component
         // queue:retry re-dispatches the stored job onto its original connection,
         // then removes it from failed_jobs — the only correct way to retry.
         Artisan::call('queue:retry', ['id' => [$uuid]]);
-        session()->flash('status', 'Job re-queued for another attempt.');
+        $this->dispatch('toast', message: 'Job re-queued for another attempt.', type: 'ok');
     }
 
     public function render(): mixed

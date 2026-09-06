@@ -59,7 +59,7 @@ class Manage extends Component
 
         $audit->log('settings.updated');
 
-        session()->flash('status', 'Settings saved.');
+        $this->dispatch('toast', message: 'Settings saved.', type: 'ok');
     }
 
     public function render(UpdateChecker $updates): mixed

@@ -1,7 +1,4 @@
 <div>
-    @if (session('status'))
-        <div class="mb-4 rounded-md bg-ok-soft px-3 py-2 text-sm text-ok">{{ session('status') }}</div>
-    @endif
 
     <x-page-header :title="$client->name" :subtitle="$client->company ?: null">
         <x-slot:actions>

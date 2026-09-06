@@ -1,9 +1,6 @@
 <div>
     <x-page-header title="Two-factor authentication" subtitle="Protect your account with a second step at sign-in." eyebrow="Security" />
 
-    @if (session('status'))
-        <div class="mb-4 rounded-md bg-ok-soft px-3 py-2 text-sm text-ok">{{ session('status') }}</div>
-    @endif
 
     {{-- Freshly issued recovery codes: shown once. --}}
     @if (! empty($recoveryCodes))
@@ -37,7 +34,7 @@
                     <label class="cr-label">Setup key</label>
                     <input type="text" readonly value="{{ $secret }}" onfocus="this.select()"
                            class="cr-input font-mono tracking-widest">
-                    <p class="mt-1 text-[11px] text-faint">Enter this manually if you can’t scan the code.</p>
+                    <p class="mt-1 text-2xs text-faint">Enter this manually if you can’t scan the code.</p>
                 </div>
 
                 <form wire:submit="confirm" class="mt-4 max-w-md space-y-3">

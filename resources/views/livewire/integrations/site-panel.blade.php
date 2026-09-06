@@ -1,7 +1,4 @@
 <div>
-    @if (session('panel_status'))
-        <div class="mb-4 rounded-md bg-ok-soft px-3 py-2 text-sm text-ok">{{ session('panel_status') }}</div>
-    @endif
 
     {{-- Connected services --}}
     @if ($connections->isNotEmpty())
@@ -15,7 +12,7 @@
                                 <span class="font-medium text-ink">{{ $connection->name }}</span>
                                 <x-badge :variant="$connection->status->badge()">{{ $connection->status->label() }}</x-badge>
                                 @if ($connection->usesWorkspace())
-                                    <span class="rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-medium" style="color:var(--color-accent)">Workspace</span>
+                                    <span class="rounded-full bg-accent-soft px-2 py-0.5 text-2xs font-medium" style="color:var(--color-accent)">Workspace</span>
                                 @endif
                             </div>
                             <div class="mt-0.5 text-xs text-muted">
@@ -34,21 +31,21 @@
                                     <div class="flex flex-wrap gap-2">
                                         @foreach ($insight['chips'] as $chip)
                                             <div class="rounded-md bg-paper px-2.5 py-1.5">
-                                                <div class="text-[11px] text-faint">{{ $chip['label'] }}</div>
+                                                <div class="text-2xs text-faint">{{ $chip['label'] }}</div>
                                                 <div class="tnum text-sm font-semibold text-ink">{{ $chip['value'] }}</div>
                                             </div>
                                         @endforeach
                                     </div>
                                     @if (($insight['line'] ?? null) && count($insight['line']['data']) > 1)
                                         <div class="mt-3 max-w-md" wire:ignore>
-                                            <p class="mb-1 text-[11px] text-faint">{{ $insight['line']['label'] }}</p>
+                                            <p class="mb-1 text-2xs text-faint">{{ $insight['line']['label'] }}</p>
                                             <div class="h-40" x-data="crLineChart(@js($insight['line']))">
                                                 <canvas x-ref="canvas"></canvas>
                                             </div>
                                         </div>
                                     @endif
                                     <div class="mt-3 max-w-md" wire:ignore>
-                                        <p class="mb-1 text-[11px] text-faint">{{ $insight['chart']['label'] }} · by period</p>
+                                        <p class="mb-1 text-2xs text-faint">{{ $insight['chart']['label'] }} · by period</p>
                                         <div class="h-40" x-data="crBarChart(@js($insight['chart']))">
                                             <canvas x-ref="canvas"></canvas>
                                         </div>
@@ -57,15 +54,27 @@
                             @endif
                         </div>
                         @can('manage-integrations')
-                            <div class="flex shrink-0 items-center gap-3 text-sm">
-                                <button wire:click="collectNow({{ $connection->id }})" wire:loading.attr="disabled" class="text-muted hover:text-ink">
+                            <div class="flex shrink-0 items-center gap-1">
+                                <x-button size="sm" variant="ghost" wire:click="collectNow({{ $connection->id }})" wire:loading.attr="disabled">
                                     <span wire:loading.remove wire:target="collectNow({{ $connection->id }})">Collect now</span>
                                     <span wire:loading wire:target="collectNow({{ $connection->id }})">Collecting…</span>
-                                </button>
-                                <a href="{{ route('integrations.edit', $connection) }}" wire:navigate class="text-muted hover:text-ink">Manage</a>
-                                <button wire:click="disconnect({{ $connection->id }})"
-                                        wire:confirm="Disconnect {{ $connection->name }}? Collected data will be removed."
-                                        class="text-danger hover:underline">Disconnect</button>
+                                </x-button>
+                                <x-dropdown>
+                                    <x-slot:trigger>
+                                        <button type="button" class="cr-btn-icon" aria-label="Actions for {{ $connection->name }}">
+                                            <x-icon name="ellipsis-horizontal" class="h-4 w-4" />
+                                        </button>
+                                    </x-slot:trigger>
+                                    <x-dropdown-item :href="route('integrations.edit', $connection)" icon="pencil-square">Manage</x-dropdown-item>
+                                    <div class="cr-menu-separator"></div>
+                                    <x-confirm-button role="menuitem" class="cr-menu-item cr-menu-item-danger"
+                                        action="disconnect({{ $connection->id }})"
+                                        title="Disconnect {{ $connection->name }}?"
+                                        message="Data collected from this connection is removed. Reports already generated keep their snapshots."
+                                        confirm="Disconnect" :danger="true">
+                                        <x-icon name="x-circle" class="h-3.5 w-3.5 shrink-0" /> Disconnect
+                                    </x-confirm-button>
+                                </x-dropdown>
                             </div>
                         @endcan
                     </div>

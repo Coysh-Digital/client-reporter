@@ -38,7 +38,7 @@
     <button type="button" @click="open = !open"
             class="cr-input flex items-center justify-between text-left">
         <span x-text="selected || 'Choose a Google Font…'" :class="selected ? 'text-ink' : 'text-faint'"></span>
-        <span class="text-[10px] text-faint">▾</span>
+        <span class="text-2xs text-faint">▾</span>
     </button>
 
     <div x-show="open" x-cloak @click.outside="open = false"
@@ -53,7 +53,7 @@
                         class="flex w-full items-center justify-between gap-3 px-3 py-1.5 text-left text-sm hover:bg-paper"
                         :class="f.family === selected ? 'bg-accent-soft' : ''">
                     <span x-text="f.family" class="text-ink"></span>
-                    <span class="text-[11px] text-faint" x-text="f.category"></span>
+                    <span class="text-2xs text-faint" x-text="f.category"></span>
                 </button>
             </template>
             <p x-show="filtered().length === 0" class="px-3 py-4 text-center text-xs text-faint">No fonts match.</p>
