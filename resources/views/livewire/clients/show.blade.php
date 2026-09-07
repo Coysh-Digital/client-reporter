@@ -74,9 +74,9 @@
                             <tr>
                                 <x-th>Site</x-th>
                                 <x-th>Health</x-th>
-                                <x-th>Integrations</x-th>
-                                <x-th>Latest report</x-th>
-                                <x-th>Schedule</x-th>
+                                <x-th class="hidden sm:table-cell">Integrations</x-th>
+                                <x-th class="hidden sm:table-cell">Latest report</x-th>
+                                <x-th class="hidden sm:table-cell">Schedule</x-th>
                             </tr>
                         </thead>
                         <tbody>
@@ -101,13 +101,13 @@
                                             <x-status-dot variant="ok" label="Healthy" />
                                         @endif
                                     </x-td>
-                                    <x-td nowrap>
+                                    <x-td nowrap class="hidden sm:table-cell">
                                         <span class="tnum text-muted">{{ $row['connectedIntegrations'] }}</span>
                                         @if ($row['troubledIntegrations'] > 0)
                                             <span class="ml-1 text-xs" style="color:var(--color-danger);">{{ $row['troubledIntegrations'] }} {{ $row['troubledIntegrations'] === 1 ? 'needs' : 'need' }} attention</span>
                                         @endif
                                     </x-td>
-                                    <x-td nowrap>
+                                    <x-td nowrap class="hidden sm:table-cell">
                                         @if ($row['latestReport'])
                                             <a href="{{ $row['latestReport']['url'] }}" wire:navigate class="inline-flex items-center gap-2 text-muted hover:text-ink">
                                                 <span class="text-xs">{{ $row['latestReport']['period'] }}</span>
@@ -117,7 +117,7 @@
                                             <span class="text-xs text-faint">None yet</span>
                                         @endif
                                     </x-td>
-                                    <x-td nowrap>
+                                    <x-td nowrap class="hidden sm:table-cell">
                                         <span class="text-xs text-muted">{{ $row['scheduled'] ?? 'Manual' }}</span>
                                         @if (! empty($row['nextReport']))
                                             <span class="block text-xs text-faint">Next {{ $row['nextReport']->format('j M') }}</span>

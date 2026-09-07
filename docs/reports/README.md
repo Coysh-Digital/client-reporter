@@ -68,7 +68,7 @@ Most data blocks give you options in the builder (the analytics summary, for ins
 3. **The builder** (`/reports/{report}/edit`) is a drag-and-drop editor. Here you can:
    - Add sections from the grouped "add block" menu. **Only blocks whose data source is live for the Site show up** — you won't see Craft blocks on a WordPress-only site, and the store block only appears when the Site has an ecommerce source. Blocks that need an integration you don't have get flagged with a requirement warning.
    - Reorder blocks by dragging them around.
-   - Edit each block's heading and write per-section **commentary** in your own voice.
+   - Edit each block's heading and write per-section **commentary** in your own voice. Commentary and headings support **merge tags** — `{{ client }}`, `{{ contact }}`, `{{ site }}`, `{{ period }}` and `{{ agency }}` — which fill in the real values when the report is generated (and in the live preview), so a template's "Hi {{ client }}," reads the client's name in every report. Anything that isn't a known tag is left as written.
    - Tweak per-block options, hide a block without deleting it, or remove it.
    - Change the report settings (title, range, comparison, intro) whenever you want.
 4. **Live preview.** The builder shows a live preview that resolves real block data for the current period (and comparison), so you're looking at the actual report as you edit it.
