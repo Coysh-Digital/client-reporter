@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
+use App\Enums\DeliveryTrigger;
 use App\Enums\GenerationStatus;
 use App\Models\Report;
 use App\Models\User;
 use App\Reporting\ReportGenerator;
+use App\Reporting\ReportSender;
 use App\Support\AuditLogger;
 use App\Support\SafeError;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -64,7 +66,7 @@ class GenerateReport implements ShouldBeUnique, ShouldQueue
         self::dispatch($report, $actor?->id);
     }
 
-    public function handle(ReportGenerator $generator, AuditLogger $audit): void
+    public function handle(ReportGenerator $generator, AuditLogger $audit, ReportSender $sender): void
     {
         $report = $this->report->fresh(['blocks']);
 
@@ -83,6 +85,42 @@ class GenerateReport implements ShouldBeUnique, ShouldQueue
 
         $actor = $this->userId !== null ? User::query()->whereKey($this->userId)->first() : null;
         $audit->log('report.generated', $report, $actor, metadata: ['scheduled' => $report->scheduled]);
+
+        $this->autoSend($report, $sender);
+    }
+
+    /**
+     * Email a freshly generated scheduled report to the client when the site
+     * has auto-send on. Generation has already succeeded by this point, so a
+     * delivery failure is recorded (by the sender) but never fails the job, and
+     * a report that has already been sent is never sent again on regeneration.
+     */
+    private function autoSend(Report $report, ReportSender $sender): void
+    {
+        $report->loadMissing('site.client');
+
+        if (! $report->scheduled || ! $report->site->auto_send) {
+            return;
+        }
+
+        if ($report->deliveries()->where('succeeded', true)->exists()) {
+            return;
+        }
+
+        $recipient = (string) ($report->site->client->contact_email ?? '');
+
+        if ($recipient === '') {
+            $sender->recordSkipped($report, 'The client has no contact email set, so the report was not sent automatically.', DeliveryTrigger::Auto);
+
+            return;
+        }
+
+        try {
+            $sender->send($report, $recipient, null, attachPdf: true, trigger: DeliveryTrigger::Auto);
+        } catch (Throwable $e) {
+            // The failed delivery is already recorded by the sender.
+            report($e);
+        }
     }
 
     public function failed(?Throwable $e): void

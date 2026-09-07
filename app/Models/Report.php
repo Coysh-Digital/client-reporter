@@ -101,6 +101,14 @@ class Report extends Model
     }
 
     /**
+     * @return HasMany<ReportDelivery, $this>
+     */
+    public function deliveries(): HasMany
+    {
+        return $this->hasMany(ReportDelivery::class);
+    }
+
+    /**
      * @return HasOne<ReportRender, $this>
      */
     public function latestRender(): HasOne

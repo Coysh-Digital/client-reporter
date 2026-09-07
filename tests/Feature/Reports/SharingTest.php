@@ -121,6 +121,12 @@ class SharingTest extends TestCase
             ->assertHasNoErrors();
 
         Mail::assertSent(ReportMail::class, fn (ReportMail $mail) => $mail->hasTo('client@acme.test'));
+        $this->assertDatabaseHas('report_deliveries', [
+            'report_id' => $report->id,
+            'recipient' => 'client@acme.test',
+            'trigger' => 'manual',
+            'succeeded' => true,
+        ]);
     }
 
     public function test_a_share_password_must_be_at_least_ten_characters(): void

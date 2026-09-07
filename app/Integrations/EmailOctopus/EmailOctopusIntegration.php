@@ -36,14 +36,14 @@ class EmailOctopusIntegration extends Integration
     {
         return [
             ConfigField::apiKey(
-                help: 'An API key from EmailOctopus → Account settings → API keys. Generate a new (non-legacy) key if yours predates API v2.'
+                help: 'From EmailOctopus → Account → Integrations & API → API keys. Generate a new (non-legacy) key if yours predates API v2.'
             ),
             new ConfigField(
                 key: 'list_id',
                 label: 'List ID',
                 required: true,
                 secret: false,
-                help: 'The ID of the list to report on — a UUID like 00000000-0000-0000-0000-000000000000, shown in the list\'s page URL.',
+                help: 'Found under Contacts: open the list you want to report on and copy the ID from the page\'s web address — a UUID like 00000000-0000-0000-0000-000000000000.',
                 placeholder: '00000000-0000-0000-0000-000000000000',
                 scope: 'site',
             ),
@@ -56,8 +56,8 @@ class EmailOctopusIntegration extends Integration
     public function setupSteps(): array
     {
         return [
-            'In EmailOctopus, open <strong>Account settings</strong> → <strong>API keys</strong> and create a key (generate a new one if yours is labelled "legacy").',
-            'Open the <strong>list</strong> you want to report on and copy its <strong>ID</strong> from the page URL.',
+            'In EmailOctopus, open <strong>Account → Integrations &amp; API</strong>, then <strong>API keys</strong>, and create a key (generate a new one if yours is labelled "legacy").',
+            'Under <strong>Contacts</strong>, open the list you want to report on and copy its <strong>ID</strong> from the page\'s web address.',
             'Paste both below.',
             'Press <strong>Connect &amp; verify</strong>.',
         ];
