@@ -14,7 +14,7 @@ namespace App\Support;
 class ReportIcons
 {
     /** @var array<int, string> */
-    public const KEYS = ['chart', 'cart', 'search', 'pulse', 'wrench', 'receipt', 'globe', 'document', 'download'];
+    public const KEYS = ['chart', 'cart', 'search', 'pulse', 'wrench', 'receipt', 'globe', 'document', 'download', 'envelope'];
 
     /**
      * Inner SVG for each icon, on a 24×24 canvas. Every shape is stroked with
@@ -32,6 +32,7 @@ class ReportIcons
         'wrench' => '<path d="M20 12a8 8 0 0 1-13.66 5.66L4 15.5"/><path d="M4 20v-4.5h4.5"/><path d="M4 12A8 8 0 0 1 17.66 6.34L20 8.5"/><path d="M20 4v4.5h-4.5"/>',
         'receipt' => '<path d="M6.5 3.5h11v17l-1.8-1.3-1.8 1.3-1.9-1.3-1.8 1.3-1.9-1.3-1.8 1.3z"/><path d="M9.5 8.5h5"/><path d="M9.5 12h5"/>',
         'download' => '<path d="M12 4v10.5"/><path d="M8 11l4 4 4-4"/><path d="M5 20h14"/>',
+        'envelope' => '<rect x="3.5" y="5.5" width="17" height="13" rx="1.5"/><path d="M4.5 7.5 12 13l7.5-5.5"/>',
     ];
 
     /**

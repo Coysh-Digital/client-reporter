@@ -6,6 +6,7 @@ namespace App\Integrations\EmailOctopus;
 
 use App\Integrations\Support\AbstractHttpClient;
 use App\Support\DateRange;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 
@@ -65,6 +66,58 @@ class EmailOctopusClient extends AbstractHttpClient
         }
 
         return $count;
+    }
+
+    /** Never look at more than this many recent campaigns for a report. */
+    private const MAX_CAMPAIGNS = 10;
+
+    /**
+     * The campaigns sent within the period, each with its performance summary,
+     * most recent first. EmailOctopus has no date filter on /campaigns, so a
+     * page is fetched and filtered by sent_at, then a summary is pulled per
+     * campaign (bounded by MAX_CAMPAIGNS).
+     *
+     * @return array<int, array{name: string, sent_at: string, recipients: int, opens: int, clicks: int, open_rate: float, click_rate: float, unsubscribed: int}>
+     */
+    public function campaigns(DateRange $range): array
+    {
+        $body = $this->request('/campaigns', ['limit' => 100]);
+
+        $sent = [];
+        foreach ($body['data'] ?? [] as $campaign) {
+            $sentAt = $campaign['sent_at'] ?? null;
+            if (($campaign['status'] ?? '') !== 'sent' || ! is_string($sentAt) || $sentAt === '') {
+                continue;
+            }
+            if (! $range->contains(CarbonImmutable::parse($sentAt))) {
+                continue;
+            }
+            $sent[] = [
+                'id' => (string) ($campaign['id'] ?? ''),
+                'name' => (string) ($campaign['name'] ?? $campaign['subject'] ?? 'Campaign'),
+                'sent_at' => $sentAt,
+            ];
+        }
+
+        usort($sent, fn (array $a, array $b): int => strcmp($b['sent_at'], $a['sent_at']));
+
+        return array_map(function (array $campaign): array {
+            $summary = $this->request("/campaigns/{$campaign['id']}/reports/summary");
+            $recipients = (int) ($summary['sent'] ?? 0);
+            $opens = (int) ($summary['opened']['unique'] ?? 0);
+            $clicks = (int) ($summary['clicked']['unique'] ?? 0);
+
+            return [
+                'name' => $campaign['name'],
+                'sent_at' => $campaign['sent_at'],
+                'recipients' => $recipients,
+                'opens' => $opens,
+                'clicks' => $clicks,
+                'open_rate' => $recipients > 0 ? round($opens / $recipients * 100, 1) : 0.0,
+                'click_rate' => $recipients > 0 ? round($clicks / $recipients * 100, 1) : 0.0,
+                'unsubscribed' => (int) ($summary['unsubscribed'] ?? 0),
+            ];
+        }, array_slice($sent, 0, self::MAX_CAMPAIGNS));
     }
 
     /**

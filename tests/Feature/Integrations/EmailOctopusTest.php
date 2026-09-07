@@ -102,6 +102,42 @@ class EmailOctopusTest extends TestCase
         });
     }
 
+    public function test_collector_reports_campaign_performance(): void
+    {
+        Http::fake([
+            'api.emailoctopus.com/campaigns/camp-1/reports/summary' => Http::response([
+                'sent' => 1000,
+                'opened' => ['unique' => 400],
+                'clicked' => ['unique' => 50],
+                'unsubscribed' => 5,
+            ]),
+            'api.emailoctopus.com/campaigns*' => Http::response([
+                'data' => [
+                    ['id' => 'camp-1', 'status' => 'sent', 'name' => 'Summer sale', 'sent_at' => '2026-08-15T10:00:00+00:00'],
+                    ['id' => 'camp-old', 'status' => 'sent', 'name' => 'Old news', 'sent_at' => '2026-06-01T10:00:00+00:00'],
+                    ['id' => 'camp-draft', 'status' => 'draft', 'name' => 'Draft', 'sent_at' => null],
+                ],
+                'paging' => ['next' => null],
+            ]),
+            'api.emailoctopus.com/lists/list-123/contacts*' => Http::response(['data' => [], 'paging' => ['next' => null]]),
+            'api.emailoctopus.com/lists/list-123' => Http::response(['name' => 'News', 'counts' => ['subscribed' => 3000]]),
+        ]);
+
+        $result = (new SummaryCollector)->collect($this->connection(), new DateRange('2026-08-01', '2026-08-31'));
+
+        $metrics = collect($result->metrics())->keyBy('key');
+        $this->assertSame(1, (int) $metrics['email.campaigns_sent']->value, 'only the in-period sent campaign counts');
+        $this->assertSame(1000, (int) $metrics['email.recipients']->value);
+        $this->assertSame(40.0, (float) $metrics['email.open_rate']->value);
+        $this->assertSame(5.0, (float) $metrics['email.click_rate']->value);
+        $this->assertSame(5, (int) $metrics['email.unsubscribed']->value);
+
+        $campaigns = $result->snapshotPayload()['campaigns'];
+        $this->assertCount(1, $campaigns);
+        $this->assertSame('Summer sale', $campaigns[0]['name']);
+        $this->assertSame(40.0, $campaigns[0]['open_rate']);
+    }
+
     public function test_a_rejected_request_surfaces_the_api_error_detail(): void
     {
         Http::fake([

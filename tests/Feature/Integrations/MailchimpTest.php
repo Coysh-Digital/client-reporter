@@ -76,6 +76,33 @@ class MailchimpTest extends TestCase
         $this->assertSame(500, (int) $metrics['leads.total']->value);
     }
 
+    public function test_collector_reports_campaign_performance(): void
+    {
+        Http::fake([
+            'us21.api.mailchimp.com/3.0/lists/abc123' => Http::response(['name' => 'Newsletter', 'stats' => ['member_count' => 500]]),
+            'us21.api.mailchimp.com/3.0/lists/abc123/growth-history*' => Http::response(['history' => []]),
+            'us21.api.mailchimp.com/3.0/campaigns*' => Http::response(['campaigns' => [
+                [
+                    'settings' => ['title' => 'August news', 'subject_line' => 'Hi'],
+                    'send_time' => '2026-08-10T09:00:00+00:00',
+                    'emails_sent' => 800,
+                    'report_summary' => ['unique_opens' => 320, 'subscriber_clicks' => 40, 'open_rate' => 0.4, 'click_rate' => 0.05],
+                ],
+            ]]),
+        ]);
+
+        $result = (new SummaryCollector)->collect($this->connection(), new DateRange('2026-08-01', '2026-08-31'));
+
+        $metrics = collect($result->metrics())->keyBy('key');
+        $this->assertSame(1, (int) $metrics['email.campaigns_sent']->value);
+        $this->assertSame(40.0, (float) $metrics['email.open_rate']->value);
+        $this->assertSame(5.0, (float) $metrics['email.click_rate']->value);
+
+        $campaigns = $result->snapshotPayload()['campaigns'];
+        $this->assertSame('August news', $campaigns[0]['name']);
+        $this->assertSame(40.0, $campaigns[0]['open_rate']);
+    }
+
     public function test_a_partial_month_range_does_not_count_that_month(): void
     {
         $this->fakeList();
