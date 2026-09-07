@@ -6,6 +6,8 @@
 
 **Free, self-hosted client reporting for web agencies and freelancers.**
 
+🌐 **[Website & documentation](https://coysh-digital.github.io/client-reporter-site/)**
+
 Client Reporter plugs into the services your clients' sites already run on — their CMS, analytics, shop, uptime monitor — pulls the numbers in on a schedule, and turns them into a clean, branded report you can hand over with your name on it.
 
 ![The Client Reporter dashboard](docs/images/dashboard.png)
@@ -138,7 +140,7 @@ Or connect over HTTP with a token (`php artisan client-reporter:mcp-token you@ex
 
 ## Documentation
 
-The full docs live in [docs/](docs/README.md) — installation, configuration, shared hosting, the reporting and branding guides, every integration, the security model, the MCP server, and how to build your own integration.
+Read them on the **[documentation site](https://coysh-digital.github.io/client-reporter-site/)**, or in [docs/](docs/README.md) here in the repo — installation, configuration, shared hosting, the reporting and branding guides, every integration, the security model, the MCP server, and how to build your own integration.
 
 ## Want to help?
 
