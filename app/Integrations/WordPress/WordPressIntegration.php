@@ -51,13 +51,19 @@ class WordPressIntegration extends Integration
         ];
     }
 
+    public function connectorDownloadUrl(): ?string
+    {
+        return 'https://github.com/Coysh-Digital/client-reporter-wordpress/releases/latest';
+    }
+
     /**
      * @return array<int, string>
      */
     public function setupSteps(): array
     {
         return [
-            'In WordPress, go to <strong>Plugins → Add New</strong> and install the <strong>Client Reporter</strong> plugin, then activate it.',
+            'Download the <strong>Client Reporter Connector</strong> plugin using the button below.',
+            'In WordPress, go to <strong>Plugins → Add New → Upload Plugin</strong>, upload the downloaded ZIP, then activate it.',
             'Open <strong>Settings → Client Reporter</strong> in WordPress.',
             'Copy the <strong>connection code</strong> shown below and paste it into that settings page, then Save.',
             'Come back here and press <strong>Connect &amp; verify</strong>.',

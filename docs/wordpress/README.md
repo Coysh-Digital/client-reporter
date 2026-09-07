@@ -10,7 +10,7 @@ That companion plugin lives in its own repo, [coysh-digital/client-reporter-word
 
 The connector is a normal WordPress plugin, so install it on whichever site you want to report on:
 
-1. Grab the latest release of the plugin from [github.com/coysh-digital/client-reporter-wordpress](https://github.com/coysh-digital/client-reporter-wordpress) (a ZIP of the `client-reporter-wordpress` directory).
+1. Download the latest release from [github.com/coysh-digital/client-reporter-wordpress/releases/latest](https://github.com/coysh-digital/client-reporter-wordpress/releases/latest) — the `client-reporter.zip` asset. (When you add a WordPress integration in Client Reporter, the connect screen links straight to it.)
 2. In WordPress, head to **Plugins → Add New → Upload Plugin**, pick the ZIP and install it. (Or, if you'd rather, copy the plugin folder into `wp-content/plugins/` over SFTP.)
 3. Activate the **Client Reporter Connector** plugin.
 
