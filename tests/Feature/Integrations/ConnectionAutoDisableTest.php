@@ -6,6 +6,7 @@ namespace Tests\Feature\Integrations;
 
 use App\Enums\ConnectionStatus;
 use App\Integrations\CollectorRunner;
+use App\Models\Site;
 use App\Models\SiteIntegration;
 use App\Support\DateRange;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -67,6 +68,28 @@ class ConnectionAutoDisableTest extends TestCase
         $this->assertSame(0, $connection->consecutive_failures);
         $this->assertNull($connection->disabled_at);
         $this->assertSame(ConnectionStatus::Connected, $connection->status);
+    }
+
+    public function test_collection_from_a_bare_connection_does_not_trip_lazy_loading(): void
+    {
+        // The queued job reloads the connection with no relations; the runner
+        // must eager-load what collectors need (site URL, workspace credential)
+        // or strict mode throws a LazyLoadingViolationException.
+        Http::fake(['www.googleapis.com/pagespeedonline/*' => Http::response([
+            'lighthouseResult' => ['categories' => ['performance' => ['score' => 0.9]]],
+        ])]);
+
+        $site = Site::factory()->create(['url' => 'https://example.com']);
+        SiteIntegration::factory()->for($site)->create(['integration_key' => 'pagespeed', 'status' => ConnectionStatus::Connected]);
+
+        // Re-fetch fresh, exactly as the job does — no relations loaded.
+        $bare = SiteIntegration::query()->firstWhere('integration_key', 'pagespeed');
+        $this->assertFalse($bare->relationLoaded('site'));
+
+        $runs = app(CollectorRunner::class)->collectAll($bare, DateRange::thisMonth());
+
+        $this->assertSame('success', $runs[0]->status);
+        $this->assertSame(ConnectionStatus::Connected, $bare->refresh()->status);
     }
 
     public function test_the_collect_command_skips_disabled_connections(): void

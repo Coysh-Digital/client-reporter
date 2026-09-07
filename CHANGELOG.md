@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Fixed scheduled/queued data collection failing with "Unexpected error during collection (LazyLoadingViolationException)" for PageSpeed, Google Search Console and any other collector that needs the site URL or a workspace credential — the runner now eager-loads those relations.
+- Billing sync now **disables a connection immediately on an authentication failure** (a rejected credential can't recover until it's reconnected) rather than retrying — and re-logging — it every hour until the failure threshold. Soft or transient failures still get the retry-then-disable grace.
+
 - Fixed AI summaries always saying "this month" even when a report covered a different period (e.g. a quarter). The report's actual reporting period is now given to the AI, the built-in prompts are period-neutral, and the model is told not to assume a calendar month. Regenerate an existing report to refresh its wording.
 
 - The WordPress integration's connect screen now links straight to the companion plugin's latest release, with a **Download the plugin** button and clearer install steps (upload the ZIP under Plugins → Add New → Upload Plugin).
