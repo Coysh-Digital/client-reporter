@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added **Import from CSV** to Sites → Import: upload a CSV with a `url` column (plus optional `name`, `client` and `cms`), preview the sites, map them to new or existing clients, and import the selected ones. Works for any CMS — including Craft sites exported from a tool without its own API — sits alongside the existing platform importers, and skips rows with no usable URL.
 - Added an **EmailOctopus** integration: connect a list to report new subscribers and audience size alongside the other Forms & Leads sources.
 - Added a **Scheduled reports** page (Reports → Scheduled) listing every site on a schedule with its frequency, sections, next generation date and last generated report; a site's page, its client's page and the site form now show when the next scheduled report will generate.
 - Lighthouse now reports all four category scores — Performance, Accessibility, Best Practices and SEO — instead of Performance alone (existing reports pick up the extra scores at their next data collection).

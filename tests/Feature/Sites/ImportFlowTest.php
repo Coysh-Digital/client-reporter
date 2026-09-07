@@ -9,6 +9,7 @@ use App\Models\Client;
 use App\Models\Site;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -109,5 +110,46 @@ class ImportFlowTest extends TestCase
             ->call('fetch')
             ->assertSet('fetched', false)
             ->assertSet('error', 'WPMgr rejected the API key. Check it has access to your sites.');
+    }
+
+    public function test_it_imports_sites_from_a_csv_file(): void
+    {
+        $manager = User::factory()->manager()->create();
+        $existing = Client::factory()->create(['name' => 'Existing Co']);
+
+        $csv = "url,name,client,cms\n"
+            ."https://one.test,Site One,Existing Co,craft\n"
+            ."https://two.test,Site Two,,\n"
+            .",Missing URL,,\n";
+
+        Livewire::actingAs($manager)->test(Import::class)
+            ->set('mode', 'csv')
+            ->set('csv', UploadedFile::fake()->createWithContent('sites.csv', $csv))
+            ->call('parseCsv')
+            ->assertSet('fetched', true)
+            ->assertSet('ignoredRows', 1)
+            ->assertSet('rows.0.client_choice', (string) $existing->id)
+            ->call('import')
+            ->assertSet('result.created', 2);
+
+        $this->assertDatabaseHas('sites', ['url' => 'https://one.test', 'cms_type' => 'craft', 'client_id' => $existing->id]);
+        $this->assertDatabaseHas('sites', ['url' => 'https://two.test', 'cms_type' => null]);
+        $this->assertDatabaseHas('audit_logs', ['event' => 'sites.imported']);
+        // Existing Co reused for one.test; a new "Site Two" client created for the unmapped row.
+        $this->assertSame(2, Client::count());
+        $this->assertDatabaseHas('clients', ['name' => 'Site Two']);
+    }
+
+    public function test_a_csv_without_a_url_column_reports_an_error(): void
+    {
+        $manager = User::factory()->manager()->create();
+
+        Livewire::actingAs($manager)->test(Import::class)
+            ->set('mode', 'csv')
+            ->set('csv', UploadedFile::fake()->createWithContent('sites.csv', "name,client\nAlpha,Alpha Ltd"))
+            ->call('parseCsv')
+            ->assertSet('fetched', false)
+            ->assertSet('rows', [])
+            ->assertSee('needs a "url" column');
     }
 }

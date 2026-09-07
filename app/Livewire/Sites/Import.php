@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Livewire\Sites;
 
 use App\Importers\Contracts\SiteImporter;
+use App\Importers\CsvSiteParser;
+use App\Importers\ImportedSite;
 use App\Importers\ImporterException;
 use App\Importers\SiteImporterRegistry;
 use App\Integrations\IntegrationRegistry;
@@ -17,11 +19,17 @@ use App\Support\Http\UnsafeUrlException;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 #[Layout('components.layouts.app')]
 #[Title('Import sites')]
 class Import extends Component
 {
+    use WithFileUploads;
+
+    /** How sites are being brought in: from a connected platform, or a CSV file. */
+    public string $mode = 'platform';
+
     /** Selected CMS key (matches Site::cms_type / a CMS integration key). */
     public string $cms = '';
 
@@ -31,9 +39,15 @@ class Import extends Component
     /** @var array<string, string> */
     public array $config = [];
 
+    /** Uploaded CSV file (csv mode only). */
+    public mixed $csv = null;
+
     public ?string $error = null;
 
     public bool $fetched = false;
+
+    /** Rows in the uploaded file that had no usable URL and were dropped. */
+    public int $ignoredRows = 0;
 
     /** @var array<int, array<string, mixed>> */
     public array $rows = [];
@@ -50,6 +64,12 @@ class Import extends Component
         $withSources = array_values(array_filter($options, fn (array $c): bool => $this->importersForCms($c['key']) !== []));
         $this->cms = $withSources[0]['key'] ?? ($options[0]['key'] ?? '');
         $this->syncProvider();
+    }
+
+    public function updatedMode(): void
+    {
+        $this->csv = null;
+        $this->resetImportState();
     }
 
     public function updatedCms(): void
@@ -105,6 +125,60 @@ class Import extends Component
             return;
         }
 
+        $this->buildRows($sites);
+
+        if ($this->rows === []) {
+            $this->error = 'No sites were found for these credentials.';
+        }
+    }
+
+    /**
+     * Read the uploaded CSV into mappable rows.
+     */
+    public function parseCsv(): void
+    {
+        $this->authorize('manage-sites');
+        $this->error = null;
+        $this->result = null;
+        $this->ignoredRows = 0;
+
+        $this->validate([
+            'csv' => ['required', 'file', 'max:2048'],
+        ]);
+
+        $extension = mb_strtolower((string) $this->csv->getClientOriginalExtension());
+        if (! in_array($extension, ['csv', 'txt'], true)) {
+            $this->error = 'Upload a .csv file (exported from your platform or a spreadsheet).';
+
+            return;
+        }
+
+        try {
+            $parsed = CsvSiteParser::parse((string) $this->csv->get());
+        } catch (ImporterException $e) {
+            $this->error = $e->getMessage();
+            $this->rows = [];
+            $this->fetched = false;
+
+            return;
+        }
+
+        $this->buildRows($parsed['sites']);
+        $this->ignoredRows = $parsed['skipped'];
+
+        if ($this->rows === []) {
+            $this->error = 'No rows with a usable URL were found in that file.';
+        }
+    }
+
+    /**
+     * Turn normalised imported sites into the mapping rows the screen edits,
+     * flagging duplicates and pre-matching clients by name.
+     *
+     * @param  array<int, ImportedSite>  $sites
+     */
+    private function buildRows(array $sites): void
+    {
         $existingUrls = $this->existingUrlSet();
         $clientsByName = [];
         foreach (Client::query()->get(['id', 'name']) as $client) {
@@ -131,10 +205,6 @@ class Import extends Component
         }
 
         $this->fetched = true;
-
-        if ($this->rows === []) {
-            $this->error = 'No sites were found for these credentials.';
-        }
     }
 
     /**
@@ -175,7 +245,9 @@ class Import extends Component
                 'client_id' => $client->id,
                 'name' => (string) $row['name'],
                 'url' => (string) $row['url'],
-                'cms_type' => $row['cms_type'] ?: ($this->cms ?: 'wordpress'),
+                // A CSV carries the CMS per row (or leaves it unset); a platform
+                // import knows the CMS it fetched from, defaulting to WordPress.
+                'cms_type' => $row['cms_type'] ?: ($this->mode === 'csv' ? null : ($this->cms ?: 'wordpress')),
                 'is_active' => true,
             ]);
 
@@ -183,11 +255,13 @@ class Import extends Component
             $created++;
         }
 
-        $audit->log('sites.imported', metadata: ['cms' => $this->cms, 'provider' => $this->provider, 'created' => $created, 'skipped' => $skipped]);
+        $source = $this->mode === 'csv' ? 'csv' : $this->provider;
+        $audit->log('sites.imported', metadata: ['cms' => $this->cms, 'provider' => $source, 'created' => $created, 'skipped' => $skipped]);
 
         $this->result = ['created' => $created, 'skipped' => $skipped];
         $this->rows = [];
         $this->fetched = false;
+        $this->csv = null;
     }
 
     private function syncProvider(): void
@@ -201,6 +275,7 @@ class Import extends Component
     {
         $this->rows = [];
         $this->fetched = false;
+        $this->ignoredRows = 0;
         $this->error = null;
         $this->result = null;
     }
