@@ -6,11 +6,13 @@ namespace Tests\Feature\Billing;
 
 use App\Billing\BillingSyncer;
 use App\Enums\ConnectionStatus;
+use App\Jobs\SyncBillingConnection;
 use App\Models\Client;
 use App\Models\ClientBillingConnection;
 use App\Models\WorkspaceIntegration;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class BillingAutoDisableTest extends TestCase
@@ -102,6 +104,28 @@ class BillingAutoDisableTest extends TestCase
         // The next sweep skips it, so it stops re-erroring every hour.
         $result = app(BillingSyncer::class)->syncAll();
         $this->assertSame([], $result['failed']);
+    }
+
+    public function test_the_hourly_sweep_does_not_queue_disabled_links(): void
+    {
+        Queue::fake();
+
+        $workspace = WorkspaceIntegration::query()->create([
+            'integration_key' => 'xero', 'name' => 'Xero',
+            'status' => ConnectionStatus::Connected, 'credentials' => ['refresh_token' => 'rt'],
+        ]);
+        ClientBillingConnection::query()->create([
+            'client_id' => Client::factory()->create()->id, 'workspace_integration_id' => $workspace->id,
+            'external_contact_id' => 'a', 'external_contact_name' => 'Enabled',
+        ]);
+        ClientBillingConnection::query()->create([
+            'client_id' => Client::factory()->create()->id, 'workspace_integration_id' => $workspace->id,
+            'external_contact_id' => 'b', 'external_contact_name' => 'Disabled', 'disabled_at' => now(),
+        ]);
+
+        $this->artisan('client-reporter:sync-billing')->assertSuccessful();
+
+        Queue::assertPushed(SyncBillingConnection::class, 1);
     }
 
     public function test_a_successful_sync_clears_the_failure_state(): void

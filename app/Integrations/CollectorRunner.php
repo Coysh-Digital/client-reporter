@@ -31,9 +31,10 @@ class CollectorRunner
     /**
      * Run every collector for a connection's integration over the given range.
      *
+     * @param  (callable(int, int): void)|null  $onProgress  Called with (completed, total) after each collector.
      * @return array<int, CollectorRun>
      */
-    public function collectAll(SiteIntegration $connection, DateRange $range): array
+    public function collectAll(SiteIntegration $connection, DateRange $range, ?callable $onProgress = null): array
     {
         $integration = $connection->integration();
 
@@ -46,10 +47,17 @@ class CollectorRunner
         // from a bare model) never triggers a lazy-loading violation.
         $connection->loadMissing(['site', 'workspaceIntegration']);
 
-        $runs = array_map(
-            fn (Collector $collector): CollectorRun => $this->run($connection, $collector, $range),
-            $integration->collectors(),
-        );
+        $collectors = $integration->collectors();
+        $total = count($collectors);
+        $runs = [];
+
+        foreach ($collectors as $index => $collector) {
+            $runs[] = $this->run($connection, $collector, $range);
+
+            if ($onProgress !== null) {
+                $onProgress($index + 1, $total);
+            }
+        }
 
         $this->settleFailureCount($connection, $runs);
 

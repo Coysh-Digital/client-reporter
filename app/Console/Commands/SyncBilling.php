@@ -34,7 +34,9 @@ class SyncBilling extends Command
             return self::SUCCESS;
         }
 
-        $links = ClientBillingConnection::query()->get();
+        // Skip links auto-disabled after repeated failures — matching syncAll —
+        // so a dead credential isn't re-queued (and re-erroring) every hour.
+        $links = ClientBillingConnection::query()->whereNull('disabled_at')->get();
 
         foreach ($links as $link) {
             SyncBillingConnection::dispatch($link);

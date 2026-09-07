@@ -57,6 +57,16 @@
             </div>
         </section>
 
+        {{-- Background queue --}}
+        <section class="cr-panel">
+            <div class="cr-panel-header"><h2 class="cr-eyebrow">Background queue</h2></div>
+            <div class="grid gap-4 px-5 py-5 sm:grid-cols-2">
+                <x-field label="Parallel jobs" for="queue_workers" help="How many background jobs (report generation, data collection, billing sync) run at once. 1 (the default) runs them one at a time; higher clears the queue faster but uses more server CPU and memory. Needs the scheduler cron running.">
+                    <input type="number" min="1" max="{{ (int) config('client-reporter.queue.max_workers', 50) }}" wire:model="queue_workers" id="queue_workers" class="cr-input">
+                </x-field>
+            </div>
+        </section>
+
         {{-- About --}}
         <section class="cr-panel">
             <div class="cr-panel-header"><h2 class="cr-eyebrow">About</h2></div>

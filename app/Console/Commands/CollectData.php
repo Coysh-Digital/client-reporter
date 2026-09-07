@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Enums\BackgroundTaskStatus;
 use App\Enums\ConnectionStatus;
 use App\Integrations\CollectionSchedule;
 use App\Integrations\CollectorRunner;
 use App\Jobs\RunConnectorCollection;
+use App\Models\BackgroundTask;
 use App\Models\CollectorRun;
 use App\Models\Metric;
 use App\Models\MetricSnapshot;
@@ -107,6 +109,17 @@ class CollectData extends Command
         if ($stale->isNotEmpty()) {
             $this->warn("Closed {$stale->count()} stale collection run(s).");
         }
+
+        // Close background-task records left "running"/"queued" by a worker that
+        // stopped, so the activity feed doesn't show zombies.
+        BackgroundTask::query()
+            ->whereIn('status', BackgroundTaskStatus::activeValues())
+            ->where('updated_at', '<', now()->subMinutes(self::STALE_RUN_MINUTES))
+            ->update([
+                'status' => BackgroundTaskStatus::Failed->value,
+                'finished_at' => now(),
+                'error' => 'The worker stopped before this task finished.',
+            ]);
     }
 
     /**
@@ -131,6 +144,13 @@ class CollectData extends Command
         }
 
         CollectorRun::query()->where('started_at', '<', now()->subDays(self::RUN_RETENTION_DAYS))->delete();
+
+        // Prune finished background-task records past the activity-feed window.
+        BackgroundTask::query()
+            ->whereNotIn('status', BackgroundTaskStatus::activeValues())
+            ->where('finished_at', '<', now()->subDays((int) config('client-reporter.queue.task_retention_days', 7)))
+            ->delete();
+
         $this->pruneSupersededRenders();
     }
 

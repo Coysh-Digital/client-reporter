@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Activity;
 
+use App\Enums\BackgroundTaskStatus;
 use App\Livewire\Activity\Index;
 use App\Livewire\Activity\QueueStatus;
+use App\Models\BackgroundTask;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -84,14 +86,25 @@ class QueueMonitorTest extends TestCase
         $this->assertSame(0, DB::table('failed_jobs')->count());
     }
 
-    public function test_sidebar_queue_status_reflects_the_queue(): void
+    public function test_sidebar_queue_status_reflects_active_tasks(): void
     {
         Livewire::actingAs($this->manager())->test(QueueStatus::class)->assertSee('Idle');
 
-        $this->queueJob();
-        Livewire::actingAs($this->manager())->test(QueueStatus::class)->assertSee('queued');
+        BackgroundTask::query()->create([
+            'kind' => BackgroundTask::KIND_COLLECTION, 'task_key' => 'collection:q',
+            'label' => 'Collecting data', 'description' => 'Acme', 'status' => BackgroundTaskStatus::Queued,
+        ]);
+        Livewire::actingAs($this->manager())->test(QueueStatus::class)
+            ->assertSee('queued')
+            ->assertSee('Acme');
 
-        $this->queueJob(reserved: true);
-        Livewire::actingAs($this->manager())->test(QueueStatus::class)->assertSee('running');
+        BackgroundTask::query()->create([
+            'kind' => BackgroundTask::KIND_REPORT, 'task_key' => 'report:r',
+            'label' => 'Generating report', 'description' => 'Beta', 'status' => BackgroundTaskStatus::Running,
+            'started_at' => now(),
+        ]);
+        Livewire::actingAs($this->manager())->test(QueueStatus::class)
+            ->assertSee('running')
+            ->assertSee('Beta');
     }
 }

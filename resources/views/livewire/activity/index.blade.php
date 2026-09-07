@@ -4,6 +4,8 @@
 
     <livewire:activity.summary />
 
+    <livewire:activity.running />
+
     {{-- Tabs --}}
     <div class="mt-5 flex flex-wrap items-center gap-3">
         <x-segmented :options="[

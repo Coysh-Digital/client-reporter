@@ -70,14 +70,16 @@ Redis is completely optional — the database drivers are fully supported in pro
 
 Data collection and the other background work run through Laravel's queue. There are two ways to process it:
 
-- **Scheduler-driven (default, shared-hosting friendly).** The scheduler runs `queue:work --stop-when-empty --max-time=55` every minute, draining the database queue on each tick. All it needs is the single `schedule:run` cron entry — no long-running process. This is the one I'd recommend on shared hosting.
-- **Persistent worker (VPS).** Run a long-lived `php artisan queue:work` (managed by systemd/supervisor, or Laravel Horizon with Redis) for lower latency. If you go this route, remove the `queue:work` line from `routes/console.php` so jobs aren't processed twice.
+- **Scheduler-driven (default, shared-hosting friendly).** The scheduler drains the database queue every minute (via `client-reporter:work`, which wraps `queue:work --stop-when-empty --max-time=55`). All it needs is the single `schedule:run` cron entry — no long-running process. This is the one I'd recommend on shared hosting.
+- **Persistent worker (VPS).** Run a long-lived `php artisan queue:work` (managed by systemd/supervisor, or Laravel Horizon with Redis) for lower latency. If you go this route, remove the worker lines from `routes/console.php` so jobs aren't processed twice.
+
+**Parallel jobs.** By default one worker runs jobs strictly one at a time. Raise **Parallel jobs** under Settings → Background queue to have the scheduler start that many workers each minute, so jobs process concurrently — faster when several reports or collections are queued, at the cost of more CPU and memory. It's safe on the database queue (each job is locked so parallel workers never double-process it). Needs the `schedule:run` cron to be running; leave it at 1 if unsure.
 
 See [Shared hosting](../shared-hosting/README.md) for the cron setup and [when to move to a VPS](../shared-hosting/README.md#when-to-move-to-a-vps).
 
 ### What runs on the queue
 
-Everything that talks to an external service runs as a queued job rather than inside a page request: data collection (one job per connection and period, retried with backoff on transient errors, unique so a backed-up queue never stacks duplicates), report generation (the builder queues it and polls until it finishes), billing sync and favicon fetches. The scheduler's `queue:work` line drains these; a VPS running a persistent worker processes them straight away. The Activity page shows what is queued, running and failed, and a run left behind by a killed worker is closed on the next `client-reporter:collect` tick.
+Everything that talks to an external service runs as a queued job rather than inside a page request: data collection (one job per connection and period, retried with backoff on transient errors, unique so a backed-up queue never stacks duplicates), report generation (the builder queues it and polls until it finishes), billing sync and favicon fetches. The scheduler's worker lines drain these; a VPS running a persistent worker processes them straight away. Each job records what it's doing, so the **sidebar shows live activity** (named, with a progress bar where known) and the **Activity page** lists what's running, queued and failed. A record left behind by a killed worker is closed, and old finished ones pruned, on the next `client-reporter:collect` tick.
 
 Collection-run history older than 90 days and all but the newest five frozen renders per report are pruned automatically; the metrics retention setting is separate and off by default.
 
