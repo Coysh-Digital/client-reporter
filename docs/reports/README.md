@@ -75,6 +75,8 @@ Most data blocks give you options in the builder (the analytics summary, for ins
 
 Availability comes down to which integrations are **connected** or **need attention** for the Site — a broken connection still counts as "present", so the block stays visible.
 
+**Duplicating a report.** Built a bespoke report and want the same one for another period? Use **Duplicate** — from the report's own page or the ⋯ menu on the reports list. It copies every section, its options and your hand-written commentary into a fresh draft for the same site and drops you in the builder. Change the date range (and the title), then generate. The copy starts ungenerated and carries none of the original's frozen data, per-period AI summaries or share links.
+
 ## Report templates
 
 A **report template** is a reusable, named set of ordered block definitions (with headings and per-block config) that you can apply to any Site. You manage them in the Templates area (`/templates`).

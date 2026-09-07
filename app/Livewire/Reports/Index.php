@@ -8,6 +8,7 @@ use App\Livewire\Concerns\SortsAndFilters;
 use App\Models\Client;
 use App\Models\Report;
 use App\Models\Site;
+use App\Reporting\ReportDuplicator;
 use App\Support\AuditLogger;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Livewire\Attributes\Layout;
@@ -80,6 +81,21 @@ class Index extends Component
         $report = Report::query()->findOrFail($reportId);
         $audit->log('report.deleted', $report, metadata: ['title' => $report->title]);
         $report->delete();
+    }
+
+    /**
+     * Copy a report's sections into a fresh draft and open it in the builder,
+     * where the date range (and anything else) can be changed before generating.
+     */
+    public function duplicate(int $reportId, ReportDuplicator $duplicator, AuditLogger $audit): mixed
+    {
+        $this->authorize('manage-reports');
+
+        $report = Report::query()->findOrFail($reportId);
+        $copy = $duplicator->duplicate($report, auth()->id());
+        $audit->log('report.duplicated', $copy, metadata: ['from' => $report->id]);
+
+        return $this->redirectRoute('reports.edit', $copy, navigate: true);
     }
 
     /**
