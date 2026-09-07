@@ -6,6 +6,7 @@ use App\Integrations\Craft\CraftCommerceIntegration;
 use App\Integrations\Craft\CraftIntegration;
 use App\Integrations\CraftAnalytics\CraftAnalyticsIntegration;
 use App\Integrations\DownloadTracker\DownloadTrackerIntegration;
+use App\Integrations\EmailOctopus\EmailOctopusIntegration;
 use App\Integrations\Fathom\FathomIntegration;
 use App\Integrations\FreeAgent\FreeAgentIntegration;
 use App\Integrations\GoogleAds\GoogleAdsIntegration;
@@ -119,6 +120,7 @@ return [
         UptimeRobotIntegration::class,
         UptimeKumaIntegration::class,
         MailchimpIntegration::class,
+        EmailOctopusIntegration::class,
         BetterUptimeIntegration::class,
         PageSpeedIntegration::class,
     ],

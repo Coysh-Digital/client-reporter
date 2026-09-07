@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Reporting\BlockAvailability;
 use App\Reporting\BlockTypeRegistry;
 use App\Reporting\ReportGenerator;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -20,6 +21,12 @@ use Tests\TestCase;
 class BillingBlockTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function tearDown(): void
+    {
+        CarbonImmutable::setTestNow();
+        parent::tearDown();
+    }
 
     public function test_billing_block_is_unavailable_with_no_invoices(): void
     {
@@ -78,5 +85,73 @@ class BillingBlockTest extends TestCase
         $this->assertEqualsWithDelta(2400.0, $metrics['Outstanding']['current'], 0.001);
         $this->assertEqualsWithDelta(1.0, $metrics['Overdue']['current'], 0.001);
         $this->assertStringContainsString('overdue', $block['data']['insight']);
+    }
+
+    public function test_outstanding_and_overdue_span_all_periods_and_drafts_are_excluded(): void
+    {
+        CarbonImmutable::setTestNow(CarbonImmutable::create(2026, 9, 1));
+
+        $site = Site::factory()->create();
+        $client = $site->client;
+
+        // A draft raised in the period — must be ignored in every figure and the table.
+        Invoice::factory()->for($client)->create([
+            'number' => 'DRAFT-1', 'amount' => 500, 'status' => InvoiceStatus::Draft,
+            'issued_at' => '2026-08-10',
+        ]);
+        // Sent and overdue, raised BEFORE the period — must still count as outstanding/overdue.
+        Invoice::factory()->for($client)->create([
+            'number' => 'OLD-1', 'amount' => 1200, 'status' => InvoiceStatus::Sent,
+            'issued_at' => '2026-05-01', 'due_at' => '2026-05-15',
+        ]);
+        // Paid in the period.
+        Invoice::factory()->for($client)->create([
+            'number' => 'INV-1', 'amount' => 800, 'status' => InvoiceStatus::Paid,
+            'issued_at' => '2026-08-05', 'paid_at' => '2026-08-06',
+        ]);
+
+        $report = Report::factory()->for($site)->create(['range_start' => '2026-08-01', 'range_end' => '2026-08-31']);
+        $report->blocks()->create(['type' => 'billing.summary', 'position' => 0, 'heading' => 'Billing & invoices']);
+        app(ReportGenerator::class)->generate($report);
+        $report->refresh();
+
+        $block = collect($report->latestRender->data)->firstWhere('type', 'billing.summary');
+        $metrics = collect($block['data']['metrics'])->keyBy('label');
+
+        // Invoiced/paid stay period-scoped and exclude the draft.
+        $this->assertEqualsWithDelta(800.0, $metrics['Invoiced']['current'], 0.001);
+        $this->assertEqualsWithDelta(800.0, $metrics['Paid']['current'], 0.001);
+        // Outstanding & overdue include the older invoice from outside the period.
+        $this->assertEqualsWithDelta(1200.0, $metrics['Outstanding']['current'], 0.001);
+        $this->assertEqualsWithDelta(1.0, $metrics['Overdue']['current'], 0.001);
+
+        $numbers = collect($block['data']['invoices'])->pluck('number');
+        $this->assertFalse($numbers->contains('DRAFT-1'), 'Draft invoices must not appear in the table.');
+        $this->assertTrue($numbers->contains('INV-1'));
+        $this->assertFalse($numbers->contains('OLD-1'), 'Out-of-period invoices are not listed in the period table.');
+    }
+
+    public function test_block_reports_outstanding_even_when_nothing_was_raised_in_the_period(): void
+    {
+        CarbonImmutable::setTestNow(CarbonImmutable::create(2026, 9, 1));
+
+        $site = Site::factory()->create();
+        Invoice::factory()->for($site->client)->create([
+            'number' => 'OLD-1', 'amount' => 640, 'status' => InvoiceStatus::Sent,
+            'issued_at' => '2026-05-01', 'due_at' => '2026-11-01',
+        ]);
+
+        $report = Report::factory()->for($site)->create(['range_start' => '2026-08-01', 'range_end' => '2026-08-31']);
+        $report->blocks()->create(['type' => 'billing.summary', 'position' => 0, 'heading' => 'Billing & invoices']);
+        app(ReportGenerator::class)->generate($report);
+        $report->refresh();
+
+        $block = collect($report->latestRender->data)->firstWhere('type', 'billing.summary');
+        $this->assertTrue($block['data']['has_data']);
+
+        $metrics = collect($block['data']['metrics'])->keyBy('label');
+        $this->assertEqualsWithDelta(0.0, $metrics['Invoiced']['current'], 0.001);
+        $this->assertEqualsWithDelta(640.0, $metrics['Outstanding']['current'], 0.001);
+        $this->assertStringContainsString('outstanding', $block['data']['insight']);
     }
 }

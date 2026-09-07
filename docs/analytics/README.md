@@ -23,14 +23,18 @@ In the workspace flow, you connect the Google account first, then click **Find s
 ## Google Ads
 
 - **Auth:** Google OAuth (same Google credentials as GA4).
-- **What you need:** the **Customer ID** (per site, shown top-right in Google Ads, e.g. `123-456-7890`) and a **Developer token** (an account-level secret from the API Center, reused across every connection).
+- **What you need:** the **Customer ID** of the account you want to report on (per site, shown top-right in Google Ads, e.g. `123-456-7890`) and a **Developer token** (a one-time, account-level secret, reused across every connection).
+
+**About the developer token.** The developer token does not come from the advertiser account you're reporting on — it comes from a Google Ads **manager account** (also called an MCC account), and the **API Center** where you get it only appears on manager accounts. If you don't already have one, create a manager account first (it's free), then apply for the token once and reuse it for every Google Ads connection.
 
 Connecting:
 
-1. In Google Ads, copy the account's **Customer ID** and paste it into the form.
-2. Under **Tools & Settings → API Center**, copy your **Developer token** and paste it in.
-3. Click **Connect Google account** and sign in with an account that can access this Google Ads account.
-4. You come back connected.
+1. Copy the **Customer ID** of the account you want to report on and paste it into the form.
+2. Sign in to your Google Ads **manager account** and open **[ads.google.com/aw/apicenter](https://ads.google.com/aw/apicenter)**. Complete the API access form and accept the terms. Use a working website URL and a regularly monitored contact email — if the URL isn't live or the inbox isn't watched, Google may reject the application, and its compliance team may email you for clarification during review.
+3. When the token appears in the API Center, copy the **Developer token** and paste it into the form. New tokens are granted **Explorer** or **Test** access automatically. **Test** access only returns data for *test* accounts, so if you want to report on live campaigns, apply for **Basic** access (approval can take a little while).
+4. Click **Connect Google account** and sign in with an account that can access the Google Ads account above. You come back connected.
+
+To check you're in a manager account, open [ads.google.com/aw/apicenter](https://ads.google.com/aw/apicenter): a normal advertiser account shows *"The API Center is only available to manager accounts."*, and a red **Test account** label in the top-right means the account is a test manager or advertiser (which can't hold a usable production token).
 
 Google Ads feeds the **Ads summary** block (spend, clicks, impressions and conversions) rather than the general analytics blocks.
 

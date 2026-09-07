@@ -64,6 +64,9 @@
             <div class="mt-1 text-xs text-faint">
                 @if ($schedule)
                     {{ $schedule['template'] ? 'Template: '.$schedule['template'] : 'Default sections' }}
+                    @if ($schedule['next'])
+                        <span class="mt-1 block">Next report: <span class="text-muted">{{ $schedule['next']->format('j M Y') }}</span></span>
+                    @endif
                 @else
                     {{ $reportCount }} {{ Str::plural('report', $reportCount) }} so far
                 @endif

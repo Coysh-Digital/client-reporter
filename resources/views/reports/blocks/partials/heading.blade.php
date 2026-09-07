@@ -8,7 +8,7 @@
 @php use App\Support\ReportLang; $isTitle = ($variant ?? 'eyebrow') === 'title'; @endphp
 <table class="block-heading-row"><tr>
     <td class="block-heading-chip-cell">
-        <span class="block-heading-chip">@include('reports.blocks.partials.icon', ['key' => $icon ?? 'document', 'color' => '#ffffff'])</span>
+        <span class="block-heading-chip">@include('reports.blocks.partials.icon', ['key' => $icon ?? 'document', 'color' => \App\Support\Branding\Color::inkOn($branding->primaryColor)])</span>
     </td>
     <td class="{{ $isTitle ? 'block-title-cell' : 'block-heading-title-cell' }}">{{ $text }}</td>
     @if (! $isTitle && ! empty($suffix ?? null))

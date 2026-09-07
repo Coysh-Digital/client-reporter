@@ -46,4 +46,18 @@ class ReportFrequencyTest extends TestCase
         $this->assertTrue($period->start->lt($period->end));
         $this->assertTrue($period->end->lt($now->startOfDay()));
     }
+
+    public function test_next_generation_date_is_the_start_of_the_next_period(): void
+    {
+        $now = CarbonImmutable::parse('2026-09-04');
+
+        $this->assertNull(ReportFrequency::None->nextGenerationDate($now));
+        $this->assertSame('2026-10-01', ReportFrequency::Monthly->nextGenerationDate($now)?->toDateString());
+        $this->assertSame('2026-10-01', ReportFrequency::Quarterly->nextGenerationDate($now)?->toDateString());
+
+        $weekly = ReportFrequency::Weekly->nextGenerationDate($now);
+        $this->assertNotNull($weekly);
+        $this->assertSame(1, $weekly->dayOfWeekIso, 'a Monday');
+        $this->assertTrue($weekly->gt($now), 'is in the future');
+    }
 }

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Added an **EmailOctopus** integration: connect a list to report new subscribers and audience size alongside the other Forms & Leads sources.
+- Added a **Scheduled reports** page (Reports → Scheduled) listing every site on a schedule with its frequency, sections, next generation date and last generated report; a site's page, its client's page and the site form now show when the next scheduled report will generate.
+- Lighthouse now reports all four category scores — Performance, Accessibility, Best Practices and SEO — instead of Performance alone (existing reports pick up the extra scores at their next data collection).
+- Brand colours stay legible automatically: a secondary or brand colour too faint to read is nudged just far enough for contrast in report text, callouts, table headers, section-icon chips and the cover band, while a colour that already works is left untouched.
+- Billing & invoices: **Outstanding** and **Overdue** now reflect the client's whole unpaid position as of the report date rather than only the report period, so nothing unpaid is hidden; **draft invoices are excluded** from the block everywhere.
+- Clearer Google Ads connection instructions: the developer token comes from a Google Ads **manager** account and is requested from the API Center, with guidance on Test vs Basic access.
 - The built-in "Full Digital Report" template now includes every available section — website, CMS/Craft, the full analytics set, search, ecommerce, ads, leads, uptime, performance, downloads and billing — each with an AI summary where supported. A migration upgrades the template on existing installs (sections a site has no data for are still left out when a report is generated).
 
 - Reworked the client portal: an agency-branded shell (logo or name, colours and fonts, a Reports / Your profile / Security nav, and a footer with the agency's contact details), website cards with health and the latest report, reports grouped by year with a PDF download for each, and a per-website filter. A portal user's profile and security pages use the same shell, never the agency admin.

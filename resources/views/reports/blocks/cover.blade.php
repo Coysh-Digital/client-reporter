@@ -1,4 +1,7 @@
 @php
+    use App\Support\Branding\Color;
+    use App\Support\ReportLang;
+
     $style = $branding->reportCoverStyle;
     $minimal = $style === 'minimal';
     $bold = $style === 'bold';
@@ -8,7 +11,17 @@
     $contact = $data['contact'] ?? null;
     $preparedOn = $data['prepared_on'] ?? null;
     $intro = $commentary ?: $branding->tagline;
-    use App\Support\ReportLang;
+
+    // Foreground tones for the branded band adapt to the brand colour: white ink
+    // on a dark brand, dark ink on a light one, with muted/faint steps mixed back
+    // towards the brand. The divider is nudged until it reads against the band, so
+    // a light secondary stays visible either way.
+    $bandInk = Color::inkOn($branding->primaryColor);
+    $bandMuted = Color::mix($bandInk, $branding->primaryColor, 0.22);
+    $bandFaint = Color::mix($bandInk, $branding->primaryColor, 0.42);
+    $bandHairlineStrong = Color::mix($bandInk, $branding->primaryColor, 0.55);
+    $bandHairline = Color::mix($bandInk, $branding->primaryColor, 0.7);
+    $divider = Color::readable($branding->secondaryColor, $branding->primaryColor, 3.0);
 @endphp
 
 @if ($minimal)
@@ -18,7 +31,7 @@
         @if ($branding->hasLogo())
             <img src="{{ $branding->logoUrl }}" alt="{{ $branding->agencyName }}" style="height:40px;max-width:240px;">
         @else
-            <div style="font-family:{{ $branding->headingFontStack() }};font-size:19px;font-weight:600;color:var(--brand-primary);">{{ $branding->agencyName }}</div>
+            <div style="font-family:{{ $branding->headingFontStack() }};font-size:19px;font-weight:600;color:var(--brand-primary-ink);">{{ $branding->agencyName }}</div>
         @endif
         <div class="metric-label" style="margin-top:30px;">{{ ReportLang::get('cover.eyebrow') }}</div>
         <h1 style="font-size:40px;line-height:1.04;margin-top:8px;color:#211f1b;">{{ $client }}</h1>
@@ -29,32 +42,32 @@
     </div>
 @else
     {{-- Standard / bold: full-bleed branded cover band. --}}
-    <div class="cover-band" style="background:var(--brand-primary);color:#eef0f6;margin:-34px -46px 0;padding:{{ $bold ? '60px 46px 54px' : '52px 46px 46px' }};">
+    <div class="cover-band" style="background:var(--brand-primary);color:{{ $bandMuted }};margin:-34px -46px 0;padding:{{ $bold ? '60px 46px 54px' : '52px 46px 46px' }};">
         <table class="cover-split" style="width:100%;border-collapse:collapse;"><tr>
             <td style="vertical-align:middle;">
                 @if ($branding->hasLogo())
                     <img src="{{ $branding->logoUrl }}" alt="{{ $branding->agencyName }}" style="height:42px;max-width:240px;">
                 @else
-                    <div style="font-family:{{ $branding->headingFontStack() }};font-size:19px;font-weight:600;color:#fff;">{{ $branding->agencyName }}</div>
+                    <div style="font-family:{{ $branding->headingFontStack() }};font-size:19px;font-weight:600;color:{{ $bandInk }};">{{ $branding->agencyName }}</div>
                 @endif
             </td>
             <td style="vertical-align:middle;text-align:right;">
-                <span style="display:inline-block;padding:4px 12px;border:1px solid rgba(255,255,255,.28);border-radius:999px;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#e7eaf5;">{{ ReportLang::get('cover.eyebrow') }}</span>
+                <span style="display:inline-block;padding:4px 12px;border:1px solid {{ $bandHairlineStrong }};border-radius:999px;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:{{ $bandMuted }};">{{ ReportLang::get('cover.eyebrow') }}</span>
             </td>
         </tr></table>
 
         <div style="margin-top:{{ $bold ? '60px' : '52px' }};">
-            <div style="height:4px;width:44px;background:var(--brand-secondary);border-radius:2px;margin-bottom:20px;"></div>
-            <h1 style="font-size:{{ $bold ? '54px' : '46px' }};line-height:1.02;font-weight:600;letter-spacing:-.02em;color:#fff;margin:0;">{{ $client }}</h1>
-            <div style="margin-top:14px;font-size:16px;color:#c7ccdf;font-variant-numeric:tabular-nums;">{{ $site }} &middot; {{ $period }}</div>
+            <div style="height:4px;width:44px;background:{{ $divider }};border-radius:2px;margin-bottom:20px;"></div>
+            <h1 style="font-size:{{ $bold ? '54px' : '46px' }};line-height:1.02;font-weight:600;letter-spacing:-.02em;color:{{ $bandInk }};margin:0;">{{ $client }}</h1>
+            <div style="margin-top:14px;font-size:16px;color:{{ $bandFaint }};font-variant-numeric:tabular-nums;">{{ $site }} &middot; {{ $period }}</div>
         </div>
 
         @if ($intro || $contact || $preparedOn)
-            <table class="cover-split" style="width:100%;border-collapse:collapse;margin-top:44px;border-top:1px solid rgba(255,255,255,.16);"><tr>
-                <td style="vertical-align:top;padding-top:20px;max-width:440px;font-size:14.5px;line-height:1.6;color:#d7dbe8;">{{ $intro }}</td>
+            <table class="cover-split" style="width:100%;border-collapse:collapse;margin-top:44px;border-top:1px solid {{ $bandHairline }};"><tr>
+                <td style="vertical-align:top;padding-top:20px;max-width:440px;font-size:14.5px;line-height:1.6;color:{{ $bandMuted }};">{{ $intro }}</td>
                 @if ($contact || $preparedOn)
-                    <td style="vertical-align:top;padding-top:20px;text-align:right;font-size:12.5px;color:#a9b0cd;line-height:1.7;white-space:nowrap;">
-                        @if ($contact) {{ ReportLang::get('cover.prepared_for') }}<br><span style="color:#fff;font-weight:600;">{{ $contact }}</span><br>@endif
+                    <td style="vertical-align:top;padding-top:20px;text-align:right;font-size:12.5px;color:{{ $bandFaint }};line-height:1.7;white-space:nowrap;">
+                        @if ($contact) {{ ReportLang::get('cover.prepared_for') }}<br><span style="color:{{ $bandInk }};font-weight:600;">{{ $contact }}</span><br>@endif
                         {{ $preparedOn }}
                     </td>
                 @endif

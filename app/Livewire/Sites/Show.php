@@ -70,7 +70,11 @@ class Show extends Component
             'recentReports' => $this->site->reports()->latest()->take(self::RECENT_REPORTS)->get(),
             'reportCount' => $this->site->reports()->count(),
             'schedule' => $this->site->hasReportSchedule()
-                ? ['frequency' => $this->site->report_frequency->label(), 'template' => $this->site->reportTemplate()->value('name')]
+                ? [
+                    'frequency' => $this->site->report_frequency->label(),
+                    'template' => $this->site->reportTemplate()->value('name'),
+                    'next' => $this->site->report_frequency->nextGenerationDate(),
+                ]
                 : null,
         ])->title($this->site->name);
     }

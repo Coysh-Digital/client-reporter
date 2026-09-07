@@ -51,7 +51,7 @@ class GoogleAdsIntegration extends Integration
                 label: 'Developer token',
                 required: true,
                 secret: true,
-                help: 'From Google Ads → Tools & Settings → API Center. One token per manager account, reused across every connection.',
+                help: 'A one-time, account-level token from a Google Ads manager (MCC) account — apply for it at ads.google.com/aw/apicenter. Reused across every connection.',
                 scope: 'account',
             ),
         ];
@@ -63,10 +63,11 @@ class GoogleAdsIntegration extends Integration
     public function setupSteps(): array
     {
         return [
-            'In Google Ads, copy the account\'s <strong>Customer ID</strong> (top-right, e.g. 123-456-7890) and paste it below.',
-            'Under <strong>Tools &amp; Settings → API Center</strong>, copy your <strong>Developer token</strong> and paste it below.',
-            'Click <strong>Connect Google account</strong> and sign in with an account that can access this Google Ads account.',
-            'You\'ll return here connected — that\'s it.',
+            'Copy the <strong>Customer ID</strong> of the account you want to report on (top-right in Google Ads, e.g. 123-456-7890) and paste it below.',
+            'The <strong>Developer token</strong> comes from a Google Ads <strong>manager account</strong>, not a normal advertiser account. If you don\'t have one, create a manager account first — the API Center only appears on manager accounts.',
+            'Signed in to that manager account, open <strong>ads.google.com/aw/apicenter</strong>, complete the API access form and accept the terms. Use a working website URL and a regularly monitored contact email, or Google may reject the application.',
+            'Copy the <strong>Developer token</strong> from the API Center and paste it below. New tokens get <strong>Explorer</strong> or <strong>Test</strong> access — Test access only returns data for test accounts, so apply for <strong>Basic</strong> access to report on live campaigns.',
+            'Click <strong>Connect Google account</strong> and sign in with an account that can access the Google Ads account above. You\'ll return here connected.',
         ];
     }
 

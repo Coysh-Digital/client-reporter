@@ -117,7 +117,12 @@
                                             <span class="text-xs text-faint">None yet</span>
                                         @endif
                                     </x-td>
-                                    <x-td nowrap><span class="text-xs text-muted">{{ $row['scheduled'] ?? 'Manual' }}</span></x-td>
+                                    <x-td nowrap>
+                                        <span class="text-xs text-muted">{{ $row['scheduled'] ?? 'Manual' }}</span>
+                                        @if (! empty($row['nextReport']))
+                                            <span class="block text-xs text-faint">Next {{ $row['nextReport']->format('j M') }}</span>
+                                        @endif
+                                    </x-td>
                                 </tr>
                             @endforeach
                         </tbody>

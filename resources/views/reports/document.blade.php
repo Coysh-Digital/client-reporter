@@ -29,6 +29,11 @@
         :root {
             --brand-primary: {{ $branding->primaryColor }};
             --brand-secondary: {{ $branding->secondaryColor }};
+            {{-- Legible variants of the brand colours for text and thin accents on
+                 the light report surface — a light brand/secondary is nudged darker
+                 only as far as it must be to stay readable. --}}
+            --brand-primary-ink: {{ \App\Support\Branding\Color::readable($branding->primaryColor, '#faf7ef', 4.5) }};
+            --brand-secondary-ink: {{ \App\Support\Branding\Color::readable($branding->secondaryColor, '#faf7ef', 4.5) }};
         }
         * { box-sizing: border-box; }
         body {
@@ -72,10 +77,10 @@
         /* Long URLs and file names must wrap rather than push a table off the page. */
         table.data td, .commentary, .insight, .ai-summary { overflow-wrap: anywhere; word-wrap: break-word; }
         /* Callouts: an editorial accent bar in a brand colour. */
-        .insight { background: #faf7ef; border: 1px solid #efe7d3; border-left: 3px solid var(--brand-secondary); border-radius: 7px; padding: 12px 16px 12px 18px; margin: 0 0 20px; font-size: 13.5px; line-height: 1.6; color: #4a4638; }
-        .insight-label { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--brand-secondary); margin-bottom: 4px; }
-        .ai-summary { background: #faf7ef; border: 1px solid #ece5da; border-left: 3px solid var(--brand-primary); border-radius: 7px; padding: 12px 16px 12px 18px; margin: 0 0 20px; font-size: 13.5px; line-height: 1.6; color: #4a4638; }
-        .ai-summary-label { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--brand-primary); margin-bottom: 4px; }
+        .insight { background: #faf7ef; border: 1px solid #efe7d3; border-left: 3px solid var(--brand-secondary-ink); border-radius: 7px; padding: 12px 16px 12px 18px; margin: 0 0 20px; font-size: 13.5px; line-height: 1.6; color: #4a4638; }
+        .insight-label { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--brand-secondary-ink); margin-bottom: 4px; }
+        .ai-summary { background: #faf7ef; border: 1px solid #ece5da; border-left: 3px solid var(--brand-primary-ink); border-radius: 7px; padding: 12px 16px 12px 18px; margin: 0 0 20px; font-size: 13.5px; line-height: 1.6; color: #4a4638; }
+        .ai-summary-label { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--brand-primary-ink); margin-bottom: 4px; }
         /* Headline metric tile, shared by the consolidated blocks. A min-height
            keeps a row of tiles level even when one label wraps. */
         .metric-tile { border: 1px solid #ece5d6; border-top: 2px solid var(--brand-primary); border-radius: 9px; padding: 13px 15px; background: #fffdfa; min-height: 84px; }
@@ -96,7 +101,7 @@
         .delta-down { color: #a13b32; }
         .delta-flat, .delta-none { color: #98938a; }
         table.data { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13.5px; font-variant-numeric: tabular-nums; }
-        table.data th { text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--brand-secondary); border-bottom: 1px solid #efe8da; padding: 7px 8px; }
+        table.data th { text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--brand-secondary-ink); border-bottom: 1px solid #efe8da; padding: 7px 8px; }
         table.data td { padding: 8px; border-bottom: 1px solid #f3ecdf; color: #3c3931; }
         table.data tr:last-child td { border-bottom: 0; }
         /* dompdf-safe horizontal bar list (table-based). */
@@ -105,14 +110,14 @@
         table.bars .bar-track { display: block; height: 6px; background: #eee7d9; border-radius: 3px; overflow: hidden; }
         table.bars .bar-fill { display: block; height: 6px; background: var(--brand-primary); border-radius: 3px; }
         .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 11px; }
-        .mini-bars-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--brand-secondary); }
+        .mini-bars-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--brand-secondary-ink); }
         .status-strip { width: 100%; border-collapse: collapse; table-layout: fixed; margin-top: 12px; }
         .status-strip td { padding: 0 1px; }
         .status-cell { display: block; height: 20px; border-radius: 3px; font-size: 0; line-height: 0; }
         .gauge-ring-img { display: block; margin: 0 auto; }
         .report-footer { text-align: center; color: #9a9384; font-size: 12.5px; margin-top: 22px; line-height: 1.7; }
         .report-footer .footer-name { font-family: {!! $branding->headingFontStack() !!}; font-size: 15px; font-weight: 600; color: #4a463d; display: block; margin-bottom: 4px; }
-        a { color: var(--brand-primary); text-decoration: none; }
+        a { color: var(--brand-primary-ink); text-decoration: none; }
 
         @media (max-width: 640px) {
             body { overflow-x: hidden; }

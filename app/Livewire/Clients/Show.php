@@ -83,6 +83,7 @@ class Show extends Component
                 'troubledIntegrations' => (int) ($site->troubled_integrations_count ?? 0),
                 'reportsCount' => (int) ($site->reports_count ?? 0),
                 'scheduled' => $site->hasReportSchedule() ? $site->report_frequency?->label() : null,
+                'nextReport' => $site->hasReportSchedule() ? $site->report_frequency?->nextGenerationDate() : null,
                 'latestReport' => $latest !== null
                     ? [
                         'period' => $latest->dateRange()->label(),

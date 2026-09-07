@@ -15,6 +15,9 @@ class PageSpeedClient extends AbstractHttpClient
 {
     private const ENDPOINT = 'https://www.googleapis.com/pagespeedonline/v5/runPagespeed';
 
+    /** The Lighthouse categories to score, in the API's own enum spelling. */
+    private const CATEGORIES = ['PERFORMANCE', 'ACCESSIBILITY', 'BEST_PRACTICES', 'SEO'];
+
     /** A Lighthouse run is slow; give it a minute and never retry a 5xx (it would double the wait). */
     protected int $timeout = 60;
 
@@ -35,14 +38,21 @@ class PageSpeedClient extends AbstractHttpClient
         $params = [
             'url' => $url,
             'strategy' => $strategy === 'desktop' ? 'desktop' : 'mobile',
-            'category' => 'performance',
         ];
 
         if ($this->apiKey !== null && $this->apiKey !== '') {
             $params['key'] = $this->apiKey;
         }
 
-        $response = $this->guard($this->get(self::ENDPOINT, $params), [
+        // The Lighthouse category scores each need their own `category` param.
+        // Laravel would serialise an array as `category[0]=…`, which the API
+        // ignores, so the repeated params are appended to the query by hand.
+        $query = http_build_query($params);
+        foreach (self::CATEGORIES as $category) {
+            $query .= '&category='.$category;
+        }
+
+        $response = $this->guard($this->get(self::ENDPOINT.'?'.$query), [
             429 => 'PageSpeed Insights rate-limited the request. Add a Google API key to raise the limit.',
             400 => 'PageSpeed Insights could not analyse this URL. Check the site address.',
         ]);
