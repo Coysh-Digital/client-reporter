@@ -7,6 +7,7 @@ namespace App\Billing;
 use App\Integrations\Support\AuthenticationException;
 use App\Integrations\Support\IntegrationException;
 use App\Models\ClientBillingConnection;
+use App\Support\IntegrationAlerts;
 use App\Support\SafeError;
 use Throwable;
 
@@ -91,11 +92,23 @@ class BillingSyncer
         // A rejected credential won't recover until it's reconnected, so disable
         // it right away rather than retrying (and re-logging) it every hour. Soft
         // or transient failures get the usual retry-then-disable grace.
-        if ($e instanceof AuthenticationException || $failures >= $this->failureThreshold()) {
+        $wasDisabled = $link->disabled_at !== null;
+        $disableNow = $e instanceof AuthenticationException || $failures >= $this->failureThreshold();
+        if ($disableNow) {
             $update['disabled_at'] = now();
         }
 
         $link->update($update);
+
+        // Alert staff the first time it disables (not on every hourly retry).
+        if (! $wasDisabled && $disableNow) {
+            app(IntegrationAlerts::class)->billingNeedsAction(
+                $link,
+                $e instanceof AuthenticationException
+                    ? 'The billing connection was rejected — reconnect it to resume syncing.'
+                    : 'The billing connection was disabled after repeated sync failures.',
+            );
+        }
     }
 
     private function failureThreshold(): int

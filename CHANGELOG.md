@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added an in-app **notification bell** in the top bar. When a connection needs attention — its authentication expires, or it's auto-disabled after repeated failures (data collection or billing) — managers and administrators get a notification, linking straight to the affected site or client. It's raised once per failure episode (never on transient retries), with unread counts and mark-as-read.
+
 - The sidebar now shows **live background activity** — what's generating, collecting or syncing right now, named (e.g. "Acme — August") with a progress bar where known — and the Activity page gains a matching "Currently running" panel. Queued and failed jobs are listed with human names too.
 - Added a **Parallel jobs** setting (Settings → Background queue): the scheduler runs that many queue workers at once so jobs process in parallel (default 1 = one at a time; more clears the queue faster but uses more server resources). Safe on the database queue — jobs are locked so they never double-run.
 - Background work (report generation, data collection, billing sync, favicon fetches) is now tracked in one place, so activity, descriptions and progress are consistent; stale records left by a stopped worker are cleared and old finished ones are pruned.
