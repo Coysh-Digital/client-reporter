@@ -188,6 +188,9 @@
                         <span class="hidden sm:inline">Search…</span>
                         <x-kbd class="hidden sm:inline">⌘K</x-kbd>
                     </button>
+                    @can('manage-integrations')
+                        <livewire:notifications.bell />
+                    @endcan
                     @if (Route::has('reports.create'))
                         @can('manage-reports')
                             <x-button variant="primary" :href="route('reports.create')" icon="plus">New report</x-button>

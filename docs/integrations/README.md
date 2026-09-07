@@ -49,6 +49,8 @@ A connection can start failing — a token gets revoked, a service is reconfigur
 
 A disabled connection shows as **"Disabled after repeated failures"** with a **Reconnect** action, and appears on the dashboard's needs-attention list. Reconnecting it — or, for billing, a successful **Sync now** — clears the disabled state and resumes normal collection. (An expired authentication still stops on the first failure, since retrying a rejected credential can't succeed until it's reconnected.)
 
+When a connection reaches a state that needs a person — authentication expired, or auto-disabled — everyone who can manage integrations (managers and administrators) also gets an in-app **notification** (the bell in the top bar), linking to the affected site or client. It's raised once per failure episode, not on every retry.
+
 ## Workspace connections ("connect once")
 
 Lots of integrations can be connected **once for the whole workspace** instead of site by site. One API key or OAuth login then covers every site (or client), and Client Reporter matches up the provider's entities for you.

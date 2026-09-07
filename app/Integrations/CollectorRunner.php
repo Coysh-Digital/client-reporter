@@ -14,6 +14,7 @@ use App\Models\Metric;
 use App\Models\MetricSnapshot;
 use App\Models\SiteIntegration;
 use App\Support\DateRange;
+use App\Support\IntegrationAlerts;
 use App\Support\SafeError;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Log;
@@ -92,6 +93,9 @@ class CollectorRunner
 
         $failures = $connection->consecutive_failures + 1;
         $update = ['consecutive_failures' => $failures];
+        // Key off disabled_at, not status: a later failed run can reset status to
+        // "needs attention", but disabled_at persists — so we never re-alert.
+        $wasDisabled = $connection->disabled_at !== null;
 
         if ($failures >= $this->failureThreshold()) {
             $update['status'] = ConnectionStatus::Disabled;
@@ -99,6 +103,15 @@ class CollectorRunner
         }
 
         $connection->update($update);
+
+        // Alert staff the first time it crosses into "disabled" — not on every
+        // subsequent pass while it stays disabled.
+        if (! $wasDisabled && ($update['status'] ?? null) === ConnectionStatus::Disabled) {
+            app(IntegrationAlerts::class)->connectionNeedsAction(
+                $connection,
+                'It was disabled after repeated failures — reconnect it to resume collection.',
+            );
+        }
     }
 
     private function failureThreshold(): int
@@ -159,12 +172,25 @@ class CollectorRunner
                 default => [ConnectionStatus::NeedsAttention, 'failed'],
             };
 
+            $previousStatus = $connection->status;
+
             $connection->update([
                 'status' => $status,
                 'last_attempted_at' => now(),
                 'last_error' => $message,
                 'last_failure_kind' => $kind,
             ]);
+
+            // Alert staff on the transition into "authentication expired" — a
+            // rejected credential needs a person to reconnect it.
+            if ($status === ConnectionStatus::AuthExpired
+                && $previousStatus !== ConnectionStatus::AuthExpired
+                && $previousStatus !== ConnectionStatus::Disabled) {
+                app(IntegrationAlerts::class)->connectionNeedsAction(
+                    $connection,
+                    'Its authentication has expired — reconnect it to resume collection.',
+                );
+            }
 
             Log::warning('Collector run failed', [
                 'connection_id' => $connection->id,
