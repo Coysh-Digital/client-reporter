@@ -8,6 +8,7 @@ use App\Enums\ReportFrequency;
 use App\Jobs\GenerateReport;
 use App\Models\Report;
 use App\Models\ReportTemplate;
+use App\Reporting\ReportDuplicator;
 use App\Support\AuditLogger;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Layout;
@@ -43,6 +44,20 @@ class Show extends Component
     public function retryGeneration(): void
     {
         $this->generate();
+    }
+
+    /**
+     * Copy this report's sections into a fresh draft and open it in the builder,
+     * ready to change the date range and generate for another period.
+     */
+    public function duplicate(ReportDuplicator $duplicator, AuditLogger $audit): mixed
+    {
+        $this->authorize('manage-reports');
+
+        $copy = $duplicator->duplicate($this->report, auth()->id());
+        $audit->log('report.duplicated', $copy, metadata: ['from' => $this->report->id]);
+
+        return $this->redirectRoute('reports.edit', $copy, navigate: true);
     }
 
     /**

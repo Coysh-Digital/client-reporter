@@ -91,6 +91,7 @@
                                             </button>
                                         </x-slot:trigger>
                                         <x-dropdown-item :href="route('reports.edit', $report)" icon="pencil-square">Edit sections</x-dropdown-item>
+                                        <x-dropdown-item wire:click="duplicate({{ $report->id }})" icon="document-duplicate">Duplicate</x-dropdown-item>
                                         @if ($report->isGenerated())
                                             <x-dropdown-item :href="route('reports.pdf', $report)" icon="file-chart-column" :navigate="false">Download PDF</x-dropdown-item>
                                         @endif

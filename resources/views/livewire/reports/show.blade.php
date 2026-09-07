@@ -28,6 +28,10 @@
             @endif
             <x-button :href="route('reports.preview', $report) . ($report->isGenerated() ? '?frozen=1' : '')" :navigate="false" target="_blank" rel="noopener" icon="arrow-up-right-from-square">Open in new tab</x-button>
             @can('manage-reports')
+                <x-button wire:click="duplicate" icon="document-duplicate">
+                    <span wire:loading.remove wire:target="duplicate">Duplicate</span>
+                    <span wire:loading wire:target="duplicate">Duplicating…</span>
+                </x-button>
                 <x-button :href="route('reports.edit', $report)" icon="pencil-square">Edit sections</x-button>
                 @if ($report->isGenerated())
                     <x-button wire:click="generate" :disabled="$report->isGenerating()">
