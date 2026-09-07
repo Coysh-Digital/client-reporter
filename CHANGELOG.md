@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added a per-connection **update frequency**: on a connection's connect/edit form — and on the workspace connect form — choose how often it refreshes (Hourly, Every 3/6/12 hours, Daily, or "Use default"). A site's own setting overrides its workspace connection, which overrides the global collection interval; the "next due" time reflects whatever applies.
+
 - Added an in-app **notification bell** in the top bar. When a connection needs attention — its authentication expires, or it's auto-disabled after repeated failures (data collection or billing) — managers and administrators get a notification, linking straight to the affected site or client. It's raised once per failure episode (never on transient retries), with unread counts and mark-as-read.
 
 - The sidebar now shows **live background activity** — what's generating, collecting or syncing right now, named (e.g. "Acme — August") with a progress bar where known — and the Activity page gains a matching "Currently running" panel. Queued and failed jobs are listed with human names too.

@@ -167,11 +167,14 @@ Log in as an Administrator and open **Settings** (`/settings`, requires the `man
 | --- | --- | --- |
 | **PDF driver** (`pdf_driver`) | Which renderer produces PDF exports | `dompdf` or `browsershot` |
 | **Update checks** (`updates_enabled`) | Whether to check GitHub for new releases and notify admins | on / off |
-| **Collection interval** (`collection_interval`) | Minutes before a connection is considered due for collection again | 15–10080 (minutes) |
+| **Collection interval** (`collection_interval`) | Minutes before a connection is considered due for collection again — the global default. Each connection can override it (see below). | 15–10080 (minutes) |
+| **Parallel jobs** (`queue_workers`) | How many queue workers the scheduler runs at once | 1–`queue.max_workers` (default cap 50) |
 | **Retention** (`collection_retention_days`) | Days of collected metrics/snapshots to keep before pruning | 1–3650, or blank for keep-forever |
 | **Share-link expiry** (`default_share_expiry_days`) | Default expiry applied to new public report share links | 1–3650 days, or blank for no default expiry |
 
 The Settings page also shows your current version, the installation date, and the latest release info from the update checker.
+
+**Per-connection update frequency.** The collection interval above is the global default. Each connection's connect/edit form has an **Update frequency** control (Hourly, Every 3/6/12 hours, Daily, or "Use default"), and the workspace connect form has the same for a shared connection. The interval that applies is resolved **site connection → workspace connection → global default**, so you can, say, poll a busy analytics property hourly while everything else stays on the default. The connection's "next due" time reflects whichever applies.
 
 ## Storing integration credentials
 

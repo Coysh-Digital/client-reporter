@@ -51,6 +51,7 @@ class CollectData extends Command
         $this->reapStaleRuns();
 
         $connections = SiteIntegration::query()
+            ->with('workspaceIntegration')
             ->whereIn('status', [ConnectionStatus::Connected->value, ConnectionStatus::NeedsAttention->value])
             ->whereHas('site', fn ($q) => $q->where('is_active', true))
             ->when($this->option('connection'), fn ($q) => $q->whereKey($this->option('connection')))

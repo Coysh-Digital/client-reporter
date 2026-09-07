@@ -30,6 +30,9 @@ class Setup extends Component
 
     public string $name = '';
 
+    /** Per-connection collection interval in minutes; '' means inherit. */
+    public string $collectionInterval = '';
+
     /** @var array<string, mixed> */
     public array $values = [];
 
@@ -61,6 +64,25 @@ class Setup extends Component
                 ? (string) ($existing->setting($field->key) ?? '')
                 : '';
         }
+
+        $this->collectionInterval = $existing !== null ? (string) ($existing->setting('collection_interval') ?? '') : '';
+    }
+
+    /**
+     * Collection-frequency presets for the select, value (minutes) => label.
+     *
+     * @return array<int|string, string>
+     */
+    public function frequencyOptions(): array
+    {
+        return [
+            '' => 'Use default',
+            '60' => 'Hourly',
+            '180' => 'Every 3 hours',
+            '360' => 'Every 6 hours',
+            '720' => 'Every 12 hours',
+            '1440' => 'Daily',
+        ];
     }
 
     /**
@@ -109,9 +131,11 @@ class Setup extends Component
         $existing = $this->connection();
         $fields = $this->fields($integration, $existing);
         $this->validateConfigFields($fields, $this->values, $this->name, $existing !== null);
+        $this->validate(['collectionInterval' => ['nullable', 'in:60,180,360,720,1440']]);
 
         $credentials = $existing !== null ? ($existing->credentials ?? []) : [];
         $settings = $existing !== null ? ($existing->settings ?? []) : [];
+        $settings['collection_interval'] = $this->collectionInterval !== '' ? (int) $this->collectionInterval : null;
 
         foreach ($fields as $field) {
             $value = trim((string) ($this->values[$field->key] ?? ''));

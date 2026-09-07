@@ -103,6 +103,15 @@
             </x-field>
         @endforeach
 
+        <x-field label="Update frequency" for="collection-interval" name="collectionInterval"
+                 help="How often this connection's data is refreshed. 'Use default' follows the workspace, then the global collection interval in Settings.">
+            <select wire:model="collectionInterval" id="collection-interval" class="cr-input">
+                @foreach ($this->frequencyOptions() as $value => $optionLabel)
+                    <option value="{{ $value }}">{{ $optionLabel }}</option>
+                @endforeach
+            </select>
+        </x-field>
+
         <div class="flex items-center gap-3 border-t border-line pt-5">
             <x-button type="submit" variant="primary">
                 <span wire:loading.remove wire:target="save">{{ $connection ? 'Save & verify' : 'Connect & verify' }}</span>
