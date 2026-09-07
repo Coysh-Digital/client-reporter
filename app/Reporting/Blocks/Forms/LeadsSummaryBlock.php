@@ -79,7 +79,7 @@ class LeadsSummaryBlock extends BlockType
 
     public function defaultAiPrompt(): ?string
     {
-        return 'Summarise this month\'s leads and signups in two to three sentences for a '
+        return 'Summarise this period\'s leads and signups in two to three sentences for a '
             .'non-technical client. Cover new leads and the total audience versus the prior '
             .'period. Use only the figures provided.';
     }

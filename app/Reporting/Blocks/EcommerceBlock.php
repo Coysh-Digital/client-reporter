@@ -96,7 +96,7 @@ class EcommerceBlock extends BlockType
 
     public function defaultAiPrompt(): ?string
     {
-        return 'Summarise the store\'s performance this month in two to three sentences for a '
+        return 'Summarise the store\'s performance this period in two to three sentences for a '
             .'non-technical client. Cover revenue, orders and how they moved versus the prior '
             .'period. Use only the figures provided.';
     }

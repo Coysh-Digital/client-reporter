@@ -66,6 +66,7 @@ class AiSummariser
 
         $this->deadline = CarbonImmutable::now()->addSeconds(self::TIME_BUDGET_SECONDS);
 
+        $period = $report->dateRange()->label();
         $aggregate = [];
 
         foreach ($report->blocks as $block) {
@@ -89,7 +90,7 @@ class AiSummariser
             $wantsSummary = $type->supportsAiSummary() && (bool) $block->configValue('ai_summary', false);
 
             if ($wantsSummary && $facts !== [] && empty($resolved['ai_summary'])) {
-                $text = $this->safeComplete($client, $this->composer->summaryFor($type, $facts));
+                $text = $this->safeComplete($client, $this->composer->summaryFor($type, $facts, $period));
                 if ($text !== null) {
                     $data[$block->id]['data']['ai_summary'] = $text;
                 }
@@ -110,7 +111,7 @@ class AiSummariser
                 continue;
             }
 
-            $text = $this->safeComplete($client, $this->composer->roundupFor($type, $aggregate));
+            $text = $this->safeComplete($client, $this->composer->roundupFor($type, $aggregate, $period));
             if ($text !== null) {
                 $data[$block->id]['data']['ai_summary'] = $text;
             }
@@ -142,7 +143,7 @@ class AiSummariser
             return null;
         }
 
-        return $this->safeComplete($client, $this->composer->summaryFor($type, $facts));
+        return $this->safeComplete($client, $this->composer->summaryFor($type, $facts, $report->dateRange()->label()));
     }
 
     /**
@@ -185,7 +186,7 @@ class AiSummariser
             return null;
         }
 
-        return $this->safeComplete($client, $this->composer->roundupFor($roundupType, $aggregate));
+        return $this->safeComplete($client, $this->composer->roundupFor($roundupType, $aggregate, $report->dateRange()->label()));
     }
 
     private function clientOrNull(): ?AiSummaryClient

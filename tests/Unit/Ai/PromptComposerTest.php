@@ -57,4 +57,24 @@ class PromptComposerTest extends TestCase
         $this->assertStringContainsString('"Visitors": 1200', $messages->user);
         $this->assertStringContainsString('Data (JSON):', $messages->user);
     }
+
+    public function test_the_reporting_period_is_included_when_given(): void
+    {
+        $composer = app(PromptComposer::class);
+
+        $withPeriod = $composer->summaryFor(new SiteTrafficBlock, ['metrics' => []], '1 Apr – 30 Jun 2026');
+        $this->assertStringContainsString('Reporting period: 1 Apr – 30 Jun 2026.', $withPeriod->user);
+
+        // The system prompt tells the model not to assume a calendar month.
+        $this->assertStringContainsString('never assume it is a calendar month', $withPeriod->system);
+
+        // Omitting the period leaves the body clean.
+        $withoutPeriod = $composer->summaryFor(new SiteTrafficBlock, ['metrics' => []]);
+        $this->assertStringNotContainsString('Reporting period:', $withoutPeriod->user);
+    }
+
+    public function test_default_prompts_are_period_neutral(): void
+    {
+        $this->assertStringNotContainsString('this month', (string) (new SiteTrafficBlock)->defaultAiPrompt());
+    }
 }

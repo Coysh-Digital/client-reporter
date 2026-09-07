@@ -59,7 +59,7 @@ class SiteTrafficBlock extends BlockType
 
     public function defaultAiPrompt(): ?string
     {
-        return 'Summarise this month\'s website traffic for a non-technical client in two to '
+        return 'Summarise this period\'s website traffic for a non-technical client in two to '
             .'three sentences. Highlight how visitors moved versus the prior period, the leading '
             .'traffic source and the most common device. Use only the figures provided.';
     }

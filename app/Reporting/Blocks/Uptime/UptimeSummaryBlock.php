@@ -81,7 +81,7 @@ class UptimeSummaryBlock extends BlockType
 
     public function defaultAiPrompt(): ?string
     {
-        return 'Summarise the website\'s uptime this month in two to three sentences for a '
+        return 'Summarise the website\'s uptime this period in two to three sentences for a '
             .'non-technical client. Mention availability, any incidents and the average response '
             .'time. Use only the figures provided.';
     }

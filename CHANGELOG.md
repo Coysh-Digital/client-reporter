@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Fixed AI summaries always saying "this month" even when a report covered a different period (e.g. a quarter). The report's actual reporting period is now given to the AI, the built-in prompts are period-neutral, and the model is told not to assume a calendar month. Regenerate an existing report to refresh its wording.
+
 - The WordPress integration's connect screen now links straight to the companion plugin's latest release, with a **Download the plugin** button and clearer install steps (upload the ZIP under Plugins → Add New → Upload Plugin).
 - Added **Duplicate** to a report (on the reports list and a report's own page): it copies the report's sections, their options and hand-written commentary into a fresh draft for the same site and opens it in the builder, where you change the date range and generate — the easy way to re-run a bespoke report for another period.
 - Added **Import from CSV** to Sites → Import: upload a CSV with a `url` column (plus optional `name`, `client` and `cms`), preview the sites, map them to new or existing clients, and import the selected ones. Works for any CMS — including Craft sites exported from a tool without its own API — sits alongside the existing platform importers, and skips rows with no usable URL.
