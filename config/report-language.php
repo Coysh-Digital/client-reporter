@@ -461,6 +461,33 @@ return [
     ],
 
     /*
+    | Email campaigns block (Mailchimp, EmailOctopus).
+    */
+    'email' => [
+        'heading' => 'Email campaigns',
+        'empty' => 'No email campaigns were sent this period.',
+        'metric' => [
+            'campaigns_sent' => 'Campaigns sent',
+            'open_rate' => 'Open rate',
+            'click_rate' => 'Click rate',
+            'recipients' => 'Recipients',
+            'unsubscribed' => 'Unsubscribes',
+        ],
+        'col' => [
+            'campaign' => 'Campaign',
+            'sent' => 'Sent',
+            'recipients' => 'Recipients',
+            'opens' => 'Opens',
+            'clicks' => 'Clicks',
+            'unsubscribes' => 'Unsubscribes',
+        ],
+        'insight' => [
+            'singular' => ':count campaign was sent this period.',
+            'plural' => ':count campaigns were sent this period.',
+        ],
+    ],
+
+    /*
     | Billing & invoices block.
     */
     'billing' => [

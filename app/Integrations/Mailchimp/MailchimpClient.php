@@ -6,6 +6,7 @@ namespace App\Integrations\Mailchimp;
 
 use App\Integrations\Support\AbstractHttpClient;
 use App\Integrations\Support\IntegrationException;
+use App\Support\DateRange;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Str;
 
@@ -61,6 +62,48 @@ class MailchimpClient extends AbstractHttpClient
             'imports' => (int) ($row['imports'] ?? 0),
             'optins' => (int) ($row['optins'] ?? 0),
         ], $data['history'] ?? []);
+    }
+
+    /**
+     * Sent campaigns whose send time falls within the range, newest first, each
+     * with its inline report summary. Mailchimp returns opens/clicks and rates
+     * on the campaign itself, so this needs no per-campaign follow-up call.
+     *
+     * @return array<int, array{name: string, sent_at: string, recipients: int, opens: int, clicks: int, open_rate: float, click_rate: float, unsubscribed: ?int}>
+     */
+    public function campaigns(DateRange $range): array
+    {
+        $data = $this->request('/campaigns', [
+            'status' => 'sent',
+            'since_send_time' => $range->start->toIso8601String(),
+            'before_send_time' => $range->end->toIso8601String(),
+            'sort_field' => 'send_time',
+            'sort_dir' => 'DESC',
+            'count' => 20,
+        ]);
+
+        return array_map(function (array $campaign): array {
+            $recipients = (int) ($campaign['emails_sent'] ?? 0);
+            $summary = $campaign['report_summary'] ?? [];
+            $opens = (int) ($summary['unique_opens'] ?? 0);
+            $clicks = (int) ($summary['subscriber_clicks'] ?? 0);
+
+            return [
+                'name' => (string) ($campaign['settings']['title'] ?? $campaign['settings']['subject_line'] ?? 'Campaign'),
+                'sent_at' => (string) ($campaign['send_time'] ?? ''),
+                'recipients' => $recipients,
+                'opens' => $opens,
+                'clicks' => $clicks,
+                'open_rate' => isset($summary['open_rate']) ? round((float) $summary['open_rate'] * 100, 1) : self::rate($opens, $recipients),
+                'click_rate' => isset($summary['click_rate']) ? round((float) $summary['click_rate'] * 100, 1) : self::rate($clicks, $recipients),
+                'unsubscribed' => null,
+            ];
+        }, $data['campaigns'] ?? []);
+    }
+
+    private static function rate(int $part, int $whole): float
+    {
+        return $whole > 0 ? round($part / $whole * 100, 1) : 0.0;
     }
 
     /**

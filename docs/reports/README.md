@@ -49,6 +49,7 @@ Blocks are grouped in the builder menu by category:
 | **Search** | Search performance | `search.summary` | a search provider (Search Console) |
 | **Ecommerce** | Store performance | `ecommerce.summary` | a store (WooCommerce, Craft Commerce, Shopify) or Stripe |
 | **Forms & Leads** | Leads & signups | `forms.summary` | a forms/marketing provider |
+| **Forms & Leads** | Email campaigns | `email.campaigns` | an email-marketing provider (Mailchimp, EmailOctopus) |
 | **Uptime** | Uptime summary | `uptime.summary` | an uptime monitor |
 | | Incidents | `uptime.incidents` | an uptime monitor |
 | **Performance** | Core Web Vitals | `performance.summary` | a performance provider (PageSpeed) |
