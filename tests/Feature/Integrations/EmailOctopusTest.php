@@ -85,6 +85,39 @@ class EmailOctopusTest extends TestCase
         $this->assertSame(500, (int) $metrics['leads.total']->value);
     }
 
+    public function test_new_subscriber_filters_use_zulu_utc_timestamps(): void
+    {
+        // A "+00:00" offset is rejected by EmailOctopus with a 400; the filters
+        // must be sent as UTC "Zulu" timestamps.
+        $this->fakeList();
+
+        (new SummaryCollector)->collect($this->connection(), new DateRange('2026-08-01', '2026-08-31'));
+
+        Http::assertSent(function ($request): bool {
+            $url = urldecode($request->url());
+
+            return str_contains($url, '/contacts')
+                && str_contains($url, 'created_at.gte=2026-08-01T00:00:00Z')
+                && str_contains($url, 'created_at.lte=2026-08-31T23:59:59Z');
+        });
+    }
+
+    public function test_a_rejected_request_surfaces_the_api_error_detail(): void
+    {
+        Http::fake([
+            'api.emailoctopus.com/*' => Http::response([
+                'type' => 'https://emailoctopus.com/errors/bad-request',
+                'title' => 'Bad request',
+                'detail' => 'The created_at.gte parameter is invalid.',
+            ], 400),
+        ]);
+
+        $result = (new EmailOctopusIntegration)->verify($this->connection());
+
+        $this->assertFalse($result->ok);
+        $this->assertStringContainsString('created_at.gte parameter is invalid', $result->message);
+    }
+
     public function test_collector_pages_through_all_new_contacts(): void
     {
         Http::fake([

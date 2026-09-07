@@ -21,6 +21,10 @@ use Illuminate\Support\Carbon;
  * @property string $external_contact_id
  * @property string $external_contact_name
  * @property Carbon|null $last_synced_at
+ * @property int $consecutive_failures
+ * @property Carbon|null $last_attempted_at
+ * @property string|null $last_error
+ * @property Carbon|null $disabled_at
  */
 class ClientBillingConnection extends Model
 {
@@ -30,13 +34,34 @@ class ClientBillingConnection extends Model
         'external_contact_id',
         'external_contact_name',
         'last_synced_at',
+        'consecutive_failures',
+        'last_attempted_at',
+        'last_error',
+        'disabled_at',
+    ];
+
+    /** @var array<string, mixed> */
+    protected $attributes = [
+        'consecutive_failures' => 0,
     ];
 
     protected function casts(): array
     {
         return [
             'last_synced_at' => 'datetime',
+            'consecutive_failures' => 'integer',
+            'last_attempted_at' => 'datetime',
+            'disabled_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Whether this billing link has been auto-disabled after repeated sync
+     * failures and is being skipped until it's reconnected.
+     */
+    public function isDisabled(): bool
+    {
+        return $this->disabled_at !== null;
     }
 
     /**

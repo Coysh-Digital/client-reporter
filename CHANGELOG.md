@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- A connection that keeps failing is now **auto-disabled after five consecutive failures** (configurable via `collection.failure_threshold`) instead of being retried — and re-logged — indefinitely. This covers both data collection and billing sync (FreeAgent, Xero), so a dead credential stops being hammered every interval. A disabled connection is surfaced with a "Disabled after repeated failures" state and a Reconnect action, and reconnecting (or a successful manual sync) clears it and resumes.
+- Fixed the **EmailOctopus** collector failing with "HTTP 400": the contacts date filters were sent with a `+00:00` offset, which EmailOctopus rejects — they're now UTC "Zulu" timestamps. EmailOctopus errors also now surface the API's own reason instead of a bare status code.
 - Added **auto-send** for scheduled reports: turn it on per site (on the site form or a report's Schedule card) and each scheduled report is emailed to the client's contact email automatically once it generates, with the PDF attached. It only fires for scheduled reports, never sends the same one twice, and is skipped and flagged when the client has no contact email. Every send — manual or automatic — is now recorded in a **Delivery history** on the report page, and the Scheduled reports page gains an auto-send indicator and a "last sent" column.
 - A report's page can now change or turn off its site's reporting schedule (frequency, template and auto-send) directly, without opening the site.
 - Clearer EmailOctopus connection steps: the API key comes from **Account → Integrations & API → API keys**, and the List ID is copied from a list's web address under **Contacts**.

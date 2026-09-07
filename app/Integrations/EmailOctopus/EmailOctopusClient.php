@@ -7,6 +7,7 @@ namespace App\Integrations\EmailOctopus;
 use App\Integrations\Support\AbstractHttpClient;
 use App\Support\DateRange;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Response;
 
 /**
  * Thin wrapper around the EmailOctopus v2 API. A single fixed host serves every
@@ -42,10 +43,12 @@ class EmailOctopusClient extends AbstractHttpClient
      */
     public function newSubscribers(string $listId, DateRange $range): int
     {
+        // EmailOctopus wants the created_at filters as UTC "Zulu" timestamps
+        // (e.g. 2024-01-19T12:14:28Z); a "+00:00" offset is rejected with a 400.
         $query = [
             'status' => 'subscribed',
-            'created_at.gte' => $range->start->toIso8601String(),
-            'created_at.lte' => $range->end->toIso8601String(),
+            'created_at.gte' => $range->start->utc()->toIso8601ZuluString(),
+            'created_at.lte' => $range->end->utc()->toIso8601ZuluString(),
             'limit' => 100,
         ];
 
@@ -97,12 +100,38 @@ class EmailOctopusClient extends AbstractHttpClient
             fn (PendingRequest $r): PendingRequest => $r->withToken($this->apiKey),
         );
 
-        $this->guard($response, [
-            401 => 'EmailOctopus rejected the API key.',
-            403 => 'EmailOctopus rejected the API key.',
-            404 => 'EmailOctopus list not found — check the List ID.',
-        ]);
+        if ($response->failed()) {
+            $detail = $this->errorDetail($response);
+
+            $this->guard($response, [
+                400 => 'EmailOctopus rejected the request'.($detail !== null ? ': '.$detail : '.'),
+                401 => 'EmailOctopus rejected the API key.',
+                403 => 'EmailOctopus rejected the API key.',
+                404 => 'EmailOctopus list not found — check the List ID.',
+                422 => 'EmailOctopus rejected the request'.($detail !== null ? ': '.$detail : '.'),
+            ]);
+        }
 
         return (array) $response->json();
+    }
+
+    /**
+     * EmailOctopus returns JSON errors in an RFC 7807 shape; pull the most
+     * human part out so the reason for a rejection is visible, not just "HTTP 400".
+     */
+    private function errorDetail(Response $response): ?string
+    {
+        $body = $response->json();
+        if (! is_array($body)) {
+            return null;
+        }
+
+        foreach (['detail', 'title', 'message'] as $key) {
+            if (isset($body[$key]) && is_string($body[$key]) && $body[$key] !== '') {
+                return $body[$key];
+            }
+        }
+
+        return null;
     }
 }

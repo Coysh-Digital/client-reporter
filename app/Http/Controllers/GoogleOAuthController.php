@@ -103,6 +103,8 @@ class GoogleOAuthController
             'status' => ConnectionStatus::Connected,
             'last_connected_at' => now(),
             'last_error' => null,
+            'consecutive_failures' => 0,
+            'disabled_at' => null,
         ]);
 
         $audit->log('integration.connected', $connection, metadata: ['integration' => $connection->integration_key, 'via' => 'oauth']);
@@ -140,6 +142,12 @@ class GoogleOAuthController
             'last_connected_at' => now(),
             'last_error' => null,
         ]);
+
+        // Re-enable any per-site connections that borrow this workspace's
+        // credential and were auto-disabled after repeated failures.
+        SiteIntegration::query()
+            ->where('workspace_integration_id', $workspace->id)
+            ->update(['consecutive_failures' => 0, 'disabled_at' => null]);
 
         $audit->log('integration.workspace_connected', $workspace, metadata: ['integration' => $workspace->integration_key, 'via' => 'oauth']);
 

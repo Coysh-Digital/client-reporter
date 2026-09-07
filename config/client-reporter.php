@@ -184,6 +184,12 @@ return [
         // How long collected metrics/snapshots are retained (days). Null keeps
         // everything, which is recommended so historical reports stay accurate.
         'retention_days' => null,
+
+        // After this many consecutive failed attempts, a connection is
+        // auto-disabled: it stops being retried (data collection and billing
+        // sync alike) until someone reconnects it. A single success resets the
+        // count. Keeps a dead credential from being hammered every interval.
+        'failure_threshold' => 5,
     ],
 
     /*
