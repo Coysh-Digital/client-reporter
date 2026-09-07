@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Storage;
 /**
  * @property ReportFrequency|null $report_frequency
  * @property int|null $report_template_id
+ * @property bool $auto_send
  */
 class Site extends Model
 {
@@ -35,6 +36,7 @@ class Site extends Model
         'settings',
         'report_frequency',
         'report_template_id',
+        'auto_send',
     ];
 
     protected function casts(): array
@@ -44,6 +46,7 @@ class Site extends Model
             'settings' => 'array',
             'report_frequency' => ReportFrequency::class,
             'favicon_fetched_at' => 'datetime',
+            'auto_send' => 'boolean',
         ];
     }
 

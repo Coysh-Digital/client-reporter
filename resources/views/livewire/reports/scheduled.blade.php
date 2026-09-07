@@ -27,6 +27,7 @@
                     <x-th>Sections</x-th>
                     <x-th>Next report</x-th>
                     <x-th>Last generated</x-th>
+                    <x-th>Last sent</x-th>
                 </tr>
             </thead>
             <tbody>
@@ -42,7 +43,12 @@
                                 </span>
                             </a>
                         </x-td>
-                        <x-td nowrap><x-badge variant="info">{{ $row['frequency'] }}</x-badge></x-td>
+                        <x-td nowrap>
+                            <x-badge variant="info">{{ $row['frequency'] }}</x-badge>
+                            @if ($row['autoSend'])
+                                <x-badge variant="accent">Auto-send</x-badge>
+                            @endif
+                        </x-td>
                         <x-td nowrap><span class="text-muted">{{ $row['template'] ?? 'Default sections' }}</span></x-td>
                         <x-td nowrap>
                             @if ($row['next'])
@@ -59,6 +65,15 @@
                                 </a>
                             @else
                                 <span class="text-xs text-faint">None yet</span>
+                            @endif
+                        </x-td>
+                        <x-td nowrap>
+                            @if ($row['lastSent'])
+                                <span class="text-xs text-muted">{{ $row['lastSent']->format('j M Y') }}</span>
+                            @elseif ($row['autoSend'])
+                                <span class="text-xs text-faint">Not yet</span>
+                            @else
+                                <span class="text-xs text-faint">—</span>
                             @endif
                         </x-td>
                     </tr>

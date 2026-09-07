@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added **auto-send** for scheduled reports: turn it on per site (on the site form or a report's Schedule card) and each scheduled report is emailed to the client's contact email automatically once it generates, with the PDF attached. It only fires for scheduled reports, never sends the same one twice, and is skipped and flagged when the client has no contact email. Every send — manual or automatic — is now recorded in a **Delivery history** on the report page, and the Scheduled reports page gains an auto-send indicator and a "last sent" column.
+- A report's page can now change or turn off its site's reporting schedule (frequency, template and auto-send) directly, without opening the site.
+- Clearer EmailOctopus connection steps: the API key comes from **Account → Integrations & API → API keys**, and the List ID is copied from a list's web address under **Contacts**.
 - Added an **EmailOctopus** integration: connect a list to report new subscribers and audience size alongside the other Forms & Leads sources.
 - Added a **Scheduled reports** page (Reports → Scheduled) listing every site on a schedule with its frequency, sections, next generation date and last generated report; a site's page, its client's page and the site form now show when the next scheduled report will generate.
 - Lighthouse now reports all four category scores — Performance, Accessibility, Best Practices and SEO — instead of Performance alone (existing reports pick up the extra scores at their next data collection).

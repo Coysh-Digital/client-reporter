@@ -95,11 +95,17 @@ Everything a client can see — the shared link, the emailed copy, the PDF — c
 
 Not every site needs a report on a clock, so scheduling is **opt-in per site**. On a site's edit page there's a **Reporting schedule** section where you can set a frequency — Weekly, Monthly or Quarterly — and, optionally, a [template](#report-templates) to build the report from (leave it on "Default sections" if you'd rather use the standard spine). Leave the frequency on "Not scheduled" for sites you report on by hand. When a frequency is set, the form tells you the date the next report will generate.
 
-**Reports → Scheduled** gives you one place to see every scheduled site at a glance: its frequency, the sections it uses, when its next report will generate, and the last one it produced. A site's own page and its client's page also show the next generation date, so you're never guessing when the next report will appear.
+You can also set a schedule straight from a **report's page** — the Schedule card there edits the same per-site setting, so a change applies to all of that site's future reports.
+
+**Reports → Scheduled** gives you one place to see every scheduled site at a glance: its frequency, whether it auto-sends, the sections it uses, when its next report will generate, the last one it produced, and the last time a report actually went out. A site's own page and its client's page also show the next generation date, so you're never guessing when the next report will appear.
 
 Once a period has **fully closed**, the `client-reporter:generate-scheduled` command (run daily by the scheduler) picks up each scheduled site, creates the report for that period, and generates it — pulling the data and freezing the snapshot, exactly as if you'd made it yourself. It won't touch the current, still-open period, and it never duplicates a report you've already made for a period.
 
-Crucially, **sending stays manual**. A scheduled report lands as generated-but-unsent, and shows up on your [dashboard](../../README.md) under "Needs attention" as *ready to send* — so you always review it and decide when (and whether) a client sees it. Nothing goes out on its own.
+### Sending — manual by default, auto-send if you want it
+
+By default **sending stays manual**: a scheduled report lands as generated-but-unsent and shows up on your [dashboard](../../README.md) under "Needs attention" as *ready to send*, so you review it and decide when (and whether) a client sees it.
+
+If you'd rather a site's reports go out on their own, turn on **Auto-send to the client** in the site's schedule (also editable from the report page). When it's on, each scheduled report is emailed to the client's contact email automatically once it generates — with the PDF attached and a share link — using the same branded email as a manual send. It only ever fires for *scheduled* reports (never manual ones), never sends the same report twice, and if the client has no contact email set it's skipped and flagged rather than sent. Every send, manual or automatic, is recorded in a **Delivery history** on the report page (recipient, time, whether it was manual or automatic, and whether it landed).
 
 If a scheduled generation fails (say an integration is down), nothing half-made is left behind — the next daily run simply tries again.
 
