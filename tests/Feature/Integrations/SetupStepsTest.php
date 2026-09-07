@@ -26,6 +26,18 @@ class SetupStepsTest extends TestCase
             ->assertSee('Auth tokens', escape: false);
     }
 
+    public function test_the_wordpress_connect_screen_links_to_the_plugin_download(): void
+    {
+        $manager = User::factory()->manager()->create();
+        $site = Site::factory()->create();
+
+        $this->actingAs($manager)
+            ->get(route('sites.integrations.connect', ['site' => $site, 'key' => 'wordpress']))
+            ->assertOk()
+            ->assertSee('Download the plugin')
+            ->assertSee('github.com/Coysh-Digital/client-reporter-wordpress/releases/latest', escape: false);
+    }
+
     public function test_every_bundled_integration_has_setup_steps(): void
     {
         $registry = app(IntegrationRegistry::class);

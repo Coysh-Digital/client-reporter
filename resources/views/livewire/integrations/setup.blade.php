@@ -65,6 +65,13 @@
                     <li>{{ \App\Support\Html::inline($step) }}</li>
                 @endforeach
             </ol>
+            @if ($integration->connectorDownloadUrl())
+                <div class="border-t border-line px-5 py-4">
+                    <x-button :href="$integration->connectorDownloadUrl()" :navigate="false" target="_blank" rel="noopener noreferrer" icon="arrow-up-right-from-square">
+                        Download the plugin
+                    </x-button>
+                </div>
+            @endif
         </details>
     @endif
 

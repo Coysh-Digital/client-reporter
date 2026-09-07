@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- The WordPress integration's connect screen now links straight to the companion plugin's latest release, with a **Download the plugin** button and clearer install steps (upload the ZIP under Plugins → Add New → Upload Plugin).
 - Added **Import from CSV** to Sites → Import: upload a CSV with a `url` column (plus optional `name`, `client` and `cms`), preview the sites, map them to new or existing clients, and import the selected ones. Works for any CMS — including Craft sites exported from a tool without its own API — sits alongside the existing platform importers, and skips rows with no usable URL.
 - Added an **Email campaigns** report section for Mailchimp and EmailOctopus: campaigns sent, open and click rates for the period, and a table of the individual campaigns (recipients, opens, clicks, unsubscribes). Campaign data is collected alongside the existing leads figures and never breaks leads collection if it can't be read.
 - A connection that keeps failing is now **auto-disabled after five consecutive failures** (configurable via `collection.failure_threshold`) instead of being retried — and re-logged — indefinitely. This covers both data collection and billing sync (FreeAgent, Xero), so a dead credential stops being hammered every interval. A disabled connection is surfaced with a "Disabled after repeated failures" state and a Reconnect action, and reconnecting (or a successful manual sync) clears it and resumes.

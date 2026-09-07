@@ -48,6 +48,17 @@ abstract class Integration
     }
 
     /**
+     * A URL where the operator can download this integration's companion plugin
+     * (e.g. a WordPress connector's latest GitHub release), shown as a download
+     * button on the setup screen. Null (the default) for integrations installed
+     * another way — via Composer, or with no companion plugin at all.
+     */
+    public function connectorDownloadUrl(): ?string
+    {
+        return null;
+    }
+
+    /**
      * Test a connection's stored credentials against the external service.
      */
     abstract public function verify(SiteIntegration $connection): VerificationResult;
