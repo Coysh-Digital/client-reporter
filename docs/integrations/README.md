@@ -43,6 +43,12 @@ Every integration declares one of three [`AuthMethod`](https://github.com/coysh-
 
 Connection fields marked `secret` — API keys, tokens, OAuth refresh tokens — live in an encrypted credentials bag on the connection, never in plain settings, and they never get sent back to the browser when you edit a connection. Non-secret values (a property ID, a base URL, a monitor selection) are stored as plain settings. There's more on all this in [Security](../security/README.md).
 
+### Failing connections and auto-disable
+
+A connection can start failing — a token gets revoked, a service is reconfigured, an account is closed. Client Reporter retries a failing connection at its normal cadence for a while, but once it has failed **five times in a row** (set by `collection.failure_threshold` in `config/client-reporter.php`) it is **auto-disabled**: it stops being collected (and, for FreeAgent/Xero, stops being synced) so a dead credential isn't hammered — and re-logged — every interval. A single success resets the counter.
+
+A disabled connection shows as **"Disabled after repeated failures"** with a **Reconnect** action, and appears on the dashboard's needs-attention list. Reconnecting it — or, for billing, a successful **Sync now** — clears the disabled state and resumes normal collection. (An expired authentication still stops on the first failure, since retrying a rejected credential can't succeed until it's reconnected.)
+
 ## Workspace connections ("connect once")
 
 Lots of integrations can be connected **once for the whole workspace** instead of site by site. One API key or OAuth login then covers every site (or client), and Client Reporter matches up the provider's entities for you.

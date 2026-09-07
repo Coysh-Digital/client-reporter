@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Enums\ConnectionStatus;
+use App\Models\ClientBillingConnection;
 use App\Models\WorkspaceIntegration;
 use App\Support\AuditLogger;
 use App\Support\OAuthState;
@@ -78,6 +79,12 @@ class FreeAgentOAuthController
             'last_connected_at' => now(),
             'last_error' => null,
         ]);
+
+        // Reconnecting re-enables any billing links auto-disabled after repeated
+        // sync failures, so they resume on the next sync.
+        ClientBillingConnection::query()
+            ->where('workspace_integration_id', $workspace->id)
+            ->update(['consecutive_failures' => 0, 'disabled_at' => null, 'last_error' => null]);
 
         $audit->log('integration.workspace_connected', $workspace, metadata: ['integration' => 'freeagent', 'via' => 'oauth']);
 

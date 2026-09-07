@@ -41,10 +41,56 @@ class CollectorRunner
             return [];
         }
 
-        return array_map(
+        $runs = array_map(
             fn (Collector $collector): CollectorRun => $this->run($connection, $collector, $range),
             $integration->collectors(),
         );
+
+        $this->settleFailureCount($connection, $runs);
+
+        return $runs;
+    }
+
+    /**
+     * Track consecutive failed collection passes once per pass (not once per
+     * collector), and auto-disable the connection when it crosses the threshold
+     * so it stops being retried until someone reconnects. A pass counts as a
+     * failure only when nothing at all was collected; any success resets it.
+     *
+     * @param  array<int, CollectorRun>  $runs
+     */
+    private function settleFailureCount(SiteIntegration $connection, array $runs): void
+    {
+        if ($runs === []) {
+            return;
+        }
+
+        $anySucceeded = array_filter($runs, fn (CollectorRun $run): bool => $run->status === 'success') !== [];
+
+        if ($anySucceeded) {
+            // run() already set the connection Connected and cleared the error;
+            // just make sure the failure count and disabled marker are cleared.
+            if ($connection->consecutive_failures !== 0 || $connection->disabled_at !== null) {
+                $connection->update(['consecutive_failures' => 0, 'disabled_at' => null]);
+            }
+
+            return;
+        }
+
+        $failures = $connection->consecutive_failures + 1;
+        $update = ['consecutive_failures' => $failures];
+
+        if ($failures >= $this->failureThreshold()) {
+            $update['status'] = ConnectionStatus::Disabled;
+            $update['disabled_at'] = now();
+        }
+
+        $connection->update($update);
+    }
+
+    private function failureThreshold(): int
+    {
+        return max(1, (int) config('client-reporter.collection.failure_threshold', 5));
     }
 
     public function run(SiteIntegration $connection, Collector $collector, DateRange $range): CollectorRun

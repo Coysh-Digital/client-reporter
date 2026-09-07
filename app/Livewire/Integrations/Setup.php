@@ -162,6 +162,9 @@ class Setup extends Component
             'last_connected_at' => $result->ok ? now() : $connection->last_connected_at,
             'last_error' => $result->ok ? null : $result->message,
             'connector_version' => $result->meta['connector_version'] ?? $connection->connector_version,
+            // A successful verify clears any auto-disable from earlier failures.
+            'consecutive_failures' => $result->ok ? 0 : $connection->consecutive_failures,
+            'disabled_at' => $result->ok ? null : $connection->disabled_at,
         ]);
 
         $audit->log('integration.connected', $connection, metadata: [
