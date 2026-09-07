@@ -51,10 +51,21 @@ class BillingAutoDisableTest extends TestCase
         ]);
     }
 
-    public function test_a_billing_link_is_disabled_after_repeated_failures_and_then_skipped(): void
+    /** Authenticates fine, but the data call fails — a soft (non-auth) failure. */
+    private function fakeSoftFailingXero(): void
+    {
+        config(['services.xero.client_id' => 'id', 'services.xero.client_secret' => 'secret']);
+        Http::fake([
+            '*identity.xero.com/connect/token*' => Http::response(['access_token' => 'at']),
+            '*api.xero.com/connections*' => Http::response([['tenantId' => 'tenant-1', 'tenantName' => 'CD']]),
+            '*api.xero.com/api.xro/2.0/Invoices*' => Http::response('server error', 500),
+        ]);
+    }
+
+    public function test_repeated_soft_failures_disable_the_link_after_the_threshold(): void
     {
         config(['client-reporter.collection.failure_threshold' => 3]);
-        $this->fakeFailingXero();
+        $this->fakeSoftFailingXero();
         $link = $this->link();
         $syncer = app(BillingSyncer::class);
 
@@ -73,6 +84,23 @@ class BillingAutoDisableTest extends TestCase
         // Once disabled it is no longer attempted by the sweep.
         $result = $syncer->syncAll();
         $this->assertSame(3, $link->refresh()->consecutive_failures);
+        $this->assertSame([], $result['failed']);
+    }
+
+    public function test_an_auth_failure_disables_the_link_on_the_first_run(): void
+    {
+        config(['client-reporter.collection.failure_threshold' => 5]);
+        $this->fakeFailingXero(); // rejected credential → AuthenticationException
+        $link = $this->link();
+
+        app(BillingSyncer::class)->syncAll();
+
+        $link->refresh();
+        $this->assertSame(1, $link->consecutive_failures);
+        $this->assertNotNull($link->disabled_at, 'a dead credential is disabled immediately, not after 5 tries');
+
+        // The next sweep skips it, so it stops re-erroring every hour.
+        $result = app(BillingSyncer::class)->syncAll();
         $this->assertSame([], $result['failed']);
     }
 

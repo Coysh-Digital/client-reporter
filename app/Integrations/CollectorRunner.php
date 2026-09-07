@@ -41,6 +41,11 @@ class CollectorRunner
             return [];
         }
 
+        // Collectors read the site URL and, for workspace connections, the
+        // shared credential — eager-load both so the queued path (which starts
+        // from a bare model) never triggers a lazy-loading violation.
+        $connection->loadMissing(['site', 'workspaceIntegration']);
+
         $runs = array_map(
             fn (Collector $collector): CollectorRun => $this->run($connection, $collector, $range),
             $integration->collectors(),
