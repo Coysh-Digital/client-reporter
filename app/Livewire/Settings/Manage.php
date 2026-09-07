@@ -25,6 +25,8 @@ class Manage extends Component
 
     public ?int $collection_retention_days = null;
 
+    public int $queue_workers = 1;
+
     public function mount(Settings $settings): void
     {
         $this->authorize('manage-settings');
@@ -36,17 +38,21 @@ class Manage extends Component
         $this->collection_interval = (int) $settings->get('collection_interval', config('client-reporter.collection.default_interval', 360));
         $retention = $settings->get('collection_retention_days', config('client-reporter.collection.retention_days'));
         $this->collection_retention_days = $retention !== null ? (int) $retention : null;
+        $this->queue_workers = (int) $settings->get('queue_workers', config('client-reporter.queue.workers', 1));
     }
 
     public function save(Settings $settings, AuditLogger $audit): void
     {
         $this->authorize('manage-settings');
 
+        $maxWorkers = (int) config('client-reporter.queue.max_workers', 50);
+
         $this->validate([
             'pdf_driver' => ['required', 'in:dompdf,browsershot'],
             'default_share_expiry_days' => ['nullable', 'integer', 'min:1', 'max:3650'],
             'collection_interval' => ['required', 'integer', 'min:15', 'max:10080'],
             'collection_retention_days' => ['nullable', 'integer', 'min:1', 'max:3650'],
+            'queue_workers' => ['required', 'integer', 'min:1', 'max:'.$maxWorkers],
         ]);
 
         $settings->setMany([
@@ -55,6 +61,7 @@ class Manage extends Component
             'default_share_expiry_days' => $this->default_share_expiry_days,
             'collection_interval' => $this->collection_interval,
             'collection_retention_days' => $this->collection_retention_days,
+            'queue_workers' => $this->queue_workers,
         ]);
 
         $audit->log('settings.updated');

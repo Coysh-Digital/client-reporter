@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
+use App\Enums\BackgroundTaskStatus;
+use App\Models\BackgroundTask;
 use App\Models\Site;
 use App\Support\SiteFaviconFetcher;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -32,8 +34,24 @@ class FetchSiteFavicon implements ShouldBeUnique, ShouldQueue
         return (string) $this->site->id;
     }
 
+    public function displayName(): string
+    {
+        return 'Fetch favicon: '.$this->site->name;
+    }
+
     public function handle(SiteFaviconFetcher $fetcher): void
     {
+        $task = BackgroundTask::record(
+            BackgroundTask::KIND_FAVICON,
+            BackgroundTask::KIND_FAVICON.':'.$this->site->id,
+            BackgroundTaskStatus::Running,
+            'Fetching favicon',
+            $this->site->name,
+            $this->site,
+        )->markRunning();
+
         $fetcher->fetch($this->site);
+
+        $task->succeed();
     }
 }

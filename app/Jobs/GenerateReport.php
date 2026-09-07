@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
+use App\Enums\BackgroundTaskStatus;
 use App\Enums\DeliveryTrigger;
 use App\Enums\GenerationStatus;
+use App\Models\BackgroundTask;
 use App\Models\Report;
 use App\Models\User;
 use App\Reporting\ReportGenerator;
@@ -50,6 +52,16 @@ class GenerateReport implements ShouldBeUnique, ShouldQueue
         return (string) $this->report->id;
     }
 
+    public function displayName(): string
+    {
+        return 'Generate report: '.$this->report->title;
+    }
+
+    private function taskKey(): string
+    {
+        return BackgroundTask::KIND_REPORT.':'.$this->report->id;
+    }
+
     /**
      * Mark the report as queued and dispatch. The single entry point for
      * every caller (builder, report page, scheduler).
@@ -62,6 +74,15 @@ class GenerateReport implements ShouldBeUnique, ShouldQueue
             'generation_started_at' => null,
             'generation_error' => null,
         ])->save();
+
+        BackgroundTask::record(
+            BackgroundTask::KIND_REPORT,
+            BackgroundTask::KIND_REPORT.':'.$report->id,
+            BackgroundTaskStatus::Queued,
+            'Generating report',
+            $report->title,
+            $report,
+        );
 
         self::dispatch($report, $actor?->id);
     }
@@ -79,9 +100,21 @@ class GenerateReport implements ShouldBeUnique, ShouldQueue
             'generation_started_at' => now(),
         ])->save();
 
-        $generator->generate($report);
+        $task = BackgroundTask::record(
+            BackgroundTask::KIND_REPORT,
+            $this->taskKey(),
+            BackgroundTaskStatus::Running,
+            'Generating report',
+            $report->title,
+            $report,
+        )->markRunning();
+
+        $generator->generate($report, function (int $done, int $total) use ($task): void {
+            $task->setProgress($done, $total);
+        });
 
         $report->forceFill(['generation_status' => null, 'generation_error' => null])->save();
+        $task->succeed();
 
         $actor = $this->userId !== null ? User::query()->whereKey($this->userId)->first() : null;
         $audit->log('report.generated', $report, $actor, metadata: ['scheduled' => $report->scheduled]);
@@ -125,9 +158,13 @@ class GenerateReport implements ShouldBeUnique, ShouldQueue
 
     public function failed(?Throwable $e): void
     {
+        $message = $e !== null ? SafeError::message($e, 'Generation failed unexpectedly') : 'Generation failed.';
+
         $this->report->forceFill([
             'generation_status' => GenerationStatus::Failed,
-            'generation_error' => $e !== null ? SafeError::message($e, 'Generation failed unexpectedly') : 'Generation failed.',
+            'generation_error' => $message,
         ])->save();
+
+        BackgroundTask::query()->where('task_key', $this->taskKey())->first()?->fail($message);
     }
 }

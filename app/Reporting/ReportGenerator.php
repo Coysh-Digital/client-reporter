@@ -8,6 +8,8 @@ use App\Ai\AiSummariser;
 use App\Integrations\CollectorRunner;
 use App\Models\Report;
 use App\Models\ReportRender;
+use App\Models\SiteIntegration;
+use Illuminate\Support\Collection;
 
 /**
  * Generates a report: ensures the exact report period (and its comparison
@@ -24,11 +26,36 @@ class ReportGenerator
         private readonly AiSummariser $ai,
     ) {}
 
-    public function generate(Report $report): ReportRender
+    /**
+     * @param  (callable(int, int): void)|null  $onProgress  Called with (completed, total) as work advances.
+     */
+    public function generate(Report $report, ?callable $onProgress = null): ReportRender
     {
         $report->load(['site.integrations', 'blocks']);
 
-        $this->ensureCollected($report);
+        $connections = $this->connectionsToCollect($report);
+        $total = count($connections) + 1; // +1 for the resolve-and-freeze step
+        $done = 0;
+        $tick = function () use (&$done, $total, $onProgress): void {
+            if ($onProgress !== null) {
+                $onProgress($done, $total);
+            }
+        };
+
+        $tick();
+        $range = $report->dateRange();
+        $comparison = $report->comparisonRange();
+
+        foreach ($connections as $connection) {
+            $this->runner->collectAll($connection, $range);
+
+            if ($comparison !== null) {
+                $this->runner->collectAll($connection, $comparison);
+            }
+
+            $done++;
+            $tick();
+        }
 
         $branding = $this->resolver->branding($report);
 
@@ -50,35 +77,29 @@ class ReportGenerator
 
         $report->update(['generated_at' => now(), 'status' => 'final']);
 
+        $done++;
+        $tick();
+
         return $render;
     }
 
     /**
-     * Collect the report's period (and comparison) for the integrations its
-     * visible blocks require, so exact-period data exists before resolving.
+     * The site connections whose data the report's visible blocks require, so
+     * the exact period is collected before resolving.
+     *
+     * @return Collection<int, SiteIntegration>
      */
-    private function ensureCollected(Report $report): void
+    private function connectionsToCollect(Report $report): Collection
     {
         $neededKeys = $this->neededIntegrationKeys($report);
 
         if ($neededKeys === []) {
-            return;
+            return collect();
         }
 
-        $range = $report->dateRange();
-        $comparison = $report->comparisonRange();
-
-        foreach ($report->site->integrations as $connection) {
-            if (! in_array($connection->integration_key, $neededKeys, true)) {
-                continue;
-            }
-
-            $this->runner->collectAll($connection, $range);
-
-            if ($comparison !== null) {
-                $this->runner->collectAll($connection, $comparison);
-            }
-        }
+        return $report->site->integrations
+            ->filter(fn ($connection): bool => in_array($connection->integration_key, $neededKeys, true))
+            ->values();
     }
 
     /**

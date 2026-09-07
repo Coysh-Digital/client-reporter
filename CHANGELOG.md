@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- The sidebar now shows **live background activity** — what's generating, collecting or syncing right now, named (e.g. "Acme — August") with a progress bar where known — and the Activity page gains a matching "Currently running" panel. Queued and failed jobs are listed with human names too.
+- Added a **Parallel jobs** setting (Settings → Background queue): the scheduler runs that many queue workers at once so jobs process in parallel (default 1 = one at a time; more clears the queue faster but uses more server resources). Safe on the database queue — jobs are locked so they never double-run.
+- Background work (report generation, data collection, billing sync, favicon fetches) is now tracked in one place, so activity, descriptions and progress are consistent; stale records left by a stopped worker are cleared and old finished ones are pruned.
+- Fixed the hourly billing sweep re-queueing connections that had been auto-disabled after repeated failures (the recurring "FreeAgent declined the connection" errors) — disabled connections are now skipped there too.
+
 - Fixed scheduled/queued data collection failing with "Unexpected error during collection (LazyLoadingViolationException)" for PageSpeed, Google Search Console and any other collector that needs the site URL or a workspace credential — the runner now eager-loads those relations.
 - Billing sync now **disables a connection immediately on an authentication failure** (a rejected credential can't recover until it's reconnected) rather than retrying — and re-logging — it every hour until the failure threshold. Soft or transient failures still get the retry-then-disable grace.
 

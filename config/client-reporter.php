@@ -196,6 +196,29 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Background queue
+    |--------------------------------------------------------------------------
+    |
+    | How many queue workers the scheduler starts each minute to process jobs
+    | (report generation, data collection, billing sync). One worker (the
+    | default) runs jobs strictly one at a time; more workers process that many
+    | jobs in parallel — faster, at the cost of more CPU and memory. The value
+    | is set from Settings ("Parallel jobs"); `max_workers` is the safety cap
+    | that setting is validated against.
+    |
+    */
+
+    'queue' => [
+        'workers' => 1,
+        'max_workers' => 50,
+
+        // How long a finished background-task record is kept for the activity
+        // feed before it is pruned (days).
+        'task_retention_days' => 7,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Outbound requests
     |--------------------------------------------------------------------------
     |

@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
+use App\Enums\BackgroundTaskStatus;
 use App\Integrations\CollectorRunner;
+use App\Integrations\IntegrationRegistry;
+use App\Models\BackgroundTask;
 use App\Models\SiteIntegration;
 use App\Support\DateRange;
+use App\Support\SafeError;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Throwable;
 
 /**
  * Collects data for one connection over one period. Dispatched by the
@@ -50,6 +55,26 @@ class RunConnectorCollection implements ShouldBeUnique, ShouldQueue
         return $this->siteIntegration->id.'|'.$this->periodStart;
     }
 
+    public function displayName(): string
+    {
+        return 'Collect data: '.self::describe($this->siteIntegration);
+    }
+
+    private function taskKey(): string
+    {
+        return BackgroundTask::KIND_COLLECTION.':'.$this->siteIntegration->id.':'.$this->periodStart;
+    }
+
+    /** A human "Provider · Site" label for the connection. */
+    private static function describe(SiteIntegration $connection): string
+    {
+        $provider = app(IntegrationRegistry::class)->find($connection->integration_key)?->manifest()->name
+            ?? $connection->integration_key;
+        $connection->loadMissing('site');
+
+        return $connection->site !== null ? $provider.' · '.$connection->site->name : $provider;
+    }
+
     /**
      * Dispatch a collection and mark the connection so the UI can show it as
      * queued before a worker picks it up.
@@ -58,11 +83,45 @@ class RunConnectorCollection implements ShouldBeUnique, ShouldQueue
     {
         $connection->forceFill(['collection_queued_at' => now()])->save();
 
+        BackgroundTask::record(
+            BackgroundTask::KIND_COLLECTION,
+            BackgroundTask::KIND_COLLECTION.':'.$connection->id.':'.$range->start->toDateString(),
+            BackgroundTaskStatus::Queued,
+            'Collecting data',
+            self::describe($connection),
+            $connection,
+        );
+
         self::dispatch($connection, $range->start->toDateString(), $range->end->toDateString());
     }
 
     public function handle(CollectorRunner $runner): void
     {
-        $runner->collectAll($this->siteIntegration, new DateRange($this->periodStart, $this->periodEnd));
+        $connection = $this->siteIntegration;
+
+        $task = BackgroundTask::record(
+            BackgroundTask::KIND_COLLECTION,
+            $this->taskKey(),
+            BackgroundTaskStatus::Running,
+            'Collecting data',
+            self::describe($connection),
+            $connection,
+        )->markRunning();
+
+        try {
+            $runner->collectAll(
+                $connection,
+                new DateRange($this->periodStart, $this->periodEnd),
+                function (int $done, int $total) use ($task): void {
+                    $task->setProgress($done, $total);
+                },
+            );
+        } catch (Throwable $e) {
+            $task->fail(SafeError::message($e, 'Collection failed.'));
+
+            throw $e;
+        }
+
+        $task->succeed();
     }
 }
