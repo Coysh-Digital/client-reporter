@@ -484,6 +484,7 @@ return [
         ],
         'insight' => [
             'no_compare' => ':total invoiced this period.',
+            'outstanding_only' => ':total is currently outstanding.',
             'overdue_singular' => ' :count invoice is overdue.',
             'overdue_plural' => ' :count invoices are overdue.',
         ],

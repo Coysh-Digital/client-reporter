@@ -11,7 +11,7 @@
                 @foreach ($row as $item)
                     <td>
                         <a href="#{{ $item['anchor'] }}" class="contents-item">
-                            <span class="contents-chip">@include('reports.blocks.partials.icon', ['key' => $item['icon'], 'color' => '#ffffff'])</span>
+                            <span class="contents-chip">@include('reports.blocks.partials.icon', ['key' => $item['icon'], 'color' => \App\Support\Branding\Color::inkOn($branding->primaryColor)])</span>
                             <span class="contents-label">{{ $item['heading'] }}</span>
                         </a>
                     </td>

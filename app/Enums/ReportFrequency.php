@@ -58,6 +58,24 @@ enum ReportFrequency: string
     }
 
     /**
+     * The date the next scheduled report will be generated: the day the
+     * current, in-progress period closes — i.e. the start of the next period —
+     * since the daily command generates a period's report as soon as it ends.
+     * Returns null for `None`.
+     */
+    public function nextGenerationDate(?CarbonInterface $now = null): ?CarbonImmutable
+    {
+        $now = CarbonImmutable::parse($now ?? CarbonImmutable::now());
+
+        return match ($this) {
+            self::None => null,
+            self::Weekly => $now->startOfWeek(CarbonInterface::MONDAY)->addWeek(),
+            self::Monthly => $now->startOfMonth()->addMonth(),
+            self::Quarterly => $now->startOfQuarter()->addQuarter(),
+        };
+    }
+
+    /**
      * Options for a schedule <select>, value => label.
      *
      * @return array<string, string>

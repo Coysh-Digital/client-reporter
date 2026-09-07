@@ -93,7 +93,9 @@ Everything a client can see — the shared link, the emailed copy, the PDF — c
 
 ## Scheduling reports
 
-Not every site needs a report on a clock, so scheduling is **opt-in per site**. On a site's edit page there's a **Reporting schedule** section where you can set a frequency — Weekly, Monthly or Quarterly — and, optionally, a [template](#report-templates) to build the report from (leave it on "Default sections" if you'd rather use the standard spine). Leave the frequency on "Not scheduled" for sites you report on by hand.
+Not every site needs a report on a clock, so scheduling is **opt-in per site**. On a site's edit page there's a **Reporting schedule** section where you can set a frequency — Weekly, Monthly or Quarterly — and, optionally, a [template](#report-templates) to build the report from (leave it on "Default sections" if you'd rather use the standard spine). Leave the frequency on "Not scheduled" for sites you report on by hand. When a frequency is set, the form tells you the date the next report will generate.
+
+**Reports → Scheduled** gives you one place to see every scheduled site at a glance: its frequency, the sections it uses, when its next report will generate, and the last one it produced. A site's own page and its client's page also show the next generation date, so you're never guessing when the next report will appear.
 
 Once a period has **fully closed**, the `client-reporter:generate-scheduled` command (run daily by the scheduler) picks up each scheduled site, creates the report for that period, and generates it — pulling the data and freezing the snapshot, exactly as if you'd made it yourself. It won't touch the current, still-open period, and it never duplicates a report you've already made for a period.
 

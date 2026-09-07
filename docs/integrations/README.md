@@ -35,7 +35,7 @@ Every integration declares one of three [`AuthMethod`](https://github.com/coysh-
 
 | Method | How it works | Used by |
 | ------ | ------------ | ------- |
-| **API key** | You paste an API key or token (plus any provider-specific fields such as a base URL or site ID). Stored encrypted. | Plausible, Fathom, Matomo, Umami, UptimeRobot, Uptime Kuma, Better Uptime, Mailchimp, Shopify, Stripe, WooCommerce, PageSpeed |
+| **API key** | You paste an API key or token (plus any provider-specific fields such as a base URL or site ID). Stored encrypted. | Plausible, Fathom, Matomo, Umami, UptimeRobot, Uptime Kuma, Better Uptime, Mailchimp, EmailOctopus, Shopify, Stripe, WooCommerce, PageSpeed |
 | **OAuth** | You click **Connect Google account** (or the provider's equivalent) and authorise through a redirect flow; Client Reporter stores the resulting refresh token. | Google Analytics 4, Google Ads, Google Search Console, FreeAgent, Xero |
 | **Connector token** | Client Reporter issues a signed connection code that a companion plugin on the client's site consumes and then verifies. | WordPress, Craft CMS |
 
@@ -66,7 +66,7 @@ Client Reporter comes with integrations across eight categories ([`IntegrationCa
 | Analytics | Google Analytics 4, Google Ads, Plausible, Fathom, Matomo, Umami |
 | Search | Google Search Console |
 | Ecommerce | WooCommerce, Craft Commerce, Shopify, Stripe |
-| Forms & Leads | Mailchimp |
+| Forms & Leads | Mailchimp, EmailOctopus |
 | Monitoring | UptimeRobot, Uptime Kuma, Better Uptime |
 | Performance | PageSpeed |
 | Billing | FreeAgent, Xero |

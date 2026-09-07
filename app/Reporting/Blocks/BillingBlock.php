@@ -46,12 +46,14 @@ class BillingBlock extends BlockType
     private array $availability = [];
 
     /**
-     * Only offered when the client has invoices. Memoised per site: the
-     * builder asks once per block type on every re-render.
+     * Only offered when the client has invoices worth showing (drafts don't
+     * count). Memoised per site: the builder asks once per block type on every
+     * re-render.
      */
     public function availableForSite(Site $site): ?bool
     {
-        return $this->availability[$site->id] ??= $site->client !== null && $site->client->invoices()->exists();
+        return $this->availability[$site->id] ??= $site->client !== null
+            && $site->client->invoices()->where('status', '!=', InvoiceStatus::Draft)->exists();
     }
 
     public function options(): array
@@ -71,7 +73,9 @@ class BillingBlock extends BlockType
             return ['has_data' => false];
         }
 
+        // Invoices raised within the reporting period (drafts are never shown).
         $invoices = $client->invoices()
+            ->where('status', '!=', InvoiceStatus::Draft)
             ->whereBetween('issued_at', [$context->range->start->toDateString(), $context->range->end->toDateString()])
             ->orderBy('issued_at')
             ->get();
@@ -80,18 +84,28 @@ class BillingBlock extends BlockType
         $previousTotal = null;
         if ($compare && $context->comparison) {
             $previousTotal = (float) $client->invoices()
+                ->where('status', '!=', InvoiceStatus::Draft)
                 ->whereBetween('issued_at', [$context->comparison->start->toDateString(), $context->comparison->end->toDateString()])
                 ->sum('amount');
         }
 
+        // Outstanding and overdue reflect the client's whole current position as
+        // of the report date — not just this period — so nothing unpaid is ever
+        // hidden because it was raised in an earlier month.
+        $unpaid = $client->invoices()->where('status', InvoiceStatus::Sent)->get();
+        $totalOutstanding = (float) $unpaid->sum('amount');
+        $overdueCount = $unpaid->filter->isOverdue()->count();
+
         $totalInvoiced = (float) $invoices->sum('amount');
         $totalPaid = (float) $invoices->where('status', InvoiceStatus::Paid)->sum('amount');
-        $totalOutstanding = (float) $invoices->where('status', InvoiceStatus::Sent)->sum('amount');
-        $overdueCount = $invoices->filter->isOverdue()->count();
-        $currency = $invoices->first()?->currency;
+        $firstInvoice = $invoices->first() ?? $unpaid->first();
+        $currency = $firstInvoice?->currency;
+
+        $hasPeriodInvoices = $invoices->isNotEmpty();
+        $hasData = $hasPeriodInvoices || $totalOutstanding > 0.0 || $overdueCount > 0;
 
         return [
-            'has_data' => $invoices->isNotEmpty(),
+            'has_data' => $hasData,
             'currency' => $currency,
             'metrics' => [
                 ['label' => ReportLang::get('billing.metric.invoiced'), 'fmt' => 'money', 'goodUp' => true, 'current' => $totalInvoiced, 'previous' => $previousTotal],
@@ -106,19 +120,24 @@ class BillingBlock extends BlockType
                 'issued_at' => $invoice->issued_at->format('d M Y'),
                 'amount' => (float) $invoice->amount,
             ])->all(),
-            'insight' => $this->insight($invoices->isNotEmpty(), $totalInvoiced, $previousTotal, $currency, $overdueCount),
+            'insight' => $this->insight($hasData, $hasPeriodInvoices, $totalInvoiced, $previousTotal, $totalOutstanding, $currency, $overdueCount),
         ];
     }
 
-    private function insight(bool $hasData, float $total, ?float $previous, ?string $currency, int $overdueCount): ?string
+    private function insight(bool $hasData, bool $hasPeriodInvoices, float $total, ?float $previous, float $outstanding, ?string $currency, int $overdueCount): ?string
     {
         if (! $hasData) {
             return null;
         }
 
-        $sentence = $previous !== null
-            ? Insight::headline(ReportLang::get('billing.insight_noun'), $total, $previous, 'money', $currency)
-            : ReportLang::get('billing.insight.no_compare', ['total' => Format::money($total, $currency)]);
+        if ($hasPeriodInvoices) {
+            $sentence = $previous !== null
+                ? Insight::headline(ReportLang::get('billing.insight_noun'), $total, $previous, 'money', $currency)
+                : ReportLang::get('billing.insight.no_compare', ['total' => Format::money($total, $currency)]);
+        } else {
+            // Nothing raised this period — lead with the outstanding balance.
+            $sentence = ReportLang::get('billing.insight.outstanding_only', ['total' => Format::money($outstanding, $currency)]);
+        }
 
         if ($overdueCount > 0) {
             $sentence .= ReportLang::get(

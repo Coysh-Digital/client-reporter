@@ -140,6 +140,14 @@
                     $headingFontPreview = $heading_font ?: "'Source Serif 4', Georgia, serif";
                     $isMinimal = $report_cover_style === 'minimal';
                     $isBold = $report_cover_style === 'bold';
+                    // Match the report's legibility handling so the preview is honest:
+                    // brand colours are nudged only as far as contrast requires.
+                    $primaryInk = \App\Support\Branding\Color::readable($primary, '#ffffff', 4.5);
+                    $secondaryInk = \App\Support\Branding\Color::readable($secondary, '#ffffff', 4.5);
+                    $bandInk = \App\Support\Branding\Color::inkOn($primary);
+                    $bandMuted = \App\Support\Branding\Color::mix($bandInk, $primary, 0.22);
+                    $bandFaint = \App\Support\Branding\Color::mix($bandInk, $primary, 0.42);
+                    $bandHairline = \App\Support\Branding\Color::mix($bandInk, $primary, 0.7);
                 @endphp
                 <div class="overflow-hidden rounded-xl border border-line bg-white shadow-sm">
                     @if ($isMinimal)
@@ -148,9 +156,9 @@
                             @if ($logoPreview)
                                 <img src="{{ $logoPreview }}" alt="Logo" class="mb-6 h-9 object-contain">
                             @else
-                                <div class="mb-6 text-lg font-semibold" style="color: {{ $primary }};font-family: {{ $headingFontPreview }};">{{ $displayName }}</div>
+                                <div class="mb-6 text-lg font-semibold" style="color: {{ $primaryInk }};font-family: {{ $headingFontPreview }};">{{ $displayName }}</div>
                             @endif
-                            <div class="text-2xs font-semibold uppercase tracking-[0.09em]" style="color: {{ $secondary }};">Website report</div>
+                            <div class="text-2xs font-semibold uppercase tracking-[0.09em]" style="color: {{ $secondaryInk }};">Website report</div>
                             <h3 class="mt-2 text-2xl font-semibold text-ink" style="font-family: {{ $headingFontPreview }};">{{ $client->name ?? 'Client name' }}</h3>
                             <p class="mt-1 text-sm text-faint tnum">clientsite.com · 1–31 August 2026</p>
                             @if ($tagline)<p class="mt-5 text-sm text-muted">{{ $tagline }}</p>@endif
@@ -161,14 +169,14 @@
                                 @if ($logoPreview)
                                     <img src="{{ $logoPreview }}" alt="Logo" class="h-9 object-contain">
                                 @else
-                                    <div class="font-semibold text-white" style="font-family: {{ $headingFontPreview }};">{{ $displayName }}</div>
+                                    <div class="font-semibold" style="font-family: {{ $headingFontPreview }};color: {{ $bandInk }};">{{ $displayName }}</div>
                                 @endif
-                                <span class="text-2xs uppercase tracking-[0.14em]" style="color: rgba(255,255,255,.7);">Website report</span>
+                                <span class="text-2xs uppercase tracking-[0.14em]" style="color: {{ $bandMuted }};">Website report</span>
                             </div>
-                            <h3 class="mt-10 font-semibold text-white" style="font-family: {{ $headingFontPreview }};font-size: {{ $isBold ? '34px' : '30px' }};line-height:1.04;">{{ $client->name ?? 'Client name' }}</h3>
-                            <p class="mt-2.5 text-sm tnum" style="color: rgba(255,255,255,.72);">clientsite.com · 1–31 August 2026</p>
+                            <h3 class="mt-10 font-semibold" style="font-family: {{ $headingFontPreview }};font-size: {{ $isBold ? '34px' : '30px' }};line-height:1.04;color: {{ $bandInk }};">{{ $client->name ?? 'Client name' }}</h3>
+                            <p class="mt-2.5 text-sm tnum" style="color: {{ $bandFaint }};">clientsite.com · 1–31 August 2026</p>
                             @if ($tagline)
-                                <p class="mt-6 border-t pt-4 text-sm" style="border-color: rgba(255,255,255,.16); color: rgba(255,255,255,.82);">{{ $tagline }}</p>
+                                <p class="mt-6 border-t pt-4 text-sm" style="border-color: {{ $bandHairline }}; color: {{ $bandMuted }};">{{ $tagline }}</p>
                             @endif
                         </div>
                     @endif

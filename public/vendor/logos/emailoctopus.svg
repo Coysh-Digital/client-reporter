@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+    <title>EmailOctopus</title>
+    <rect width="200" height="200" rx="44" fill="#2E2E7A"/>
+    <g fill="#ffffff">
+        <rect x="64" y="116" width="13" height="34" rx="6.5"/>
+        <rect x="84" y="118" width="13" height="42" rx="6.5"/>
+        <rect x="104" y="118" width="13" height="42" rx="6.5"/>
+        <rect x="124" y="116" width="13" height="34" rx="6.5"/>
+        <circle cx="100" cy="92" r="46"/>
+    </g>
+    <g fill="#2E2E7A">
+        <circle cx="86" cy="90" r="7.5"/>
+        <circle cx="114" cy="90" r="7.5"/>
+    </g>
+</svg>

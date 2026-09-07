@@ -93,6 +93,7 @@ Route::middleware(['auth', 'active', 'can:access-admin'])->group(function () {
 
     // Reports
     Route::get('/reports', Reports\Index::class)->name('reports.index');
+    Route::get('/reports/scheduled', Reports\Scheduled::class)->name('reports.scheduled');
     Route::get('/reports/create', Reports\Create::class)->middleware('can:manage-reports')->name('reports.create');
     Route::get('/reports/{report}', Reports\Show::class)->name('reports.show');
     Route::get('/reports/{report}/preview', ReportPreviewController::class)->middleware('report-headers')->name('reports.preview');

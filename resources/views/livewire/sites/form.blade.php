@@ -77,6 +77,16 @@
                     </x-field>
                 @endif
             </div>
+
+            @if ($report_frequency !== 'none')
+                @php($nextRun = \App\Enums\ReportFrequency::tryFrom($report_frequency)?->nextGenerationDate())
+                <p class="mt-3 text-xs text-faint">
+                    The next report will be generated automatically
+                    @if ($nextRun) on <span class="text-muted">{{ $nextRun->format('j M Y') }}</span>, @endif
+                    and again once each period closes. See every scheduled site under
+                    <a href="{{ route('reports.scheduled') }}" wire:navigate class="cr-link">Reports → Scheduled</a>.
+                </p>
+            @endif
         </div>
 
         <div class="flex items-center gap-3 border-t border-line pt-5">

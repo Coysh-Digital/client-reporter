@@ -1,6 +1,7 @@
 <div>
     <x-page-header title="Reports" subtitle="Every report you've built for your clients." eyebrow="Portfolio">
         <x-slot:actions>
+            <x-button :href="route('reports.scheduled')" icon="arrow-path" variant="ghost" wire:navigate>Scheduled</x-button>
             @can('manage-reports')
                 <x-button variant="primary" :href="route('reports.create')" icon="plus">New report</x-button>
             @endcan
