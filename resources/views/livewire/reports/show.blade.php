@@ -66,6 +66,71 @@
                     <div class="flex justify-between gap-3"><dt class="text-muted">Site</dt><dd class="min-w-0 truncate text-right"><a href="{{ route('sites.show', $report->site) }}" wire:navigate class="cr-link">{{ $report->site->name }}</a></dd></div>
                 </dl>
             </div>
+
+            {{-- Schedule: edits the parent site's schedule, so it applies to
+                 every future report for this site. --}}
+            <div class="cr-card px-5 py-4">
+                <h3 class="cr-eyebrow">Schedule</h3>
+                @can('manage-sites')
+                    <form wire:submit="saveSchedule" class="mt-3 space-y-3">
+                        <x-field label="Frequency" for="sched-frequency">
+                            <select wire:model.live="report_frequency" id="sched-frequency" class="cr-input">
+                                @foreach ($this->frequencies() as $value => $label)
+                                    <option value="{{ $value }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </x-field>
+
+                        @if ($report_frequency !== 'none')
+                            <x-field label="Report template" for="sched-template" optional>
+                                <select wire:model="report_template_id" id="sched-template" class="cr-input">
+                                    <option value="">Default sections</option>
+                                    @foreach ($this->templates() as $template)
+                                        <option value="{{ $template->id }}">{{ $template->name }}</option>
+                                    @endforeach
+                                </select>
+                            </x-field>
+
+                            <x-toggle wire:model="auto_send"
+                                label="Auto-send to client"
+                                help="Email each new report to {{ $report->site->client->contact_email ?: 'the client contact' }} automatically once it generates." />
+                        @endif
+
+                        <x-button type="submit" size="sm" variant="primary">
+                            <span wire:loading.remove wire:target="saveSchedule">Save schedule</span>
+                            <span wire:loading wire:target="saveSchedule">Saving…</span>
+                        </x-button>
+                    </form>
+                @else
+                    <dl class="mt-3 space-y-2.5 text-sm">
+                        <div class="flex justify-between gap-3"><dt class="text-muted">Frequency</dt><dd class="text-ink">{{ $report->site->report_frequency->label() }}</dd></div>
+                        @if ($report->site->hasReportSchedule())
+                            <div class="flex justify-between gap-3"><dt class="text-muted">Auto-send</dt><dd class="text-ink">{{ $report->site->auto_send ? 'On' : 'Off' }}</dd></div>
+                        @endif
+                    </dl>
+                @endcan
+            </div>
+
+            {{-- Delivery history: what was emailed, when, and whether it landed. --}}
+            @if ($deliveries->isNotEmpty())
+                <div class="cr-card px-5 py-4">
+                    <h3 class="cr-eyebrow">Delivery history</h3>
+                    <ul class="mt-3 space-y-3 text-sm">
+                        @foreach ($deliveries as $delivery)
+                            <li wire:key="delivery-{{ $delivery->id }}" class="flex items-start justify-between gap-3">
+                                <span class="min-w-0">
+                                    <span class="block truncate text-ink">{{ $delivery->recipient ?: 'Not sent' }}</span>
+                                    <span class="block text-xs text-faint">{{ $delivery->created_at->format('j M Y, H:i') }} · {{ $delivery->trigger->label() }}</span>
+                                    @if (! $delivery->succeeded && $delivery->error)
+                                        <span class="mt-0.5 block text-xs" style="color:var(--color-danger);">{{ $delivery->error }}</span>
+                                    @endif
+                                </span>
+                                <x-badge :variant="$delivery->succeeded ? 'ok' : 'danger'">{{ $delivery->succeeded ? 'Sent' : 'Failed' }}</x-badge>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
         </div>
     </div>
 </div>

@@ -48,6 +48,13 @@
                 </span>
             @endcan
         </div>
+
+        @if ($billingConnection->isDisabled())
+            <x-alert variant="warn" class="mb-4">
+                Automatic billing sync was paused after repeated failures{{ $billingConnection->last_error ? ' — '.$billingConnection->last_error : '.' }}
+                Reconnect <strong>{{ $billingConnection->workspaceIntegration->name }}</strong>, or press <strong>Sync now</strong> above to try again — a successful sync resumes it.
+            </x-alert>
+        @endif
     @endif
 
     @can('manage-clients')

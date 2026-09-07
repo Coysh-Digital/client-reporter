@@ -79,6 +79,12 @@
             </div>
 
             @if ($report_frequency !== 'none')
+                <div class="mt-4">
+                    <x-toggle wire:model="auto_send"
+                        label="Auto-send to the client"
+                        help="Email each scheduled report to the client's contact email automatically once it generates, with the PDF attached. Leave off to review and send by hand." />
+                </div>
+
                 @php($nextRun = \App\Enums\ReportFrequency::tryFrom($report_frequency)?->nextGenerationDate())
                 <p class="mt-3 text-xs text-faint">
                     The next report will be generated automatically

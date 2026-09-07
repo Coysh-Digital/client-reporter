@@ -36,6 +36,8 @@ class Form extends Component
 
     public ?int $report_template_id = null;
 
+    public bool $auto_send = false;
+
     public function mount(?Site $site = null): void
     {
         $this->authorize('manage-sites');
@@ -51,6 +53,7 @@ class Form extends Component
             $this->is_active = $site->is_active;
             $this->report_frequency = $site->report_frequency->value;
             $this->report_template_id = $site->report_template_id;
+            $this->auto_send = $site->auto_send;
 
             return;
         }
@@ -89,11 +92,14 @@ class Form extends Component
             'is_active' => ['boolean'],
             'report_frequency' => ['required', 'in:none,weekly,monthly,quarterly'],
             'report_template_id' => ['nullable', 'integer', 'exists:report_templates,id'],
+            'auto_send' => ['boolean'],
         ]);
 
         // A schedule needs a closed period to report on; templates are optional.
+        // Auto-send only means anything for a scheduled site.
         if ($validated['report_frequency'] === 'none') {
             $validated['report_template_id'] = null;
+            $validated['auto_send'] = false;
         }
 
         if ($this->site) {

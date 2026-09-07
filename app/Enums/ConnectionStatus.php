@@ -15,6 +15,7 @@ enum ConnectionStatus: string
     case NeedsAttention = 'needs_attention';
     case AuthExpired = 'auth_expired';
     case Error = 'error';
+    case Disabled = 'disabled';
 
     public function label(): string
     {
@@ -24,6 +25,7 @@ enum ConnectionStatus: string
             self::NeedsAttention => 'Needs attention',
             self::AuthExpired => 'Authentication expired',
             self::Error => 'Error',
+            self::Disabled => 'Disabled',
         };
     }
 
@@ -35,15 +37,16 @@ enum ConnectionStatus: string
         return match ($this) {
             self::Connected => 'ok',
             self::NeedsAttention => 'warn',
-            self::AuthExpired, self::Error => 'danger',
+            self::AuthExpired, self::Error, self::Disabled => 'danger',
             self::NotConnected => 'neutral',
         };
     }
 
     /**
      * Whether scheduled collection should keep trying this connection. An
-     * expired authentication stops until someone reconnects: hammering a dead
-     * token only burns the provider's goodwill.
+     * expired authentication or a connection auto-disabled after repeated
+     * failures stops until someone reconnects: hammering a dead token only
+     * burns the provider's goodwill.
      */
     public function isLive(): bool
     {
@@ -55,7 +58,10 @@ enum ConnectionStatus: string
      */
     public function needsAttention(): bool
     {
-        return $this === self::NeedsAttention || $this === self::AuthExpired || $this === self::Error;
+        return $this === self::NeedsAttention
+            || $this === self::AuthExpired
+            || $this === self::Error
+            || $this === self::Disabled;
     }
 
     /**
@@ -71,6 +77,6 @@ enum ConnectionStatus: string
      */
     public static function troubledValues(): array
     {
-        return [self::NeedsAttention->value, self::AuthExpired->value, self::Error->value];
+        return [self::NeedsAttention->value, self::AuthExpired->value, self::Error->value, self::Disabled->value];
     }
 }

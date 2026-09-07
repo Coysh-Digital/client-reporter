@@ -32,6 +32,8 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $collection_queued_at
  * @property string|null $last_error
  * @property string|null $last_failure_kind
+ * @property int $consecutive_failures
+ * @property Carbon|null $disabled_at
  * @property string|null $connector_version
  * @property-read CollectorRun|null $latestRun
  */
@@ -55,9 +57,16 @@ class SiteIntegration extends Model
         'collection_queued_at',
         'last_error',
         'last_failure_kind',
+        'consecutive_failures',
+        'disabled_at',
     ];
 
     protected $hidden = ['credentials'];
+
+    /** @var array<string, mixed> */
+    protected $attributes = [
+        'consecutive_failures' => 0,
+    ];
 
     protected function casts(): array
     {
@@ -69,6 +78,8 @@ class SiteIntegration extends Model
             'last_collected_at' => 'datetime',
             'last_attempted_at' => 'datetime',
             'collection_queued_at' => 'datetime',
+            'consecutive_failures' => 'integer',
+            'disabled_at' => 'datetime',
         ];
     }
 

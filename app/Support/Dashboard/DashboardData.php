@@ -124,6 +124,7 @@ class DashboardData
                 'severity' => $conn->status === ConnectionStatus::NeedsAttention ? 1 : 2,
                 'variant' => $conn->status->badge(),
                 'title' => match ($conn->status) {
+                    ConnectionStatus::Disabled => "{$name} disabled after repeated failures",
                     ConnectionStatus::AuthExpired => "{$name} needs reconnecting",
                     ConnectionStatus::Error => "{$name} sync failed",
                     default => "{$name} needs attention",

@@ -6,8 +6,10 @@ namespace App\Livewire\Reports;
 
 use App\Enums\ReportFrequency;
 use App\Models\Report;
+use App\Models\ReportDelivery;
 use App\Models\Site;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Carbon;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -17,10 +19,11 @@ use Livewire\Component;
 class Scheduled extends Component
 {
     /**
-     * Every active site on a reporting schedule, with its next generation date
-     * and most recent auto-generated report, soonest first.
+     * Every active site on a reporting schedule, with its next generation date,
+     * whether it auto-sends, its most recent auto-generated report and the last
+     * time a report actually went out — soonest next-run first.
      *
-     * @return array<int, array{site: Site, frequency: string, template: ?string, next: ?CarbonImmutable, lastReport: ?Report}>
+     * @return array<int, array{site: Site, frequency: string, template: ?string, autoSend: bool, next: ?CarbonImmutable, lastReport: ?Report, lastSent: ?Carbon}>
      */
     public function scheduledSites(): array
     {
@@ -35,8 +38,14 @@ class Scheduled extends Component
                 'site' => $site,
                 'frequency' => $site->report_frequency?->label() ?? '',
                 'template' => $site->reportTemplate?->name,
+                'autoSend' => $site->auto_send,
                 'next' => $site->report_frequency?->nextGenerationDate(),
                 'lastReport' => $site->reports()->where('scheduled', true)->latest('id')->first(),
+                'lastSent' => ReportDelivery::query()
+                    ->where('succeeded', true)
+                    ->whereHas('report', fn ($query) => $query->where('site_id', $site->id))
+                    ->latest('id')
+                    ->first()?->created_at,
             ])
             ->all();
 

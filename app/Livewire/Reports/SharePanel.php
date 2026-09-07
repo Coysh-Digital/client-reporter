@@ -4,20 +4,17 @@ declare(strict_types=1);
 
 namespace App\Livewire\Reports;
 
-use App\Mail\ReportMail;
+use App\Enums\DeliveryTrigger;
 use App\Models\Report;
 use App\Models\ReportShare;
-use App\Reporting\ReportDocument;
-use App\Reporting\ReportPdf;
+use App\Reporting\ReportSender;
 use App\Reporting\ReportShareService;
 use App\Support\AuditLogger;
-use App\Support\Branding\BrandingResolver;
+use App\Support\SafeError;
 use App\Support\Settings;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
-use Spatie\LaravelPdf\Facades\Pdf;
+use Throwable;
 
 /**
  * Sharing and delivery for a generated report: secure public links (with expiry
@@ -75,7 +72,7 @@ class SharePanel extends Component
         $this->report->shares()->whereKey($shareId)->update(['revoked_at' => now()]);
     }
 
-    public function sendEmail(ReportShareService $shares, BrandingResolver $branding, ReportDocument $document, AuditLogger $audit): void
+    public function sendEmail(ReportSender $sender): void
     {
         $this->authorize('manage-reports');
 
@@ -88,46 +85,23 @@ class SharePanel extends Component
             'emailMessage' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        $result = $shares->create($this->report);
-        $resolved = $branding->forSite($this->report->site);
+        try {
+            $sender->send(
+                report: $this->report,
+                to: $this->emailTo,
+                customMessage: $this->emailMessage ?: null,
+                attachPdf: $this->attachPdf,
+                trigger: DeliveryTrigger::Manual,
+                actor: auth()->user(),
+            );
+        } catch (Throwable $e) {
+            $this->dispatch('toast', message: 'The report could not be sent: '.SafeError::message($e, 'delivery failed'), type: 'error');
 
-        $pdfPath = null;
-        if ($this->attachPdf) {
-            $pdfPath = $this->renderPdf($document);
+            return;
         }
 
-        Mail::to($this->emailTo)->send(new ReportMail(
-            report: $this->report,
-            url: $shares->url($result['token']),
-            branding: $resolved,
-            customMessage: $this->emailMessage ?: null,
-            pdfPath: $pdfPath,
-        ));
-
-        if ($pdfPath !== null && file_exists($pdfPath)) {
-            @unlink($pdfPath);
-        }
-
-        $audit->log('report.emailed', $this->report, metadata: ['to' => $this->emailTo]);
         $this->dispatch('toast', message: 'Report emailed to '.$this->emailTo.'.', type: 'ok');
         $this->emailMessage = '';
-    }
-
-    private function renderPdf(ReportDocument $document): ?string
-    {
-        $render = $this->report->latestRender;
-        if ($render === null) {
-            return null;
-        }
-
-        Storage::disk('local')->makeDirectory('tmp');
-        $path = Storage::disk('local')->path('tmp/report-'.$this->report->id.'-'.uniqid().'.pdf');
-
-        Pdf::view('reports.document', $document->fromRender($render))
-            ->driver(app(ReportPdf::class)->driver())
-            ->save($path);
-
-        return $path;
     }
 
     private function reportIsGenerated(): bool

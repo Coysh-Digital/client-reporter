@@ -41,6 +41,7 @@ final readonly class ConnectionState
 
         [$label, $variant, $action] = match (true) {
             $syncing => ['Syncing', 'info', 'wait'],
+            $connection->status === ConnectionStatus::Disabled => ['Disabled after repeated failures', 'danger', 'reconnect'],
             $connection->status === ConnectionStatus::AuthExpired => ['Authentication expired', 'danger', 'reconnect'],
             $connection->status === ConnectionStatus::Error => ['Attention required', 'danger', 'retry'],
             $connection->status === ConnectionStatus::NeedsAttention && $connection->last_failure_kind === 'rate_limit' => ['Rate limited', 'warn', 'retry'],
