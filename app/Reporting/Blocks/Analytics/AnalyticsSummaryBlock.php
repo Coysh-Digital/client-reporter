@@ -76,7 +76,7 @@ class AnalyticsSummaryBlock extends BlockType
 
     public function defaultAiPrompt(): ?string
     {
-        return 'Summarise this month\'s website analytics for a non-technical client in two to '
+        return 'Summarise this period\'s website analytics for a non-technical client in two to '
             .'three sentences. Cover visitors and engagement and how they moved versus the prior '
             .'period. Use only the figures provided.';
     }

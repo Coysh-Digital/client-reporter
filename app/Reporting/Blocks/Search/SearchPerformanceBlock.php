@@ -83,7 +83,7 @@ class SearchPerformanceBlock extends BlockType
 
     public function defaultAiPrompt(): ?string
     {
-        return 'Summarise the site\'s Google search performance this month in two to three '
+        return 'Summarise the site\'s Google search performance this period in two to three '
             .'sentences for a non-technical client. Cover clicks, impressions and average '
             .'position versus the prior period, and the leading query. Use only the figures provided.';
     }

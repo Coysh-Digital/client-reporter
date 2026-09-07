@@ -58,7 +58,7 @@ class PerformanceSummaryBlock extends BlockType
 
     public function defaultAiPrompt(): ?string
     {
-        return 'Summarise the site\'s Core Web Vitals this month in two to three sentences for a '
+        return 'Summarise the site\'s Core Web Vitals this period in two to three sentences for a '
             .'non-technical client, noting the performance score and any vitals needing attention. '
             .'Use only the figures provided.';
     }

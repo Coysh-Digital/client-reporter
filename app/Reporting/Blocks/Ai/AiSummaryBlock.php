@@ -41,10 +41,11 @@ class AiSummaryBlock extends BlockType
 
     public function defaultAiPrompt(): ?string
     {
-        return 'Write a short "month in review" roundup for a non-technical client that '
+        return 'Write a short review of the reporting period for a non-technical client that '
             .'summarises the whole report in three to four sentences, drawing on the figures '
-            .'for each section provided. Lead with the headline story of the month. Use only '
-            .'the figures provided; never invent numbers.';
+            .'for each section provided. Lead with the headline story of the period. Use only '
+            .'the figures provided; never invent numbers, and do not assume the period is a '
+            .'calendar month — describe the timeframe you are given.';
     }
 
     /**

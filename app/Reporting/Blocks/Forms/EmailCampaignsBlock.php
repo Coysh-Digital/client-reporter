@@ -88,7 +88,7 @@ class EmailCampaignsBlock extends BlockType
 
     public function defaultAiPrompt(): ?string
     {
-        return 'Summarise this month\'s email campaign performance in two to three sentences '
+        return 'Summarise this period\'s email campaign performance in two to three sentences '
             .'for a non-technical client. Cover how many campaigns were sent and the open and '
             .'click rates. Use only the figures provided.';
     }

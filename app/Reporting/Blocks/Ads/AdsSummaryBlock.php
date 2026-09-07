@@ -83,7 +83,7 @@ class AdsSummaryBlock extends BlockType
 
     public function defaultAiPrompt(): ?string
     {
-        return 'Summarise the ad platform\'s performance this month in two to three sentences '
+        return 'Summarise the ad platform\'s performance this period in two to three sentences '
             .'for a non-technical client. Cover spend, clicks and conversions versus the prior '
             .'period. Use only the figures provided.';
     }
