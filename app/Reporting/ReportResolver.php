@@ -9,6 +9,7 @@ use App\Models\ReportBlock;
 use App\Reporting\Support\BlockContext;
 use App\Support\Branding\BrandingResolver;
 use App\Support\Branding\ResolvedBranding;
+use App\Support\MergeTags;
 
 /**
  * Resolves live block data for a report (used for the builder preview and by the
@@ -77,8 +78,8 @@ class ReportResolver
 
             $data[$block->id] = [
                 'type' => $block->type,
-                'heading' => $block->heading,
-                'commentary' => $block->commentary,
+                'heading' => MergeTags::apply($block->heading, $report, $branding),
+                'commentary' => MergeTags::apply($block->commentary, $report, $branding),
                 'data' => $this->resolveBlock($report, $block, $branding),
             ];
         }

@@ -174,9 +174,10 @@
                                         </x-field>
 
                                         @if (! $type || $type->supportsCommentary())
-                                            <x-field label="Commentary" :for="'block-'.$block->id.'-commentary'" :name="'edits.'.$block->id.'.commentary'" optional>
+                                            <x-field label="Commentary" :for="'block-'.$block->id.'-commentary'" :name="'edits.'.$block->id.'.commentary'" optional
+                                                     help="Merge tags fill in automatically: @{{ client }}, @{{ contact }}, @{{ site }}, @{{ period }}, @{{ agency }}.">
                                                 <textarea wire:model="edits.{{ $block->id }}.commentary" id="block-{{ $block->id }}-commentary" wire:blur="persistBlock({{ $block->id }})"
-                                                          rows="2" placeholder="A note shown under this section" class="cr-input text-sm"></textarea>
+                                                          rows="2" placeholder="A note shown under this section — e.g. Hi @{{ client }}," class="cr-input text-sm"></textarea>
                                             </x-field>
                                         @endif
 

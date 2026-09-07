@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added **merge tags** for report text: write `{{ client }}`, `{{ contact }}`, `{{ site }}`, `{{ period }}` or `{{ agency }}` in a section's commentary or heading and they're filled in with the real values when the report generates (and in the live preview) — so "Hi {{ client }}," reads "Hi Coastal Holidays,". Unknown tags are left untouched.
+- Mobile fixes: a report page's action buttons now wrap instead of running off the screen, and a client page's Websites table drops to its key columns (site and health) on small screens.
+
 - Added a per-connection **update frequency**: on a connection's connect/edit form — and on the workspace connect form — choose how often it refreshes (Hourly, Every 3/6/12 hours, Daily, or "Use default"). A site's own setting overrides its workspace connection, which overrides the global collection interval; the "next due" time reflects whatever applies.
 
 - Added an in-app **notification bell** in the top bar. When a connection needs attention — its authentication expires, or it's auto-disabled after repeated failures (data collection or billing) — managers and administrators get a notification, linking straight to the affected site or client. It's raised once per failure episode (never on transient retries), with unread counts and mark-as-read.
