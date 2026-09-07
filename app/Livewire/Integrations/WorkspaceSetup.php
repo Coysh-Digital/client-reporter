@@ -44,6 +44,9 @@ class WorkspaceSetup extends Component
 
     public string $phase = 'credentials';
 
+    /** Workspace-level collection interval in minutes; '' means the global default. */
+    public string $collectionInterval = '';
+
     /** @var array<int, array{externalId: string, label: string, url: ?string, settings: array<string, mixed>, email: ?string}> */
     public array $discovered = [];
 
@@ -76,6 +79,25 @@ class WorkspaceSetup extends Component
                 ? (string) ($existing->setting($field->key) ?? '')
                 : '';
         }
+
+        $this->collectionInterval = $existing !== null ? (string) ($existing->setting('collection_interval') ?? '') : '';
+    }
+
+    /**
+     * Collection-frequency presets for the select, value (minutes) => label.
+     *
+     * @return array<int|string, string>
+     */
+    public function frequencyOptions(): array
+    {
+        return [
+            '' => 'Use global default',
+            '60' => 'Hourly',
+            '180' => 'Every 3 hours',
+            '360' => 'Every 6 hours',
+            '720' => 'Every 12 hours',
+            '1440' => 'Daily',
+        ];
     }
 
     public function workspace(): ?WorkspaceIntegration
@@ -116,9 +138,11 @@ class WorkspaceSetup extends Component
         $fields = $integration->accountConfigFields();
         $existing = $this->workspace();
         $this->validateConfigFields($fields, $this->values, $this->name, $existing !== null);
+        $this->validate(['collectionInterval' => ['nullable', 'in:60,180,360,720,1440']]);
 
         $credentials = $existing !== null ? ($existing->credentials ?? []) : [];
         $settings = $existing !== null ? ($existing->settings ?? []) : [];
+        $settings['collection_interval'] = $this->collectionInterval !== '' ? (int) $this->collectionInterval : null;
 
         foreach ($fields as $field) {
             $value = trim((string) ($this->values[$field->key] ?? ''));

@@ -37,6 +37,15 @@
                 </x-field>
             @endforeach
 
+            <x-field label="Update frequency" for="wcollection-interval" name="collectionInterval"
+                     help="How often every connection sharing this workspace credential refreshes. Each site can still override this. 'Use global default' follows the collection interval in Settings.">
+                <select wire:model="collectionInterval" id="wcollection-interval" class="cr-input">
+                    @foreach ($this->frequencyOptions() as $value => $optionLabel)
+                        <option value="{{ $value }}">{{ $optionLabel }}</option>
+                    @endforeach
+                </select>
+            </x-field>
+
             <div class="flex items-center gap-3 border-t border-line pt-5">
                 <x-button type="submit" variant="primary">
                     <span wire:loading.remove wire:target="connect">
