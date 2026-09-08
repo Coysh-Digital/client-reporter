@@ -87,6 +87,12 @@ class BrandingResolver
             bodyFont: $pick('body_font') ?? self::DEFAULT_BODY_FONT,
             customCss: $pick('custom_css'),
             aiSummaryLabel: $this->aiSummaryLabel(),
+            reportCoverLabel: $pick('report_cover_label'),
+            reportCoverColor: $pick('report_cover_color'),
+            reportCoverImageUrl: $this->firstProfileWith($profiles, 'report_cover_image_path')?->coverImageUrl(),
+            reportCoverShowTagline: $this->firstBool($profiles, 'report_cover_show_tagline', true),
+            reportCoverShowPeriod: $this->firstBool($profiles, 'report_cover_show_period', true),
+            reportCoverShowContact: $this->firstBool($profiles, 'report_cover_show_contact', true),
         );
     }
 
@@ -115,6 +121,26 @@ class BrandingResolver
         }
 
         return null;
+    }
+
+    /**
+     * The nearest override's boolean value (site beats client beats global),
+     * falling back to $default when no profile in the chain sets it. Unlike the
+     * string picker, a stored `false` is a real value, not "empty".
+     *
+     * @param  array<int, BrandingProfile>  $profiles
+     */
+    private function firstBool(array $profiles, string $field, bool $default): bool
+    {
+        foreach (array_reverse($profiles) as $profile) {
+            $value = $profile->{$field};
+
+            if ($value !== null) {
+                return (bool) $value;
+            }
+        }
+
+        return $default;
     }
 
     /**

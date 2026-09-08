@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **More report banner (cover) customisation** in Branding: set your own **banner label** (in place of "Website report"), a **banner background colour** independent of the brand primary, and a **background image** (kept legible with an overlay, and readable in the PDF too). Plus switches to **show or hide** the tagline, the reporting-period dates and the "prepared for" contact on the cover. All of it cascades global → client → site like the rest of your branding.
+- Fixed the merge-tag hint under a section's commentary showing raw template code; it now lists the available tags plainly.
+- The "generating your report" wait is now the same on the report page as in the builder, instead of a plain line of text in one place and an overlay in the other.
 - **Refreshed report design:** each section is now its own rounded, bordered card floating on the page background, with the page colour showing through the gaps — more whitespace and a clearer separation between sections than the previous single-sheet layout. Applies to the web report, the live preview and the PDF.
 - Added **hide empty sections**: a section that has nothing to show for the period (no invoices, no email campaigns, no store, no analytics rows, and so on) is left out of the report entirely, and the table of contents is pruned to match. It's a per-section switch in the builder — on by default for every data section — so you can force one to show its "nothing this period" note instead. Sections with meaningful empty states (like "no outages this period") always stay.
 - Added **merge tags** for report text: write `{{ client }}`, `{{ contact }}`, `{{ site }}`, `{{ period }}` or `{{ agency }}` in a section's commentary or heading and they're filled in with the real values when the report generates (and in the live preview) — so "Hi {{ client }}," reads "Hi Coastal Holidays,". Unknown tags are left untouched.

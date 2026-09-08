@@ -30,10 +30,28 @@ class BrandingProfile extends Model
         'report_footer',
         'email_footer',
         'report_cover_style',
+        'report_cover_label',
+        'report_cover_color',
+        'report_cover_image_path',
+        'report_cover_show_tagline',
+        'report_cover_show_period',
+        'report_cover_show_contact',
         'heading_font',
         'body_font',
         'custom_css',
     ];
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'report_cover_show_tagline' => 'boolean',
+            'report_cover_show_period' => 'boolean',
+            'report_cover_show_contact' => 'boolean',
+        ];
+    }
 
     /**
      * @return MorphTo<Model, $this>
@@ -46,6 +64,11 @@ class BrandingProfile extends Model
     public function logoUrl(): ?string
     {
         return $this->logo_path ? Storage::disk('public')->url($this->logo_path) : null;
+    }
+
+    public function coverImageUrl(): ?string
+    {
+        return $this->report_cover_image_path ? Storage::disk('public')->url($this->report_cover_image_path) : null;
     }
 
     public function faviconUrl(): ?string

@@ -83,4 +83,71 @@ class BrandingResolverTest extends TestCase
         $this->assertSame('Inherited Co', $resolved->agencyName);
         $this->assertSame('#444444', $resolved->primaryColor);
     }
+
+    public function test_cover_customisation_cascades_and_falls_back(): void
+    {
+        $this->resolver()->global()->update([
+            'primary_color' => '#101010',
+            'report_cover_label' => 'Monthly update',
+            'report_cover_color' => '#654321',
+        ]);
+
+        $client = Client::factory()->create();
+        $resolved = $this->resolver()->forClient($client);
+
+        $this->assertSame('Monthly update', $resolved->reportCoverLabel);
+        $this->assertSame('#654321', $resolved->reportCoverColor);
+        $this->assertSame('#654321', $resolved->coverColor());
+
+        // With no dedicated cover colour, the banner uses the brand primary.
+        $this->resolver()->global()->update(['report_cover_color' => null]);
+        $this->assertSame('#101010', $this->resolver()->forClient(Client::factory()->create())->coverColor());
+    }
+
+    public function test_cover_toggles_default_on_and_a_stored_false_wins(): void
+    {
+        // Nothing set: every cover element defaults to shown.
+        $resolved = $this->resolver()->forClient(Client::factory()->create());
+        $this->assertTrue($resolved->reportCoverShowTagline);
+        $this->assertTrue($resolved->reportCoverShowPeriod);
+        $this->assertTrue($resolved->reportCoverShowContact);
+
+        // A stored false is a real value the cascade must honour (not "empty").
+        $this->resolver()->global()->update(['report_cover_show_tagline' => false]);
+        $client = Client::factory()->create();
+        $this->assertFalse($this->resolver()->forClient($client)->reportCoverShowTagline);
+
+        // A site override flips it back on over the global false.
+        $site = Site::factory()->for($client)->create();
+        $site->branding()->create(['report_cover_show_tagline' => true]);
+        $this->assertTrue($this->resolver()->forSite($site)->reportCoverShowTagline);
+    }
+
+    public function test_the_cover_renders_the_custom_label_and_honours_the_toggles(): void
+    {
+        $this->resolver()->global()->update([
+            'tagline' => 'We build things',
+            'report_cover_label' => 'Quarterly review',
+            'report_cover_show_tagline' => false,
+            'report_cover_show_period' => false,
+            'report_cover_show_contact' => false,
+        ]);
+
+        $branding = $this->resolver()->forClient(Client::factory()->create());
+
+        $html = view('reports.blocks.cover', [
+            'data' => ['client' => 'Acme Ltd', 'site' => 'acme.example', 'period' => '1–31 August 2026', 'contact' => 'Sam Jones', 'prepared_on' => '1 Sep 2026'],
+            'commentary' => null,
+            'branding' => $branding,
+            'icon' => 'document',
+        ])->render();
+
+        $this->assertStringContainsString('Quarterly review', $html);
+        $this->assertStringNotContainsString('Website report', $html);
+        $this->assertStringContainsString('acme.example', $html);
+        // Hidden by the toggles.
+        $this->assertStringNotContainsString('We build things', $html);
+        $this->assertStringNotContainsString('1–31 August 2026', $html);
+        $this->assertStringNotContainsString('Sam Jones', $html);
+    }
 }

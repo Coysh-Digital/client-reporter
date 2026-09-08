@@ -60,6 +60,18 @@ class Manage extends Component
 
     public string $report_cover_style = 'standard';
 
+    public string $report_cover_label = '';
+
+    public string $report_cover_color = '';
+
+    public bool $report_cover_show_tagline = true;
+
+    public bool $report_cover_show_period = true;
+
+    public bool $report_cover_show_contact = true;
+
+    public $report_cover_image = null;
+
     public string $heading_font = '';
 
     public string $body_font = '';
@@ -96,12 +108,28 @@ class Manage extends Component
         foreach ([
             'agency_name', 'tagline', 'primary_color', 'secondary_color', 'website',
             'email', 'phone', 'address', 'report_footer', 'email_footer',
+            'report_cover_label', 'report_cover_color',
             'heading_font', 'body_font', 'custom_css',
         ] as $field) {
             $this->{$field} = (string) $this->profile->{$field};
         }
 
         $this->report_cover_style = $this->profile->report_cover_style ?: 'standard';
+
+        // Cover-element toggles: use this profile's own value if it sets one,
+        // otherwise start from what it currently inherits (the global default),
+        // so editing an override never silently flips an inherited setting.
+        $global = $this->scope === 'global' ? null : app(BrandingResolver::class)->global();
+        foreach (['report_cover_show_tagline', 'report_cover_show_period', 'report_cover_show_contact'] as $toggle) {
+            $own = $this->profile->{$toggle};
+            $inherited = $global !== null ? $global->{$toggle} : null;
+
+            $this->{$toggle} = match (true) {
+                $own !== null => (bool) $own,
+                $inherited !== null => (bool) $inherited,
+                default => true,
+            };
+        }
     }
 
     public function save(AuditLogger $audit): void
@@ -120,6 +148,12 @@ class Manage extends Component
             'report_footer' => ['nullable', 'string', 'max:2000'],
             'email_footer' => ['nullable', 'string', 'max:2000'],
             'report_cover_style' => ['required', 'in:minimal,standard,bold'],
+            'report_cover_label' => ['nullable', 'string', 'max:120'],
+            'report_cover_color' => ['nullable', 'regex:/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/'],
+            'report_cover_show_tagline' => ['boolean'],
+            'report_cover_show_period' => ['boolean'],
+            'report_cover_show_contact' => ['boolean'],
+            'report_cover_image' => ['nullable', 'image', 'max:4096'],
             'heading_font' => ['nullable', 'string', 'max:255', $this->knownFont()],
             'body_font' => ['nullable', 'string', 'max:255', $this->knownFont()],
             'custom_css' => ['nullable', 'string', 'max:20000', new SafeCss],
@@ -128,7 +162,7 @@ class Manage extends Component
         ]);
 
         foreach ($validated as $field => $value) {
-            if (in_array($field, ['logo', 'favicon'], true)) {
+            if (in_array($field, ['logo', 'favicon', 'report_cover_image'], true)) {
                 continue;
             }
 
@@ -150,6 +184,10 @@ class Manage extends Component
             $this->profile->favicon_path = $this->favicon->store('branding', 'public');
         }
 
+        if ($this->report_cover_image) {
+            $this->profile->report_cover_image_path = $this->report_cover_image->store('branding', 'public');
+        }
+
         // Attach to the correct owner for a fresh override profile.
         if (! $this->profile->exists && $this->scope !== 'global') {
             $owner = $this->scope === 'site' ? $this->site : $this->client;
@@ -159,6 +197,7 @@ class Manage extends Component
         $this->profile->save();
         $this->logo = null;
         $this->favicon = null;
+        $this->report_cover_image = null;
 
         $audit->log('branding.updated', $this->profile, metadata: ['scope' => $this->scope]);
         $this->dispatch('toast', message: 'Branding saved.', type: 'ok');
@@ -175,6 +214,12 @@ class Manage extends Component
     {
         $this->authorizeScope();
         $this->profile->update(['favicon_path' => null]);
+    }
+
+    public function removeCoverImage(): void
+    {
+        $this->authorizeScope();
+        $this->profile->update(['report_cover_image_path' => null]);
     }
 
     /**
