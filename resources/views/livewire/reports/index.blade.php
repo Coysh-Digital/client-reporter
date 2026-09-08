@@ -75,6 +75,8 @@
                                 <x-status-dot variant="danger" label="Generation failed" />
                             @elseif ($report->status === 'final')
                                 <x-status-dot variant="ok" label="Generated" />
+                            @elseif ($report->isAwaitingScheduledGeneration())
+                                <x-status-dot variant="info" :label="'Scheduled · ' . $report->scheduled_for->format('j M')" />
                             @else
                                 <x-status-dot variant="neutral" label="Draft" />
                             @endif

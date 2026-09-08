@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Enums\GenerationStatus;
 use App\Enums\ReportFrequency;
 use App\Jobs\GenerateReport;
 use App\Models\Report;
@@ -83,8 +84,34 @@ class GenerateScheduledReports extends Command
             $queued++;
         }
 
-        $this->info("Queued {$queued} scheduled report(s)".($retried > 0 ? ", retried {$retried} failed one(s)." : '.'));
+        $dated = $this->queueDatedReports($now);
+
+        $this->info("Queued {$queued} scheduled report(s)".($retried > 0 ? ", retried {$retried} failed one(s)" : '').($dated > 0 ? ", {$dated} one-off dated report(s)." : '.'));
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Queue any one-off report set to auto-generate on or before today that
+     * hasn't generated yet and isn't already in flight. A failed one is picked
+     * up again on the next run; a generated one drops out (generated_at is set).
+     */
+    private function queueDatedReports(CarbonImmutable $now): int
+    {
+        $reports = Report::query()
+            ->whereNotNull('scheduled_for')
+            ->whereNull('generated_at')
+            ->whereDate('scheduled_for', '<=', $now->toDateString())
+            // A fresh draft has a null status; skip only ones already in flight.
+            ->where(fn ($query) => $query
+                ->whereNull('generation_status')
+                ->orWhereNotIn('generation_status', [GenerationStatus::Queued, GenerationStatus::Running]))
+            ->get();
+
+        foreach ($reports as $report) {
+            GenerateReport::queueFor($report);
+        }
+
+        return $reports->count();
     }
 }
