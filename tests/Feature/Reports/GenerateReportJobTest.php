@@ -134,7 +134,7 @@ class GenerateReportJobTest extends TestCase
 
         Livewire::actingAs($manager)->test(Show::class, ['report' => $report])
             ->call('generate')
-            ->assertSee('queued');
+            ->assertSee('Generating your report');
 
         Queue::assertPushed(GenerateReport::class, 1);
     }
