@@ -49,7 +49,7 @@ class PageSpeedCollector extends AbstractCollector
 
     public function collect(SiteIntegration $connection, DateRange $range): CollectorResult
     {
-        $client = new PageSpeedClient((string) $connection->credential('api_key') ?: null);
+        $client = new PageSpeedClient(PageSpeedIntegration::apiKeyFor($connection));
         $strategy = (string) ($connection->setting('strategy') ?: 'mobile');
 
         $data = $client->analyze($connection->site->url, $strategy);
