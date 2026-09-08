@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Customisable report emails.** Set the auto-send email's subject and message in Settings → Report emails, using merge tags ({{ client }}, {{ contact }}, {{ site }}, {{ period }}, {{ agency }}); each site can override both. Auto-send now has a workspace default with a per-site Always / Never / Use-default choice.
 - Added a **Download PDF** button to the report — on the staff preview, the public share link and the client portal — so anyone viewing a generated report can save it as a PDF. The public share link gains a matching `/r/{token}/pdf` endpoint, gated by the same token and password as the web view.
 - Reconnecting a billing integration (FreeAgent/Xero) now **re-enables** its client connections that had been auto-disabled after a rejected credential, so syncing resumes for all of them — previously they stayed disabled and were skipped forever.
 - Billing sync no longer floods the log when a billing credential (FreeAgent/Xero) is rejected: the per-connection job now records the failure and stops instead of re-throwing, which had made the queue retry — and Laravel re-log — the same "declined the connection" error several times per connection. Transient (non-auth) failures still retry as before.

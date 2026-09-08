@@ -24,8 +24,8 @@
                             <h1 style="font-family:{{ str_replace('"', "'", $branding->headingFontStack()) }}; font-size:20px; margin:0 0 6px;">{{ $report->title }}</h1>
                             <p style="color:#6c675f; font-size:14px; margin:0 0 20px;">{{ $report->site->name }} &middot; {{ $report->dateRange()->label() }}</p>
 
-                            @if ($customMessage)
-                                <div style="font-size:15px; color:#33302b; margin-bottom:22px;">{!! nl2br(e($customMessage)) !!}</div>
+                            @if ($reportMessage)
+                                <div style="font-size:15px; color:#33302b; margin-bottom:22px;">{!! nl2br(e($reportMessage)) !!}</div>
                             @else
                                 <p style="font-size:15px; color:#33302b; margin-bottom:22px;">Your latest website report is ready. Click below to view it.</p>
                             @endif

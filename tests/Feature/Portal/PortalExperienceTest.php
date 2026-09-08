@@ -173,7 +173,7 @@ class PortalExperienceTest extends TestCase
         $report = $this->generated($site, 'August roundup', '2026-08-31');
         $branding = app(BrandingResolver::class)->forSite($site);
 
-        $mail = new ReportMail($report, 'https://example.test/r/abc', $branding, 'Here is your August report.');
+        $mail = new ReportMail($report, 'https://example.test/r/abc', $branding, reportMessage: 'Here is your August report.');
 
         $mail->assertSeeInText('August roundup')
             ->assertSeeInText('Here is your August report.')

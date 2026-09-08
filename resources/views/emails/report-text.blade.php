@@ -1,8 +1,8 @@
 {{ $report->title }}
 {{ $report->site->name }} · {{ $report->dateRange()->label() }}
 
-@if ($customMessage)
-{{ $customMessage }}
+@if ($reportMessage)
+{{ $reportMessage }}
 @else
 Your latest website report is ready.
 @endif

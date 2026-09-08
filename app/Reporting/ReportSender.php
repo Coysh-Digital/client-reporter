@@ -29,6 +29,7 @@ class ReportSender
         private readonly BrandingResolver $branding,
         private readonly ReportDocument $document,
         private readonly AuditLogger $audit,
+        private readonly ReportEmailContent $emailContent,
     ) {}
 
     /**
@@ -42,12 +43,20 @@ class ReportSender
 
         try {
             $share = $this->shares->create($report);
+            $branding = $this->branding->forSite($report->site);
+
+            // A one-off note typed when sending manually wins; otherwise use the
+            // configured template body (or the email's built-in default).
+            $message = $customMessage !== null && trim($customMessage) !== ''
+                ? $customMessage
+                : $this->emailContent->body($report, $branding);
 
             Mail::to($to)->send(new ReportMail(
                 report: $report,
                 url: $this->shares->url($share['token']),
-                branding: $this->branding->forSite($report->site),
-                customMessage: $customMessage,
+                branding: $branding,
+                emailSubject: $this->emailContent->subject($report, $branding),
+                reportMessage: $message,
                 pdfPath: $pdfPath,
             ));
         } catch (Throwable $e) {

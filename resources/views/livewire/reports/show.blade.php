@@ -88,9 +88,13 @@
                                 </select>
                             </x-field>
 
-                            <x-toggle wire:model="auto_send"
-                                label="Auto-send to client"
-                                help="Email each new report to {{ $report->site->client->contact_email ?: 'the client contact' }} automatically once it generates." />
+                            <x-field label="Auto-send to client" for="sched-auto-send" help="Email each new report to {{ $report->site->client->contact_email ?: 'the client contact' }} automatically once it generates.">
+                                <select wire:model="auto_send" id="sched-auto-send" class="cr-input">
+                                    <option value="">Use workspace default</option>
+                                    <option value="yes">Always send</option>
+                                    <option value="no">Never send</option>
+                                </select>
+                            </x-field>
                         @endif
 
                         <x-button type="submit" size="sm" variant="primary">
@@ -102,7 +106,7 @@
                     <dl class="mt-3 space-y-2.5 text-sm">
                         <div class="flex justify-between gap-3"><dt class="text-muted">Frequency</dt><dd class="text-ink">{{ $report->site->report_frequency->label() }}</dd></div>
                         @if ($report->site->hasReportSchedule())
-                            <div class="flex justify-between gap-3"><dt class="text-muted">Auto-send</dt><dd class="text-ink">{{ $report->site->auto_send ? 'On' : 'Off' }}</dd></div>
+                            <div class="flex justify-between gap-3"><dt class="text-muted">Auto-send</dt><dd class="text-ink">{{ $report->site->autoSends() ? 'On' : 'Off' }}{{ $report->site->autoSendSetting() === null ? ' (default)' : '' }}</dd></div>
                         @endif
                     </dl>
                 @endcan
