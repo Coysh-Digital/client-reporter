@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fixed a crash (`UNIQUE constraint failed`) when connecting an integration on a site that already had it connected (e.g. a PageSpeed connection a workspace connection had already created): the connect form now edits the existing connection instead of trying to insert a duplicate.
 - Fixed a site page crash (`LazyLoadingViolationException`) introduced with the PageSpeed key-source badge: the badge reads a workspace-linked connection's shared credentials, so the site panel now eager-loads that relation.
 - PageSpeed connections now show **where their API key comes from** — an "Own API key" / "Workspace API key" badge, or a "No API key" warning when a call would run anonymously and be rate-limited.
 - Clearer PageSpeed workspace setup: it no longer says it "found items on your PageSpeed account" (there is no account) — it explains PageSpeed measures each of your sites by its public address, and lists your sites to choose from.
