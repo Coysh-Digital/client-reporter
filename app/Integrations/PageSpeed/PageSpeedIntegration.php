@@ -49,6 +49,11 @@ class PageSpeedIntegration extends Integration
      * level lists your sites so you can enable measurement across them in one
      * go, all sharing the one key.
      */
+    public function discoversOwnSites(): bool
+    {
+        return true;
+    }
+
     public function supportsWorkspaceScope(): bool
     {
         return true;
@@ -108,6 +113,22 @@ class PageSpeedIntegration extends Integration
             ->first()?->credential('api_key') ?? ''));
 
         return $workspaceKey !== '' ? $workspaceKey : null;
+    }
+
+    /**
+     * Where this connection's PageSpeed API key comes from, for display:
+     * 'own' (a key stored on the connection itself), 'workspace' (using the
+     * shared workspace key, whether linked or via the fallback), or 'none' (no
+     * key anywhere — calls run anonymously and get rate-limited).
+     */
+    public static function apiKeySource(SiteIntegration $connection): string
+    {
+        $own = trim((string) (($connection->credentials ?? [])['api_key'] ?? ''));
+        if ($own !== '') {
+            return 'own';
+        }
+
+        return self::apiKeyFor($connection) !== null ? 'workspace' : 'none';
     }
 
     public function verify(SiteIntegration $connection): VerificationResult

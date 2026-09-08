@@ -230,4 +230,25 @@ class SitePanelTest extends TestCase
         $this->assertArrayNotHasKey($connection->id, $component->viewData('trends'));
         $component->assertSee('Never collected');
     }
+
+    public function test_a_pagespeed_row_shows_where_its_api_key_comes_from(): void
+    {
+        $manager = User::factory()->manager()->create();
+        $site = Site::factory()->create();
+        SiteIntegration::factory()->create([
+            'site_id' => $site->id,
+            'integration_key' => 'pagespeed',
+            'credentials' => null,
+            'status' => ConnectionStatus::Connected,
+        ]);
+        WorkspaceIntegration::query()->create([
+            'integration_key' => 'pagespeed',
+            'name' => 'PageSpeed (workspace)',
+            'status' => ConnectionStatus::Connected,
+            'credentials' => ['api_key' => 'WS'],
+        ]);
+
+        Livewire::actingAs($manager)->test(SitePanel::class, ['site' => $site])
+            ->assertSee('Workspace API key');
+    }
 }

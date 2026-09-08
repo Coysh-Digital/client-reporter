@@ -16,6 +16,7 @@
                     $state = $states[$connection->id];
                     $headline = $headlines[$connection->id] ?? null;
                     $trend = $trends[$connection->id] ?? null;
+                    $apiKeyNote = $apiKeyNotes[$connection->id] ?? null;
                 @endphp
                 <div wire:key="conn-{{ $connection->id }}" x-data="{ open: false }" class="px-5 py-3.5">
                     <div class="flex items-center gap-4">
@@ -27,6 +28,13 @@
                                 <span class="text-xs text-faint">{{ $manifest?->name ?? $connection->integration_key }}</span>
                                 @if ($connection->usesWorkspace())
                                     <x-badge variant="accent">Workspace</x-badge>
+                                @endif
+                                @if ($apiKeyNote === 'workspace')
+                                    <x-badge variant="neutral" title="Using the Google API key from the workspace PageSpeed connection.">Workspace API key</x-badge>
+                                @elseif ($apiKeyNote === 'own')
+                                    <x-badge variant="neutral" title="Using this connection's own Google API key.">Own API key</x-badge>
+                                @elseif ($apiKeyNote === 'none')
+                                    <x-badge variant="warn" title="No Google API key set, so PageSpeed calls run anonymously and get rate-limited. Add a key on the workspace PageSpeed connection.">No API key</x-badge>
                                 @endif
                             </div>
                             <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">

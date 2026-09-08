@@ -98,6 +98,17 @@ abstract class Integration
     }
 
     /**
+     * Whether workspace "discovery" simply lists the agency's own sites to
+     * measure — like PageSpeed, which has no external account and just reads
+     * each site's public URL — rather than pulling items from a connected
+     * account. Only affects the wording of the workspace-setup confirmation.
+     */
+    public function discoversOwnSites(): bool
+    {
+        return false;
+    }
+
+    /**
      * Whether this integration can ONLY be connected at the workspace level —
      * there is no meaningful per-site connection at all (e.g. an accounting
      * system billing the agency's clients). Such integrations skip the

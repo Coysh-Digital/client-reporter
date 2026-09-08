@@ -64,9 +64,14 @@
         </form>
     @else
         <x-alert variant="ok" class="mb-4">
-            Connected. Found {{ count($discovered) }} {{ Str::plural('item', count($discovered)) }} on your {{ $manifest->name }} account —
-            {{ $matchedCount }} auto-matched to {{ Str::plural($mapsToClient ? 'client' : 'site', $matchedCount) }}
-            by {{ $mapsToClient ? 'email or name' : 'URL' }}. Adjust any below, then create the connections.
+            @if ($integration->discoversOwnSites())
+                Ready. {{ $manifest->name }} measures each site by its public address — no account needed.
+                {{ count($discovered) }} of your {{ Str::plural('site', count($discovered)) }} {{ count($discovered) === 1 ? 'is' : 'are' }} listed below; pick which to measure, then create the connections.
+            @else
+                Connected. Found {{ count($discovered) }} {{ Str::plural('item', count($discovered)) }} on your {{ $manifest->name }} account —
+                {{ $matchedCount }} auto-matched to {{ Str::plural($mapsToClient ? 'client' : 'site', $matchedCount) }}
+                by {{ $mapsToClient ? 'email or name' : 'URL' }}. Adjust any below, then create the connections.
+            @endif
         </x-alert>
 
         <form wire:submit="confirm" class="cr-card max-w-3xl px-6 py-6">

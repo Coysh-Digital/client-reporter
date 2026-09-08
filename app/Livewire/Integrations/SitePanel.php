@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Livewire\Integrations;
 
 use App\Integrations\CollectionSchedule;
+use App\Integrations\PageSpeed\PageSpeedIntegration;
 use App\Jobs\RunConnectorCollection;
 use App\Models\Metric;
 use App\Models\MetricSnapshot;
@@ -83,8 +84,25 @@ class SitePanel extends Component
             'states' => $states->all(),
             'headlines' => $this->headlines($connections),
             'trends' => $this->trends($connections),
+            'apiKeyNotes' => $this->apiKeyNotes($connections),
             'polling' => $states->contains(fn (ConnectionState $s): bool => $s->syncing),
         ]);
+    }
+
+    /**
+     * Per-connection API-key source, for the integrations that share one key
+     * across the workspace (PageSpeed today). Maps a connection id to 'own',
+     * 'workspace' or 'none', so the panel can show where its key comes from.
+     *
+     * @param  Collection<int, SiteIntegration>  $connections
+     * @return array<int, string>
+     */
+    private function apiKeyNotes(Collection $connections): array
+    {
+        return $connections
+            ->filter(fn (SiteIntegration $c): bool => $c->integration_key === 'pagespeed')
+            ->mapWithKeys(fn (SiteIntegration $c): array => [$c->id => PageSpeedIntegration::apiKeySource($c)])
+            ->all();
     }
 
     /**
