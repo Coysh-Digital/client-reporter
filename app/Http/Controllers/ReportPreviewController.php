@@ -30,6 +30,10 @@ class ReportPreviewController
             ? $document->fromRender($report->latestRender)
             : $document->live($report);
 
+        // Offer the PDF once the report has been generated (the PDF is built
+        // from the frozen render, so a draft has nothing to download yet).
+        $payload['pdfUrl'] = $report->isGenerated() ? route('reports.pdf', $report) : null;
+
         return view('reports.document', $payload);
     }
 }
