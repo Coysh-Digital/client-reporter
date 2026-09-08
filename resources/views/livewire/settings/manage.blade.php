@@ -44,6 +44,21 @@
             </div>
         </section>
 
+        {{-- Report emails --}}
+        <section class="cr-panel">
+            <div class="cr-panel-header"><h2 class="cr-eyebrow">Report emails</h2></div>
+            <div class="space-y-4 px-5 py-5">
+                <x-toggle wire:model="report_auto_send" label="Auto-send reports by default"
+                    help="The default for new sites: email each scheduled report to the client automatically once it generates. Each site can override this (Always / Never / Use default)." />
+                <x-field label="Email subject" for="report_email_subject" help="Merge tags: {{ \App\Support\MergeTags::hint() }}. Leave blank to use the report's title.">
+                    <input wire:model="report_email_subject" id="report_email_subject" type="text" maxlength="255" class="cr-input" placeholder="Uses the report title">
+                </x-field>
+                <x-field label="Email message" for="report_email_body" help="The message shown above the “View your report” button. Leave blank for the default. Merge tags work here too.">
+                    <textarea wire:model="report_email_body" id="report_email_body" rows="4" class="cr-input" placeholder="Your latest website report is ready. Click below to view it."></textarea>
+                </x-field>
+            </div>
+        </section>
+
         {{-- Data collection --}}
         <section class="cr-panel">
             <div class="cr-panel-header"><h2 class="cr-eyebrow">Data collection</h2></div>

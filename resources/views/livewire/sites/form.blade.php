@@ -80,9 +80,13 @@
 
             @if ($report_frequency !== 'none')
                 <div class="mt-4">
-                    <x-toggle wire:model="auto_send"
-                        label="Auto-send to the client"
-                        help="Email each scheduled report to the client's contact email automatically once it generates, with the PDF attached. Leave off to review and send by hand." />
+                    <x-field label="Auto-send to the client" for="auto_send" help="Email each scheduled report to the client's contact email automatically once it generates, with the PDF attached. “Use workspace default” follows the setting in Settings → Report emails.">
+                        <select wire:model="auto_send" id="auto_send" class="cr-input max-w-xs">
+                            <option value="">Use workspace default</option>
+                            <option value="yes">Always send</option>
+                            <option value="no">Never send</option>
+                        </select>
+                    </x-field>
                 </div>
 
                 @php($nextRun = \App\Enums\ReportFrequency::tryFrom($report_frequency)?->nextGenerationDate())
@@ -93,6 +97,17 @@
                     <a href="{{ route('reports.scheduled') }}" wire:navigate class="cr-link">Reports → Scheduled</a>.
                 </p>
             @endif
+
+            <div class="mt-5 border-t border-line pt-5 space-y-4">
+                <p class="cr-eyebrow">Report email (this site)</p>
+                <p class="text-xs text-faint">Override the workspace email template for this site's reports. Leave blank to use the default set in Settings → Report emails. Merge tags: {{ \App\Support\MergeTags::hint() }}.</p>
+                <x-field label="Email subject" for="email_subject" optional>
+                    <input wire:model="email_subject" id="email_subject" type="text" maxlength="255" class="cr-input" placeholder="Uses the workspace default (or the report title)">
+                </x-field>
+                <x-field label="Email message" for="email_body" optional>
+                    <textarea wire:model="email_body" id="email_body" rows="4" class="cr-input" placeholder="Uses the workspace default message"></textarea>
+                </x-field>
+            </div>
         </div>
 
         <div class="flex items-center gap-3 border-t border-line pt-5">

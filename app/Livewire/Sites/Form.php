@@ -36,7 +36,12 @@ class Form extends Component
 
     public ?int $report_template_id = null;
 
-    public bool $auto_send = false;
+    /** '' = use the workspace default, 'yes' = always send, 'no' = never. */
+    public string $auto_send = '';
+
+    public string $email_subject = '';
+
+    public string $email_body = '';
 
     public function mount(?Site $site = null): void
     {
@@ -53,7 +58,11 @@ class Form extends Component
             $this->is_active = $site->is_active;
             $this->report_frequency = $site->report_frequency->value;
             $this->report_template_id = $site->report_template_id;
-            $this->auto_send = $site->auto_send;
+            $this->auto_send = match ($site->autoSendSetting()) {
+                true => 'yes', false => 'no', default => ''
+            };
+            $this->email_subject = (string) $site->email_subject;
+            $this->email_body = (string) $site->email_body;
 
             return;
         }
@@ -92,14 +101,20 @@ class Form extends Component
             'is_active' => ['boolean'],
             'report_frequency' => ['required', 'in:none,weekly,monthly,quarterly'],
             'report_template_id' => ['nullable', 'integer', 'exists:report_templates,id'],
-            'auto_send' => ['boolean'],
+            'auto_send' => ['in:,yes,no'],
+            'email_subject' => ['nullable', 'string', 'max:255'],
+            'email_body' => ['nullable', 'string', 'max:5000'],
         ]);
 
+        $validated['auto_send'] = match ($validated['auto_send']) {
+            'yes' => true, 'no' => false, default => null
+        };
+        $validated['email_subject'] = trim((string) $validated['email_subject']) !== '' ? $validated['email_subject'] : null;
+        $validated['email_body'] = trim((string) $validated['email_body']) !== '' ? $validated['email_body'] : null;
+
         // A schedule needs a closed period to report on; templates are optional.
-        // Auto-send only means anything for a scheduled site.
         if ($validated['report_frequency'] === 'none') {
             $validated['report_template_id'] = null;
-            $validated['auto_send'] = false;
         }
 
         if ($this->site) {

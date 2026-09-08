@@ -27,9 +27,19 @@ class Manage extends Component
 
     public int $queue_workers = 1;
 
+    public bool $report_auto_send = false;
+
+    public string $report_email_subject = '';
+
+    public string $report_email_body = '';
+
     public function mount(Settings $settings): void
     {
         $this->authorize('manage-settings');
+
+        $this->report_auto_send = (bool) $settings->get('report.auto_send', false);
+        $this->report_email_subject = (string) $settings->get('report.email_subject', '');
+        $this->report_email_body = (string) $settings->get('report.email_body', '');
 
         $this->updates_enabled = (bool) $settings->get('updates_enabled', config('client-reporter.updates.enabled', true));
         $this->pdf_driver = (string) $settings->get('pdf_driver', config('client-reporter.pdf.driver', 'dompdf'));
@@ -53,6 +63,9 @@ class Manage extends Component
             'collection_interval' => ['required', 'integer', 'min:15', 'max:10080'],
             'collection_retention_days' => ['nullable', 'integer', 'min:1', 'max:3650'],
             'queue_workers' => ['required', 'integer', 'min:1', 'max:'.$maxWorkers],
+            'report_auto_send' => ['boolean'],
+            'report_email_subject' => ['nullable', 'string', 'max:255'],
+            'report_email_body' => ['nullable', 'string', 'max:5000'],
         ]);
 
         $settings->setMany([
@@ -62,6 +75,9 @@ class Manage extends Component
             'collection_interval' => $this->collection_interval,
             'collection_retention_days' => $this->collection_retention_days,
             'queue_workers' => $this->queue_workers,
+            'report.auto_send' => $this->report_auto_send,
+            'report.email_subject' => trim($this->report_email_subject) !== '' ? $this->report_email_subject : null,
+            'report.email_body' => trim($this->report_email_body) !== '' ? $this->report_email_body : null,
         ]);
 
         $audit->log('settings.updated');

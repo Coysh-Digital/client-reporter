@@ -30,7 +30,8 @@ class ReportMail extends Mailable
         public Report $report,
         public string $url,
         public ResolvedBranding $branding,
-        public ?string $customMessage = null,
+        public ?string $emailSubject = null,
+        public ?string $reportMessage = null,
         ?string $pdfPath = null,
     ) {
         if ($pdfPath !== null) {
@@ -43,7 +44,7 @@ class ReportMail extends Mailable
         return new Envelope(
             from: new Address(config('mail.from.address'), $this->branding->agencyName),
             replyTo: $this->branding->email ? [new Address($this->branding->email, $this->branding->agencyName)] : [],
-            subject: $this->report->title,
+            subject: $this->emailSubject !== null && trim($this->emailSubject) !== '' ? $this->emailSubject : $this->report->title,
         );
     }
 

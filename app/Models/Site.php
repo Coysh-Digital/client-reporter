@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\ReportFrequency;
+use App\Support\Settings;
 use Database\Factories\SiteFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -16,7 +17,7 @@ use Illuminate\Support\Facades\Storage;
 /**
  * @property ReportFrequency|null $report_frequency
  * @property int|null $report_template_id
- * @property bool $auto_send
+ * @property bool|null $auto_send
  */
 class Site extends Model
 {
@@ -37,6 +38,8 @@ class Site extends Model
         'report_frequency',
         'report_template_id',
         'auto_send',
+        'email_subject',
+        'email_body',
     ];
 
     protected function casts(): array
@@ -46,8 +49,30 @@ class Site extends Model
             'settings' => 'array',
             'report_frequency' => ReportFrequency::class,
             'favicon_fetched_at' => 'datetime',
-            'auto_send' => 'boolean',
+            // auto_send is nullable tri-state (null = inherit the workspace
+            // default), so it is deliberately not cast to a plain boolean.
         ];
+    }
+
+    /**
+     * This site's explicit auto-send choice, or null when it inherits the
+     * workspace default. Read raw so a null isn't coerced to false.
+     */
+    public function autoSendSetting(): ?bool
+    {
+        $value = $this->attributes['auto_send'] ?? null;
+
+        return $value === null ? null : (bool) $value;
+    }
+
+    /**
+     * Whether generated reports for this site are emailed to the client
+     * automatically — the site's own choice, or the workspace default when it
+     * hasn't set one.
+     */
+    public function autoSends(): bool
+    {
+        return $this->autoSendSetting() ?? (bool) app(Settings::class)->get('report.auto_send', false);
     }
 
     /**

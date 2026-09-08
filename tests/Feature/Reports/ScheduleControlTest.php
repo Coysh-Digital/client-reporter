@@ -10,6 +10,7 @@ use App\Livewire\Reports\Show;
 use App\Livewire\Sites\Form;
 use App\Models\Report;
 use App\Models\ReportDelivery;
+use App\Models\ReportTemplate;
 use App\Models\Site;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -28,19 +29,20 @@ class ScheduleControlTest extends TestCase
 
         Livewire::actingAs($manager)->test(Show::class, ['report' => $report])
             ->set('report_frequency', 'monthly')
-            ->set('auto_send', true)
+            ->set('auto_send', 'yes')
             ->call('saveSchedule')
             ->assertHasNoErrors();
 
         $site->refresh();
         $this->assertSame(ReportFrequency::Monthly, $site->report_frequency);
-        $this->assertTrue($site->auto_send);
+        $this->assertTrue($site->autoSends());
     }
 
-    public function test_turning_the_schedule_off_also_clears_auto_send(): void
+    public function test_turning_the_schedule_off_clears_the_template(): void
     {
         $manager = User::factory()->manager()->create();
-        $site = Site::factory()->create(['report_frequency' => 'monthly', 'auto_send' => true]);
+        $template = ReportTemplate::query()->create(['name' => 'Monthly', 'blocks' => []]);
+        $site = Site::factory()->create(['report_frequency' => 'monthly', 'report_template_id' => $template->id]);
         $report = Report::factory()->for($site)->create();
 
         Livewire::actingAs($manager)->test(Show::class, ['report' => $report])
@@ -49,7 +51,7 @@ class ScheduleControlTest extends TestCase
 
         $site->refresh();
         $this->assertSame(ReportFrequency::None, $site->report_frequency);
-        $this->assertFalse($site->auto_send);
+        $this->assertNull($site->report_template_id);
     }
 
     public function test_the_site_form_saves_auto_send(): void
@@ -58,11 +60,11 @@ class ScheduleControlTest extends TestCase
         $site = Site::factory()->create(['report_frequency' => 'monthly', 'auto_send' => false]);
 
         Livewire::actingAs($manager)->test(Form::class, ['site' => $site])
-            ->set('auto_send', true)
+            ->set('auto_send', 'yes')
             ->call('save')
             ->assertHasNoErrors();
 
-        $this->assertTrue($site->refresh()->auto_send);
+        $this->assertTrue($site->refresh()->autoSends());
     }
 
     public function test_the_scheduled_page_shows_auto_send_and_last_sent(): void

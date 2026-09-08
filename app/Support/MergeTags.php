@@ -32,6 +32,18 @@ class MergeTags
         ];
     }
 
+    /**
+     * A human hint listing the available tags in their `{{ tag }}` form, for
+     * help text. Built in PHP (not Blade) so the braces are plain data.
+     */
+    public static function hint(): string
+    {
+        return collect(self::available())
+            ->keys()
+            ->map(fn (string $tag): string => '{{ '.$tag.' }}')
+            ->implode(', ');
+    }
+
     public static function apply(?string $text, Report $report, ResolvedBranding $branding): ?string
     {
         if ($text === null || ! str_contains($text, '{{')) {

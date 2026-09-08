@@ -23,14 +23,17 @@ class Show extends Component
 
     public ?int $report_template_id = null;
 
-    public bool $auto_send = false;
+    /** '' = use the workspace default, 'yes' = always send, 'no' = never. */
+    public string $auto_send = '';
 
     public function mount(Report $report): void
     {
         $this->report = $report->load('site.client', 'latestRender');
         $this->report_frequency = $this->report->site->report_frequency->value;
         $this->report_template_id = $this->report->site->report_template_id;
-        $this->auto_send = $this->report->site->auto_send;
+        $this->auto_send = match ($this->report->site->autoSendSetting()) {
+            true => 'yes', false => 'no', default => ''
+        };
     }
 
     public function generate(): void
@@ -71,20 +74,26 @@ class Show extends Component
         $validated = $this->validate([
             'report_frequency' => ['required', 'in:none,weekly,monthly,quarterly'],
             'report_template_id' => ['nullable', 'integer', 'exists:report_templates,id'],
-            'auto_send' => ['boolean'],
+            'auto_send' => ['in:,yes,no'],
         ]);
 
-        // Nothing to send or template when the site isn't on a schedule.
+        $autoSend = match ($validated['auto_send']) {
+            'yes' => true, 'no' => false, default => null
+        };
+
+        // Nothing to template when the site isn't on a schedule.
         if ($validated['report_frequency'] === 'none') {
             $validated['report_template_id'] = null;
-            $validated['auto_send'] = false;
         }
 
-        $this->report->site->update($validated);
+        $this->report->site->update([
+            'report_frequency' => $validated['report_frequency'],
+            'report_template_id' => $validated['report_template_id'],
+            'auto_send' => $autoSend,
+        ]);
         $audit->log('site.updated', $this->report->site);
 
         $this->report_template_id = $validated['report_template_id'];
-        $this->auto_send = $validated['auto_send'];
 
         $this->dispatch('toast', message: 'Schedule updated.', type: 'ok');
     }

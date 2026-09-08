@@ -132,7 +132,7 @@ class GenerateReport implements ShouldBeUnique, ShouldQueue
     {
         $report->loadMissing('site.client');
 
-        if (! $report->scheduled || ! $report->site->auto_send) {
+        if (! $report->scheduled || ! $report->site->autoSends()) {
             return;
         }
 
