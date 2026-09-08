@@ -15,6 +15,7 @@ use App\Integrations\Support\IntegrationManifest;
 use App\Integrations\Support\VerificationResult;
 use App\Integrations\WordPress\Blocks\CmsStatusBlock;
 use App\Integrations\WordPress\Blocks\CmsUpdatesBlock;
+use App\Integrations\WordPress\Blocks\FormSubmissionsBlock;
 use App\Models\SiteIntegration;
 
 class WordPressIntegration extends Integration
@@ -98,7 +99,7 @@ class WordPressIntegration extends Integration
      */
     public function collectors(): array
     {
-        return [new SiteStatusCollector, new WooCommerceCollector];
+        return [new SiteStatusCollector, new WooCommerceCollector, new FormsCollector];
     }
 
     /**
@@ -109,6 +110,7 @@ class WordPressIntegration extends Integration
         return [
             CmsStatusBlock::class,
             CmsUpdatesBlock::class,
+            FormSubmissionsBlock::class,
         ];
     }
 

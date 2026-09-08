@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added a **Form submissions** report section (WordPress): website form counts for the period from **Gravity Forms** and **Ninja Forms**, with a total versus the previous period, a per-form breakdown showing each form's source, and a daily trend. It's separate from the email-provider "Leads & signups" section so website enquiries and email-list growth are never conflated, and it's added to the "Full Digital Report" template. Requires the updated WordPress connector plugin; sites without a supported forms plugin simply leave the section out.
 - **More report banner (cover) customisation** in Branding: set your own **banner label** (in place of "Website report"), a **banner background colour** independent of the brand primary, and a **background image** (kept legible with an overlay, and readable in the PDF too). Plus switches to **show or hide** the tagline, the reporting-period dates and the "prepared for" contact on the cover. All of it cascades global → client → site like the rest of your branding.
 - Fixed the merge-tag hint under a section's commentary showing raw template code; it now lists the available tags plainly.
 - The "generating your report" wait is now the same on the report page as in the builder, instead of a plain line of text in one place and an overlay in the other.

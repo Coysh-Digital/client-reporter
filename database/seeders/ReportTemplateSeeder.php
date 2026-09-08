@@ -90,6 +90,7 @@ class ReportTemplateSeeder extends Seeder
                 ['ecommerce.summary', 'Store performance', true],
                 ['ads.summary', 'Ad performance', true],
                 ['forms.summary', 'Leads & signups', true],
+                ['wordpress.forms', 'Form submissions', true],
                 ['email.campaigns', 'Email campaigns', true],
                 ['uptime.overview', 'Uptime & performance', true],
                 ['uptime.summary', 'Uptime summary', true],
