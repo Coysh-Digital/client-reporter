@@ -206,4 +206,26 @@ class PageSpeedTest extends TestCase
 
         $this->assertSame('SITE-KEY', PageSpeedIntegration::apiKeyFor($connection->fresh()));
     }
+
+    public function test_api_key_source_reports_where_the_key_comes_from(): void
+    {
+        $connection = $this->connection();
+
+        // Its own key.
+        $connection->update(['credentials' => ['api_key' => 'SITE']]);
+        $this->assertSame('own', PageSpeedIntegration::apiKeySource($connection->fresh()));
+
+        // No key anywhere.
+        $connection->update(['credentials' => null]);
+        $this->assertSame('none', PageSpeedIntegration::apiKeySource($connection->fresh()));
+
+        // Falls back to the workspace key.
+        WorkspaceIntegration::query()->create([
+            'integration_key' => 'pagespeed',
+            'name' => 'PageSpeed (workspace)',
+            'status' => ConnectionStatus::Connected,
+            'credentials' => ['api_key' => 'WS'],
+        ]);
+        $this->assertSame('workspace', PageSpeedIntegration::apiKeySource($connection->fresh()));
+    }
 }
