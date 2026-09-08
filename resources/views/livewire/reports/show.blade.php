@@ -1,4 +1,4 @@
-<div {{ $report->isGenerating() ? 'wire:poll.3s=pollGeneration' : '' }}>
+<div>
     <x-breadcrumbs :items="[['label' => 'Reports', 'href' => route('reports.index')], ['label' => $report->site->name, 'href' => route('sites.show', $report->site)], ['label' => $report->title]]" />
 
     @if ($report->generationFailed())
@@ -8,14 +8,7 @@
                 <x-slot:action><x-button size="sm" wire:click="retryGeneration" icon="arrow-path">Try again</x-button></x-slot:action>
             @endcan
         </x-alert>
-    @elseif ($report->isGenerating())
-        <x-alert variant="info" class="mb-4">
-            <span class="inline-flex items-center gap-2">
-                <span class="inline-block h-2 w-2 animate-pulse rounded-full" style="background:var(--color-info);" aria-hidden="true"></span>
-                {{ $report->generation_status === \App\Enums\GenerationStatus::Queued ? 'Generation is queued and will start shortly.' : 'Generating this report in the background — fresh data is being collected.' }}
-            </span>
-        </x-alert>
-    @elseif (! $report->isGenerated())
+    @elseif (! $report->isGenerated() && ! $report->isGenerating())
         <x-alert variant="warn" class="mb-4">
             This report is a draft. Generate it to freeze the data for sharing, PDF and email.
         </x-alert>
@@ -137,4 +130,6 @@
             @endif
         </div>
     </div>
+
+    <x-report-generating :report="$report" />
 </div>
