@@ -18,10 +18,18 @@ class PageSpeedClient extends AbstractHttpClient
     /** The Lighthouse categories to score, in the API's own enum spelling. */
     private const CATEGORIES = ['PERFORMANCE', 'ACCESSIBILITY', 'BEST_PRACTICES', 'SEO'];
 
-    /** A Lighthouse run is slow; give it a minute and never retry a 5xx (it would double the wait). */
+    /** A Lighthouse run is slow, so allow a full minute per attempt. */
     protected int $timeout = 60;
 
-    protected int $retries = 0;
+    /**
+     * PageSpeed's Lighthouse backend returns transient 5xx errors fairly often.
+     * One retry after a short pause absorbs most of them; it only costs a second
+     * slow call when the first genuinely fails, and this runs in the background.
+     * (Only 5xx/connection errors are retried — never a 4xx or a 429.)
+     */
+    protected int $retries = 1;
+
+    protected int $retryDelayMs = 1500;
 
     public function __construct(private readonly ?string $apiKey = null) {}
 

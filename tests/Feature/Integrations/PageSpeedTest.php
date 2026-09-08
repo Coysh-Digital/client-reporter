@@ -194,6 +194,18 @@ class PageSpeedTest extends TestCase
         $this->assertSame(90.0, collect($result->metrics())->firstWhere('key', 'performance.score')->value);
     }
 
+    public function test_a_transient_500_is_retried(): void
+    {
+        // PageSpeed's backend 500s intermittently; a retry should recover.
+        Http::fake(['www.googleapis.com/*' => Http::sequence()
+            ->push('upstream error', 500)
+            ->push(['lighthouseResult' => ['categories' => ['performance' => ['score' => 0.88]]]], 200)]);
+
+        $data = (new PageSpeedClient('K'))->analyze('https://example.com', 'mobile');
+
+        $this->assertSame(0.88, $data['lighthouseResult']['categories']['performance']['score']);
+    }
+
     public function test_the_request_actually_carries_the_api_key_and_url(): void
     {
         Http::fake(['*' => Http::response(['lighthouseResult' => ['categories' => ['performance' => ['score' => 0.9]]]])]);
