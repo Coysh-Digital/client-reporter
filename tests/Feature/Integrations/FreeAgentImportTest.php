@@ -86,6 +86,38 @@ class FreeAgentImportTest extends TestCase
         $this->assertSame(1, ClientBillingConnection::query()->count());
     }
 
+    public function test_reconnecting_re_enables_a_previously_disabled_client_connection(): void
+    {
+        $this->fakeFreeAgent();
+        $manager = User::factory()->manager()->create();
+        $workspace = $this->connectedWorkspace();
+
+        // An existing client whose billing connection was auto-disabled after
+        // FreeAgent rejected the (now-stale) credential.
+        $client = Client::factory()->create(['name' => 'Northwind']);
+        ClientBillingConnection::query()->create([
+            'client_id' => $client->id,
+            'workspace_integration_id' => $workspace->id,
+            'external_contact_id' => 'https://api.freeagent.com/v2/contacts/1',
+            'external_contact_name' => 'Northwind',
+            'consecutive_failures' => 1,
+            'disabled_at' => now(),
+            'last_error' => 'FreeAgent declined the connection.',
+        ]);
+
+        Livewire::actingAs($manager)->test(WorkspaceSetup::class, ['workspace' => $workspace])
+            ->call('connect')
+            ->set('assignments.0', (string) $client->id)
+            ->set('assignments.1', '')
+            ->call('confirm')
+            ->assertRedirect(route('integrations.index'));
+
+        $link = ClientBillingConnection::query()->where('client_id', $client->id)->firstOrFail();
+        $this->assertNull($link->disabled_at, 'reconnecting should re-enable the disabled connection');
+        $this->assertSame(0, $link->consecutive_failures);
+        $this->assertNull($link->last_error);
+    }
+
     private function link(): ClientBillingConnection
     {
         return ClientBillingConnection::query()->create([

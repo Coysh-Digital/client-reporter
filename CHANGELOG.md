@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Reconnecting a billing integration (FreeAgent/Xero) now **re-enables** its client connections that had been auto-disabled after a rejected credential, so syncing resumes for all of them — previously they stayed disabled and were skipped forever.
 - Billing sync no longer floods the log when a billing credential (FreeAgent/Xero) is rejected: the per-connection job now records the failure and stops instead of re-throwing, which had made the queue retry — and Laravel re-log — the same "declined the connection" error several times per connection. Transient (non-auth) failures still retry as before.
 - PageSpeed collection now retries once on a transient Google 5xx (its Lighthouse backend returns these intermittently), so an occasional upstream blip no longer shows as a failed collector run.
 - Fixed PageSpeed Insights being rate-limited even with a valid API key: the request was being sent with **no query parameters at all** — the API key and the target URL never reached Google, so every call was anonymous and rate-limited. (An empty query array passed to the HTTP client was wiping the query string the PageSpeed client built into its URL.)

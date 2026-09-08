@@ -306,6 +306,12 @@ class WorkspaceSetup extends Component
                     'workspace_integration_id' => $workspace->id,
                     'external_contact_id' => $entity['externalId'],
                     'external_contact_name' => $entity['label'],
+                    // Reconnecting with a fresh credential clears any auto-disable
+                    // (from a previously rejected credential) so the hourly sweep
+                    // resumes syncing this client instead of skipping it forever.
+                    'consecutive_failures' => 0,
+                    'disabled_at' => null,
+                    'last_error' => null,
                 ],
             );
 
