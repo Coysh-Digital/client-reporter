@@ -164,4 +164,46 @@ class PageSpeedTest extends TestCase
         $log = MetricSnapshot::query()->where('collector_key', 'core-web-vitals-log')->first();
         $this->assertCount(2, $log->payload['days']);
     }
+
+    public function test_api_key_falls_back_to_the_workspace_connection_when_a_site_connection_is_not_linked(): void
+    {
+        // A standalone per-site connection: no key of its own, not linked to a
+        // workspace connection.
+        $connection = $this->connection();
+        $connection->update(['credentials' => null]);
+        $connection = $connection->fresh();
+        $this->assertNull($connection->workspace_integration_id);
+
+        // The key was entered once at the workspace level.
+        WorkspaceIntegration::query()->create([
+            'integration_key' => 'pagespeed',
+            'name' => 'PageSpeed (workspace)',
+            'status' => ConnectionStatus::Connected,
+            'credentials' => ['api_key' => 'WS-KEY-123'],
+        ]);
+
+        // The resolved key is the workspace one, so the call is authenticated
+        // rather than hitting Google anonymously and being rate-limited.
+        $this->assertSame('WS-KEY-123', PageSpeedIntegration::apiKeyFor($connection));
+
+        // And collection runs cleanly using it.
+        $this->fakePageSpeed(90);
+        $result = (new PageSpeedCollector)->collect($connection, new DateRange('2026-08-01', '2026-08-31'));
+        $this->assertSame(90.0, collect($result->metrics())->firstWhere('key', 'performance.score')->value);
+    }
+
+    public function test_a_site_connections_own_key_takes_precedence_over_the_workspace_key(): void
+    {
+        $connection = $this->connection();
+        $connection->update(['credentials' => ['api_key' => 'SITE-KEY']]);
+
+        WorkspaceIntegration::query()->create([
+            'integration_key' => 'pagespeed',
+            'name' => 'PageSpeed (workspace)',
+            'status' => ConnectionStatus::Connected,
+            'credentials' => ['api_key' => 'WS-KEY'],
+        ]);
+
+        $this->assertSame('SITE-KEY', PageSpeedIntegration::apiKeyFor($connection->fresh()));
+    }
 }

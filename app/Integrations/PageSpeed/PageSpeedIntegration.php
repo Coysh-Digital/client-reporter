@@ -89,10 +89,31 @@ class PageSpeedIntegration extends Integration
         ];
     }
 
+    /**
+     * The Google API key to use for a PageSpeed call. Prefers the connection's
+     * own (or workspace-inherited) key, then falls back to the workspace-wide
+     * PageSpeed connection's key even when this site connection isn't linked to
+     * it — the key is workspace-wide by design, so a per-site connection made on
+     * its own should still benefit from a key entered once at the workspace level.
+     */
+    public static function apiKeyFor(SiteIntegration $connection): ?string
+    {
+        $key = trim((string) $connection->credential('api_key'));
+        if ($key !== '') {
+            return $key;
+        }
+
+        $workspaceKey = trim((string) (WorkspaceIntegration::query()
+            ->where('integration_key', 'pagespeed')
+            ->first()?->credential('api_key') ?? ''));
+
+        return $workspaceKey !== '' ? $workspaceKey : null;
+    }
+
     public function verify(SiteIntegration $connection): VerificationResult
     {
         try {
-            (new PageSpeedClient((string) $connection->credential('api_key') ?: null))
+            (new PageSpeedClient(self::apiKeyFor($connection)))
                 ->analyze($connection->site->url, (string) ($connection->setting('strategy') ?: 'mobile'));
         } catch (IntegrationException $e) {
             return VerificationResult::failure($e->getMessage());
