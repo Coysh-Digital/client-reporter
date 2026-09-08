@@ -7,7 +7,7 @@
 
     @if ($result)
         <x-alert variant="ok" class="mb-6">
-            Imported {{ $result['created'] }} {{ Str::plural('site', $result['created']) }}{{ $result['skipped'] > 0 ? ', skipped '.$result['skipped'].' already present' : '' }}.
+            Imported {{ $result['created'] }} {{ Str::plural('site', $result['created']) }}{{ ($result['updated'] ?? 0) > 0 ? ', updated '.$result['updated'] : '' }}{{ $result['skipped'] > 0 ? ', skipped '.$result['skipped'].' already present' : '' }}.
             <x-slot:action><a href="{{ route('sites.index') }}" wire:navigate class="font-semibold underline">View sites</a></x-slot:action>
         </x-alert>
     @endif
@@ -102,13 +102,21 @@
     {{-- Mapping --}}
     @if ($fetched && count($rows))
         <div class="cr-panel">
-            @php $selectable = collect($rows)->reject(fn ($r) => $r['already']); $selected = $selectable->filter(fn ($r) => $r['include'] ?? false)->count(); @endphp
+            @php $selectable = collect($rows)->reject(fn ($r) => $r['already'] && $duplicates === 'skip'); $selected = $selectable->filter(fn ($r) => $r['include'] ?? false)->count(); $matched = collect($rows)->filter(fn ($r) => $r['already'])->count(); @endphp
             <div class="cr-panel-header flex-wrap gap-3">
                 <div>
                     <h2 class="cr-eyebrow">{{ count($rows) }} {{ Str::plural('site', count($rows)) }} found — map to clients</h2>
-                    <p class="mt-0.5 text-xs text-faint">{{ $selected }} of {{ $selectable->count() }} selected{{ $ignoredRows > 0 ? ' · '.$ignoredRows.' '.Str::plural('row', $ignoredRows).' skipped (no valid URL)' : '' }}</p>
+                    <p class="mt-0.5 text-xs text-faint">{{ $selected }} of {{ $selectable->count() }} selected{{ $matched > 0 ? ' · '.$matched.' already in your fleet' : '' }}{{ $ignoredRows > 0 ? ' · '.$ignoredRows.' '.Str::plural('row', $ignoredRows).' skipped (no valid URL)' : '' }}</p>
                 </div>
                 <div class="flex items-center gap-2">
+                    @if ($matched > 0)
+                        <label for="dup-strategy" class="text-xs text-faint">Already in your fleet</label>
+                        <select wire:model.live="duplicates" id="dup-strategy" class="cr-input text-sm">
+                            <option value="skip">Skip</option>
+                            <option value="update">Update details</option>
+                            <option value="overwrite">Overwrite (incl. client)</option>
+                        </select>
+                    @endif
                     <x-button size="sm" variant="ghost" wire:click="selectAll(true)">Select all</x-button>
                     <x-button size="sm" variant="ghost" wire:click="selectAll(false)">Select none</x-button>
                     <x-button variant="primary" wire:click="import" :disabled="$selected === 0">
@@ -121,23 +129,23 @@
                 @foreach ($rows as $i => $row)
                     <div class="flex flex-wrap items-center gap-4 px-5 py-3" wire:key="row-{{ $i }}">
                         <label class="flex min-w-0 flex-1 items-center gap-3">
-                            <input type="checkbox" wire:model.live="rows.{{ $i }}.include" @disabled($row['already']) class="cr-checkbox">
+                            <input type="checkbox" wire:model.live="rows.{{ $i }}.include" @disabled($row['already'] && $duplicates === 'skip') class="cr-checkbox">
                             <x-avatar :name="$row['name']" size="lg" aria-hidden="true" />
                             <span class="min-w-0">
                                 <span class="block truncate text-sm font-semibold text-ink">{{ $row['name'] }}</span>
-                                <span class="block truncate text-xs text-faint">{{ $row['host'] }}{{ $row['already'] ? ' · already imported' : '' }}</span>
+                                <span class="block truncate text-xs text-faint">{{ $row['host'] }}@if ($row['already']){{ $duplicates === 'skip' ? ' · already imported (skipped)' : ($duplicates === 'overwrite' ? ' · will be overwritten' : ' · will be updated') }}@endif</span>
                             </span>
                         </label>
                         <div class="flex items-center gap-2">
                             <label for="import-client-{{ $i }}" class="text-xs text-faint">Client</label>
-                            <select wire:model.live="rows.{{ $i }}.client_choice" id="import-client-{{ $i }}" @disabled($row['already']) class="cr-input w-52 text-sm">
+                            <select wire:model.live="rows.{{ $i }}.client_choice" id="import-client-{{ $i }}" @disabled($row['already'] && $duplicates !== 'overwrite') class="cr-input w-52 text-sm">
                                 <option value="new">＋ New client</option>
                                 @foreach ($clients as $c)
                                     <option value="{{ $c->id }}">{{ $c->name }}</option>
                                 @endforeach
                             </select>
                             @if (($row['client_choice'] ?? 'new') === 'new')
-                                <input wire:model="rows.{{ $i }}.new_client_name" @disabled($row['already'])
+                                <input wire:model="rows.{{ $i }}.new_client_name" @disabled($row['already'] && $duplicates !== 'overwrite')
                                        placeholder="New client name" aria-label="New client name for {{ $row['name'] }}" class="cr-input w-48 text-sm">
                             @endif
                         </div>
