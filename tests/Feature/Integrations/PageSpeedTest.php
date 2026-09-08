@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Integrations;
 
 use App\Enums\ConnectionStatus;
+use App\Integrations\PageSpeed\PageSpeedClient;
 use App\Integrations\PageSpeed\PageSpeedCollector;
 use App\Integrations\PageSpeed\PageSpeedIntegration;
 use App\Livewire\Integrations\Setup;
@@ -191,6 +192,22 @@ class PageSpeedTest extends TestCase
         $this->fakePageSpeed(90);
         $result = (new PageSpeedCollector)->collect($connection, new DateRange('2026-08-01', '2026-08-31'));
         $this->assertSame(90.0, collect($result->metrics())->firstWhere('key', 'performance.score')->value);
+    }
+
+    public function test_the_request_actually_carries_the_api_key_and_url(): void
+    {
+        Http::fake(['*' => Http::response(['lighthouseResult' => ['categories' => ['performance' => ['score' => 0.9]]]])]);
+
+        (new PageSpeedClient('LIVE-KEY-XYZ'))->analyze('https://example.com', 'mobile');
+
+        // The params PageSpeedClient builds into the URL must survive to Google;
+        // an empty query array used to strip them, so every call went out
+        // keyless and got rate-limited.
+        Http::assertSent(function ($request) {
+            $query = $request->toPsrRequest()->getUri()->getQuery();
+
+            return str_contains($query, 'key=LIVE-KEY-XYZ') && str_contains($query, 'url=https');
+        });
     }
 
     public function test_api_key_falls_back_to_a_key_stored_on_any_other_connection(): void
