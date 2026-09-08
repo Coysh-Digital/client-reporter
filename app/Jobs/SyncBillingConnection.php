@@ -6,6 +6,7 @@ namespace App\Jobs;
 
 use App\Billing\BillingSyncer;
 use App\Enums\BackgroundTaskStatus;
+use App\Integrations\Support\AuthenticationException;
 use App\Models\BackgroundTask;
 use App\Models\ClientBillingConnection;
 use App\Support\SafeError;
@@ -61,7 +62,17 @@ class SyncBillingConnection implements ShouldBeUnique, ShouldQueue
 
         try {
             $syncer->syncOne($this->link);
+        } catch (AuthenticationException $e) {
+            // A rejected credential won't recover on retry, and the syncer has
+            // already disabled the connection and alerted staff. Record it and
+            // stop — don't re-throw, or the queue would retry (and Laravel would
+            // re-log) the same dead-credential error several times over.
+            $task->fail(SafeError::message($e, 'Billing sync failed.'));
+
+            return;
         } catch (Throwable $e) {
+            // Soft/transient failure: record it and re-throw so the queue's
+            // retry-then-disable grace still applies.
             $task->fail(SafeError::message($e, 'Billing sync failed.'));
 
             throw $e;
