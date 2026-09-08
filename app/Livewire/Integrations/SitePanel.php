@@ -73,7 +73,9 @@ class SitePanel extends Component
     public function render(CollectionSchedule $schedule): mixed
     {
         /** @var Collection<int, SiteIntegration> $connections */
-        $connections = $this->site->integrations()->with('latestRun')->orderBy('name')->get();
+        // workspaceIntegration is eager-loaded because the API-key source note
+        // (PageSpeed) reads a workspace-linked connection's shared credentials.
+        $connections = $this->site->integrations()->with(['latestRun', 'workspaceIntegration'])->orderBy('name')->get();
 
         $states = $connections->mapWithKeys(
             fn (SiteIntegration $c): array => [$c->id => ConnectionState::from($c, $schedule)],

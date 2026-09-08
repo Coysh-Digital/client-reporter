@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fixed a site page crash (`LazyLoadingViolationException`) introduced with the PageSpeed key-source badge: the badge reads a workspace-linked connection's shared credentials, so the site panel now eager-loads that relation.
 - PageSpeed connections now show **where their API key comes from** — an "Own API key" / "Workspace API key" badge, or a "No API key" warning when a call would run anonymously and be rate-limited.
 - Clearer PageSpeed workspace setup: it no longer says it "found items on your PageSpeed account" (there is no account) — it explains PageSpeed measures each of your sites by its public address, and lists your sites to choose from.
 - Fixed PageSpeed Insights still being **rate-limited despite a workspace API key**: a per-site PageSpeed connection that wasn't linked to the workspace one ignored the key and called Google anonymously. The collector (and connection check) now fall back to the workspace-wide PageSpeed key whenever a site connection has none of its own, so a key entered once at the workspace level is always used.
