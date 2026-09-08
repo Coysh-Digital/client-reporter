@@ -29,6 +29,8 @@ class PortalReportController
         $render = $report->latestRender;
         abort_if($render === null, 404);
 
-        return view('reports.document', $document->fromRender($render));
+        return view('reports.document', $document->fromRender($render) + [
+            'pdfUrl' => route('portal.report.pdf', $report),
+        ]);
     }
 }

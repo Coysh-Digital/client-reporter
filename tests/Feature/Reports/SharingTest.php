@@ -46,6 +46,31 @@ class SharingTest extends TestCase
         $this->assertSame(1, $result['share']->refresh()->views);
     }
 
+    public function test_a_share_link_offers_a_pdf_download(): void
+    {
+        $report = $this->generatedReport();
+        $shares = app(ReportShareService::class);
+        $token = $shares->create($report)['token'];
+
+        // The web view shows the Download PDF action...
+        $this->get($shares->url($token))->assertOk()->assertSee('Download PDF');
+
+        // ...and the PDF endpoint streams a PDF gated by the same token.
+        $response = $this->get(route('public-report.pdf', ['token' => $token]));
+        $response->assertOk();
+        $this->assertStringContainsString('application/pdf', (string) $response->headers->get('content-type'));
+    }
+
+    public function test_a_locked_share_pdf_redirects_to_the_password_page(): void
+    {
+        $report = $this->generatedReport();
+        $shares = app(ReportShareService::class);
+        $token = $shares->create($report, password: 'secret')['token'];
+
+        $this->get(route('public-report.pdf', ['token' => $token]))
+            ->assertRedirect(route('public-report', ['token' => $token]));
+    }
+
     public function test_an_expired_link_is_not_accessible(): void
     {
         $report = $this->generatedReport();

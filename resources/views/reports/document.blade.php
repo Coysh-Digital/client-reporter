@@ -122,9 +122,21 @@
         .report-footer { text-align: center; color: #9a9384; font-size: 12.5px; margin-top: 22px; line-height: 1.7; }
         .report-footer .footer-name { font-family: {!! $branding->headingFontStack() !!}; font-size: 15px; font-weight: 600; color: #4a463d; display: block; margin-bottom: 4px; }
         a { color: var(--brand-primary-ink); text-decoration: none; }
+        /* Floating "Download PDF" action — only rendered on the web views (the
+           PDF render is passed no pdfUrl), and never printed. */
+        .pdf-download {
+            position: fixed; top: 18px; right: 18px; z-index: 50;
+            display: inline-block; padding: 9px 15px; border-radius: 9px;
+            background: var(--brand-primary); color: {{ \App\Support\Branding\Color::inkOn($branding->primaryColor) }};
+            font-size: 13px; font-weight: 600; text-decoration: none; letter-spacing: .01em;
+            box-shadow: 0 6px 18px -6px rgba(40, 34, 20, .45);
+        }
+        .pdf-download-icon { display: inline-block; width: 14px; height: 14px; vertical-align: -2px; margin-right: 7px; }
+        @media print { .pdf-download { display: none !important; } }
 
         @media (max-width: 640px) {
             body { overflow-x: hidden; }
+            .pdf-download { top: 10px; right: 10px; padding: 8px 12px; font-size: 12px; }
             .report { padding: 20px 10px 48px; }
             .block { padding: 24px 20px !important; margin-bottom: 14px; border-radius: 12px; }
             .cover-band { margin: -24px -20px 0 !important; padding: 36px 20px 30px !important; }
@@ -163,6 +175,10 @@
     </style>
 </head>
 <body>
+    @if (! empty($pdfUrl ?? null))
+        <a href="{{ $pdfUrl }}" class="pdf-download">
+            <svg class="pdf-download-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3a1 1 0 0 1 1 1v9.585l2.293-2.292a1 1 0 1 1 1.414 1.414l-4 4a1 1 0 0 1-1.414 0l-4-4a1 1 0 1 1 1.414-1.414L11 13.585V4a1 1 0 0 1 1-1Z"/><path d="M5 19a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H6a1 1 0 0 1-1-1Z"/></svg>Download PDF</a>
+    @endif
     <div class="report">
         @foreach ($blocks as $b)
             <section id="block-{{ $b['id'] ?? $loop->index }}" class="block block--{{ $b['type'] }}">

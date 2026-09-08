@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ReportShare;
 use App\Reporting\ReportDocument;
+use App\Reporting\ReportPdf;
 use App\Reporting\ReportShareService;
 use App\Support\Branding\BrandingResolver;
 use App\Support\Branding\ResolvedBranding;
@@ -13,6 +14,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Spatie\LaravelPdf\PdfBuilder;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -50,7 +52,32 @@ class PublicReportController
 
         $share->forceFill(['views' => $share->views + 1, 'last_viewed_at' => now()])->save();
 
-        return view('reports.document', $document->fromRender($render));
+        return view('reports.document', $document->fromRender($render) + [
+            'pdfUrl' => route('public-report.pdf', ['token' => $token]),
+        ]);
+    }
+
+    /**
+     * The same report as a downloadable PDF, gated by the same token (and
+     * password) as the web view.
+     */
+    public function pdf(string $token, ReportShareService $shares, ReportPdf $pdf): Response|PdfBuilder|RedirectResponse
+    {
+        $share = $shares->resolve($token);
+
+        if ($share === null) {
+            return $this->unavailable(null);
+        }
+
+        if ($share->requiresPassword() && ! $this->isUnlocked($share)) {
+            return redirect()->route('public-report', ['token' => $token]);
+        }
+
+        if ($share->report->latestRender === null) {
+            return $this->unavailable($share);
+        }
+
+        return $pdf->download($share->report) ?? $this->unavailable($share);
     }
 
     public function unlock(string $token, Request $request, ReportShareService $shares): RedirectResponse|View|Response

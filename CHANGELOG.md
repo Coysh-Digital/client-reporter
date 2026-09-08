@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added a **Download PDF** button to the report — on the staff preview, the public share link and the client portal — so anyone viewing a generated report can save it as a PDF. The public share link gains a matching `/r/{token}/pdf` endpoint, gated by the same token and password as the web view.
 - Reconnecting a billing integration (FreeAgent/Xero) now **re-enables** its client connections that had been auto-disabled after a rejected credential, so syncing resumes for all of them — previously they stayed disabled and were skipped forever.
 - Billing sync no longer floods the log when a billing credential (FreeAgent/Xero) is rejected: the per-connection job now records the failure and stops instead of re-throwing, which had made the queue retry — and Laravel re-log — the same "declined the connection" error several times per connection. Transient (non-auth) failures still retry as before.
 - PageSpeed collection now retries once on a transient Google 5xx (its Lighthouse backend returns these intermittently), so an occasional upstream blip no longer shows as a failed collector run.

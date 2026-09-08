@@ -52,6 +52,7 @@ Route::middleware(['auth', 'active'])->group(function () {
 */
 Route::middleware(['throttle:60,1', 'report-headers'])->group(function () {
     Route::get('/r/{token}', [PublicReportController::class, 'show'])->name('public-report');
+    Route::get('/r/{token}/pdf', [PublicReportController::class, 'pdf'])->name('public-report.pdf');
     Route::post('/r/{token}/unlock', [PublicReportController::class, 'unlock'])
         ->middleware('throttle:share-unlock')->name('public-report.unlock');
 });
