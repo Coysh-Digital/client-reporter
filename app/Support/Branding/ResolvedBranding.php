@@ -40,7 +40,22 @@ readonly class ResolvedBranding
         public string $bodyFont,
         public ?string $customCss,
         public string $aiSummaryLabel = 'AI summary',
+        public ?string $reportCoverLabel = null,
+        public ?string $reportCoverColor = null,
+        public ?string $reportCoverImageUrl = null,
+        public bool $reportCoverShowTagline = true,
+        public bool $reportCoverShowPeriod = true,
+        public bool $reportCoverShowContact = true,
     ) {}
+
+    /**
+     * The banner background colour to paint the cover band in — the dedicated
+     * cover colour when set, otherwise the brand primary.
+     */
+    public function coverColor(): string
+    {
+        return $this->reportCoverColor ?: $this->primaryColor;
+    }
 
     public function hasLogo(): bool
     {
@@ -102,6 +117,12 @@ readonly class ResolvedBranding
             'reportFooter' => $this->reportFooter,
             'emailFooter' => $this->emailFooter,
             'reportCoverStyle' => $this->reportCoverStyle,
+            'reportCoverLabel' => $this->reportCoverLabel,
+            'reportCoverColor' => $this->reportCoverColor,
+            'reportCoverImageUrl' => $this->reportCoverImageUrl,
+            'reportCoverShowTagline' => $this->reportCoverShowTagline,
+            'reportCoverShowPeriod' => $this->reportCoverShowPeriod,
+            'reportCoverShowContact' => $this->reportCoverShowContact,
             'headingFont' => $this->headingFont,
             'bodyFont' => $this->bodyFont,
             'customCss' => $this->customCss,
@@ -132,6 +153,12 @@ readonly class ResolvedBranding
             bodyFont: (string) ($data['bodyFont'] ?? "'Hanken Grotesk', sans-serif"),
             customCss: $data['customCss'] ?? null,
             aiSummaryLabel: (string) ($data['aiSummaryLabel'] ?? 'AI summary'),
+            reportCoverLabel: $data['reportCoverLabel'] ?? null,
+            reportCoverColor: $data['reportCoverColor'] ?? null,
+            reportCoverImageUrl: $data['reportCoverImageUrl'] ?? null,
+            reportCoverShowTagline: (bool) ($data['reportCoverShowTagline'] ?? true),
+            reportCoverShowPeriod: (bool) ($data['reportCoverShowPeriod'] ?? true),
+            reportCoverShowContact: (bool) ($data['reportCoverShowContact'] ?? true),
         );
     }
 

@@ -97,6 +97,39 @@
                         <option value="bold">Bold</option>
                     </select>
                 </x-field>
+
+                <x-field label="Banner label" for="report_cover_label" help="The small label above the client name on the cover. Leave blank for “Website report”.">
+                    <input wire:model.live.debounce.400ms="report_cover_label" id="report_cover_label" type="text" maxlength="120" class="cr-input max-w-xs"
+                           placeholder="{{ $inherited?->report_cover_label ?: 'Website report' }}">
+                </x-field>
+
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <x-field label="Banner colour" for="report_cover_color" help="The cover band’s background. Leave blank to use the primary colour.">
+                        <div class="flex items-center gap-2">
+                            <input wire:model.live="report_cover_color" id="report_cover_color-swatch" type="color" aria-label="Banner colour picker" class="h-9 w-12 rounded border border-line-strong">
+                            <input wire:model.live.debounce.400ms="report_cover_color" id="report_cover_color" type="text" class="cr-input" placeholder="{{ $inherited?->report_cover_color ?: 'Primary colour' }}">
+                        </div>
+                    </x-field>
+                    <x-field label="Banner image" for="report_cover_image" help="Optional photo/graphic behind the banner, kept legible with an overlay. Up to 4 MB.">
+                        @if ($profile->coverImageUrl())
+                            <div class="mb-2 flex items-center gap-3">
+                                <img src="{{ $profile->coverImageUrl() }}" alt="Current banner image" class="h-10 w-16 rounded border border-line object-cover">
+                                <x-button size="sm" variant="ghost" wire:click="removeCoverImage">Remove</x-button>
+                            </div>
+                        @endif
+                        <input wire:model="report_cover_image" id="report_cover_image" type="file" accept="image/*" class="block w-full text-sm text-muted file:mr-3 file:rounded-md file:border-0 file:bg-accent-soft file:px-3 file:py-1.5 file:text-accent">
+                        <div wire:loading wire:target="report_cover_image" class="mt-1 text-xs text-muted">Uploading…</div>
+                    </x-field>
+                </div>
+
+                <div>
+                    <span class="cr-label">Show on the cover</span>
+                    <div class="mt-1.5 space-y-1.5">
+                        <x-checkbox wire:model.live="report_cover_show_tagline" id="report_cover_show_tagline" label="Tagline" />
+                        <x-checkbox wire:model.live="report_cover_show_period" id="report_cover_show_period" label="Reporting period (dates)" />
+                        <x-checkbox wire:model.live="report_cover_show_contact" id="report_cover_show_contact" label="“Prepared for” contact" />
+                    </div>
+                </div>
             </div>
 
             <div class="cr-card px-6 py-5 space-y-4">
@@ -144,40 +177,54 @@
                     // brand colours are nudged only as far as contrast requires.
                     $primaryInk = \App\Support\Branding\Color::readable($primary, '#ffffff', 4.5);
                     $secondaryInk = \App\Support\Branding\Color::readable($secondary, '#ffffff', 4.5);
-                    $bandInk = \App\Support\Branding\Color::inkOn($primary);
-                    $bandMuted = \App\Support\Branding\Color::mix($bandInk, $primary, 0.22);
-                    $bandFaint = \App\Support\Branding\Color::mix($bandInk, $primary, 0.42);
-                    $bandHairline = \App\Support\Branding\Color::mix($bandInk, $primary, 0.7);
+
+                    $coverColorPreview = preg_match('/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $report_cover_color) ? $report_cover_color : ($inherited?->report_cover_color ?: $primary);
+                    $coverImagePreview = $report_cover_image ? $report_cover_image->temporaryUrl() : $profile->coverImageUrl();
+                    $coverLabelPreview = $report_cover_label ?: ($inherited?->report_cover_label ?: 'Website report');
+                    $hasImagePreview = (bool) $coverImagePreview;
+                    if ($hasImagePreview) {
+                        $bandInk = '#ffffff';
+                        $bandMuted = 'rgba(255,255,255,0.86)';
+                        $bandFaint = 'rgba(255,255,255,0.72)';
+                        $bandHairline = 'rgba(255,255,255,0.32)';
+                    } else {
+                        $bandInk = \App\Support\Branding\Color::inkOn($coverColorPreview);
+                        $bandMuted = \App\Support\Branding\Color::mix($bandInk, $coverColorPreview, 0.22);
+                        $bandFaint = \App\Support\Branding\Color::mix($bandInk, $coverColorPreview, 0.42);
+                        $bandHairline = \App\Support\Branding\Color::mix($bandInk, $coverColorPreview, 0.7);
+                    }
                 @endphp
                 <div class="overflow-hidden rounded-xl border border-line bg-white shadow-sm">
                     @if ($isMinimal)
                         <div class="px-7 py-9">
-                            <div style="height:5px;width:52px;border-radius:2px;background:{{ $primary }};margin-bottom:20px;"></div>
+                            <div style="height:5px;width:52px;border-radius:2px;background:{{ $coverColorPreview }};margin-bottom:20px;"></div>
                             @if ($logoPreview)
                                 <img src="{{ $logoPreview }}" alt="Logo" class="mb-6 h-9 object-contain">
                             @else
                                 <div class="mb-6 text-lg font-semibold" style="color: {{ $primaryInk }};font-family: {{ $headingFontPreview }};">{{ $displayName }}</div>
                             @endif
-                            <div class="text-2xs font-semibold uppercase tracking-[0.09em]" style="color: {{ $secondaryInk }};">Website report</div>
+                            <div class="text-2xs font-semibold uppercase tracking-[0.09em]" style="color: {{ $secondaryInk }};">{{ $coverLabelPreview }}</div>
                             <h3 class="mt-2 text-2xl font-semibold text-ink" style="font-family: {{ $headingFontPreview }};">{{ $client->name ?? 'Client name' }}</h3>
-                            <p class="mt-1 text-sm text-faint tnum">clientsite.com · 1–31 August 2026</p>
-                            @if ($tagline)<p class="mt-5 text-sm text-muted">{{ $tagline }}</p>@endif
+                            <p class="mt-1 text-sm text-faint tnum">clientsite.com@if ($report_cover_show_period) · 1–31 August 2026@endif</p>
+                            @if ($tagline && $report_cover_show_tagline)<p class="mt-5 text-sm text-muted">{{ $tagline }}</p>@endif
                         </div>
                     @else
-                        <div class="px-7 {{ $isBold ? 'py-12' : 'py-10' }}" style="background: {{ $primary }};">
-                            <div class="flex items-center justify-between">
-                                @if ($logoPreview)
-                                    <img src="{{ $logoPreview }}" alt="Logo" class="h-9 object-contain">
-                                @else
-                                    <div class="font-semibold" style="font-family: {{ $headingFontPreview }};color: {{ $bandInk }};">{{ $displayName }}</div>
+                        <div class="px-7 {{ $isBold ? 'py-12' : 'py-10' }}" style="background-color: {{ $coverColorPreview }};@if ($hasImagePreview)background-image:linear-gradient(rgba(17,15,20,0.45),rgba(17,15,20,0.55)),url('{{ $coverImagePreview }}');background-size:cover;background-position:center;background-repeat:no-repeat;@endif">
+                            <div>
+                                <div class="flex items-center justify-between">
+                                    @if ($logoPreview)
+                                        <img src="{{ $logoPreview }}" alt="Logo" class="h-9 object-contain">
+                                    @else
+                                        <div class="font-semibold" style="font-family: {{ $headingFontPreview }};color: {{ $bandInk }};">{{ $displayName }}</div>
+                                    @endif
+                                    <span class="text-2xs uppercase tracking-[0.14em]" style="color: {{ $bandMuted }};">{{ $coverLabelPreview }}</span>
+                                </div>
+                                <h3 class="mt-10 font-semibold" style="font-family: {{ $headingFontPreview }};font-size: {{ $isBold ? '34px' : '30px' }};line-height:1.04;color: {{ $bandInk }};">{{ $client->name ?? 'Client name' }}</h3>
+                                <p class="mt-2.5 text-sm tnum" style="color: {{ $bandFaint }};">clientsite.com@if ($report_cover_show_period) · 1–31 August 2026@endif</p>
+                                @if ($tagline && $report_cover_show_tagline)
+                                    <p class="mt-6 border-t pt-4 text-sm" style="border-color: {{ $bandHairline }}; color: {{ $bandMuted }};">{{ $tagline }}</p>
                                 @endif
-                                <span class="text-2xs uppercase tracking-[0.14em]" style="color: {{ $bandMuted }};">Website report</span>
                             </div>
-                            <h3 class="mt-10 font-semibold" style="font-family: {{ $headingFontPreview }};font-size: {{ $isBold ? '34px' : '30px' }};line-height:1.04;color: {{ $bandInk }};">{{ $client->name ?? 'Client name' }}</h3>
-                            <p class="mt-2.5 text-sm tnum" style="color: {{ $bandFaint }};">clientsite.com · 1–31 August 2026</p>
-                            @if ($tagline)
-                                <p class="mt-6 border-t pt-4 text-sm" style="border-color: {{ $bandHairline }}; color: {{ $bandMuted }};">{{ $tagline }}</p>
-                            @endif
                         </div>
                     @endif
                     @if ($report_footer)
