@@ -460,6 +460,25 @@ return [
         ],
     ],
 
+    'forms' => [
+        'heading' => 'Form submissions',
+        'empty' => 'No form submissions were recorded for this period.',
+        'form_fallback' => 'Form',
+        'metric' => [
+            'submissions' => 'Submissions',
+            'forms' => 'Forms',
+        ],
+        'col' => [
+            'form' => 'Form',
+            'source' => 'Source',
+            'submissions' => 'Submissions',
+        ],
+        'insight' => [
+            'singular' => ':count form submission this period.',
+            'plural' => ':count form submissions this period.',
+        ],
+    ],
+
     /*
     | Email campaigns block (Mailchimp, EmailOctopus).
     */

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Reports;
 
 use App\Enums\ConnectionStatus;
+use App\Integrations\WordPress\Blocks\FormSubmissionsBlock;
 use App\Models\Metric;
 use App\Models\MetricSnapshot;
 use App\Models\Report;
@@ -113,6 +114,51 @@ class ConsolidatedBlocksTest extends TestCase
         $this->assertCount(1, $data['top_pages']);
         $this->assertStringContainsString('14,310 visitors', $data['summary']);
         $this->assertStringContainsString('Google.com was the largest source', $data['summary']);
+    }
+
+    public function test_form_submissions_block_reads_wordpress_form_data(): void
+    {
+        $site = Site::factory()->create();
+        $c = SiteIntegration::factory()->for($site)->create([
+            'integration_key' => 'wordpress',
+            'status' => ConnectionStatus::Connected,
+        ]);
+
+        $this->metric($c, 'forms.submissions', 160, $this->range);
+        $this->metric($c, 'forms.submissions', 100, $this->previous);
+        $this->snapshot($c, 'forms', [
+            'active' => true,
+            'providers' => ['gravity', 'ninja'],
+            'forms' => [
+                ['name' => 'Contact', 'source' => 'Gravity Forms', 'submissions' => 120],
+                ['name' => 'Newsletter signup', 'source' => 'Ninja Forms', 'submissions' => 40],
+            ],
+            'timeseries' => [['date' => '2026-08-01', 'value' => 5]],
+        ]);
+
+        $data = (new FormSubmissionsBlock)->resolve($this->context($site, ['compare' => true]));
+
+        $this->assertTrue($data['has_data']);
+        $this->assertSame(160, $data['total']);
+        $this->assertSame(100, $data['previous']);
+        $this->assertSame(160.0, $data['metrics'][0]['current']);
+        $this->assertCount(2, $data['forms']);
+        $this->assertSame('Contact', $data['forms'][0]['name']);
+        $this->assertNotEmpty($data['timeseries']);
+    }
+
+    public function test_form_submissions_block_is_empty_without_a_forms_plugin(): void
+    {
+        $site = Site::factory()->create();
+        $c = SiteIntegration::factory()->for($site)->create([
+            'integration_key' => 'wordpress',
+            'status' => ConnectionStatus::Connected,
+        ]);
+        $this->snapshot($c, 'forms', ['active' => false]);
+
+        $data = (new FormSubmissionsBlock)->resolve($this->context($site));
+
+        $this->assertFalse($data['has_data']);
     }
 
     public function test_certificates_block_lists_monitors_soonest_expiry_first(): void
