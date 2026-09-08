@@ -52,7 +52,10 @@ class Import extends Component
     /** @var array<int, array<string, mixed>> */
     public array $rows = [];
 
-    /** @var array{created: int, skipped: int}|null */
+    /** How to handle a row whose URL matches an existing site: skip, update, overwrite. */
+    public string $duplicates = 'skip';
+
+    /** @var array{created: int, updated: int, skipped: int}|null */
     public ?array $result = null;
 
     public function mount(): void
@@ -208,13 +211,27 @@ class Import extends Component
     }
 
     /**
-     * Tick or untick every row that can still be imported.
+     * Tick or untick every row that can still be imported — including matched
+     * ones once a strategy other than "skip" is chosen for them.
      */
     public function selectAll(bool $include): void
     {
         foreach ($this->rows as $i => $row) {
-            if (! ($row['already'] ?? false)) {
+            if (! ($row['already'] ?? false) || $this->duplicates !== 'skip') {
                 $this->rows[$i]['include'] = $include;
+            }
+        }
+    }
+
+    /**
+     * Choosing what to do with matched sites also toggles whether they're
+     * included: "skip" leaves them out, update/overwrite ticks them in.
+     */
+    public function updatedDuplicates(): void
+    {
+        foreach ($this->rows as $i => $row) {
+            if ($row['already'] ?? false) {
+                $this->rows[$i]['include'] = $this->duplicates !== 'skip';
             }
         }
     }
@@ -223,8 +240,13 @@ class Import extends Component
     {
         $this->authorize('manage-sites');
 
-        $existingUrls = $this->existingUrlSet();
+        /** @var array<string, Site> $existingByUrl */
+        $existingByUrl = Site::query()->get()
+            ->keyBy(fn (Site $site): string => $this->normaliseUrl((string) $site->url))
+            ->all();
+
         $created = 0;
+        $updated = 0;
         $skipped = 0;
 
         foreach ($this->rows as $row) {
@@ -233,32 +255,48 @@ class Import extends Component
             }
 
             $normalised = $this->normaliseUrl((string) $row['url']);
-            if (in_array($normalised, $existingUrls, true)) {
-                $skipped++;
+            $cms = $row['cms_type'] ?: ($this->mode === 'csv' ? null : ($this->cms ?: 'wordpress'));
+            $existing = $existingByUrl[$normalised] ?? null;
+
+            if ($existing !== null) {
+                if ($this->duplicates === 'skip') {
+                    $skipped++;
+
+                    continue;
+                }
+
+                // Update refreshes the site's own details; overwrite also
+                // reassigns the client from the row's mapping.
+                $changes = ['name' => (string) $row['name'], 'cms_type' => $cms];
+                if ($this->duplicates === 'overwrite') {
+                    $changes['client_id'] = $this->resolveClient($row)->id;
+                }
+
+                $existing->update($changes);
+                $updated++;
 
                 continue;
             }
 
             $client = $this->resolveClient($row);
 
-            Site::create([
+            $existingByUrl[$normalised] = Site::create([
                 'client_id' => $client->id,
                 'name' => (string) $row['name'],
                 'url' => (string) $row['url'],
                 // A CSV carries the CMS per row (or leaves it unset); a platform
                 // import knows the CMS it fetched from, defaulting to WordPress.
-                'cms_type' => $row['cms_type'] ?: ($this->mode === 'csv' ? null : ($this->cms ?: 'wordpress')),
+                'cms_type' => $cms,
                 'is_active' => true,
             ]);
 
-            $existingUrls[] = $normalised;
             $created++;
         }
 
         $source = $this->mode === 'csv' ? 'csv' : $this->provider;
-        $audit->log('sites.imported', metadata: ['cms' => $this->cms, 'provider' => $source, 'created' => $created, 'skipped' => $skipped]);
+        $audit->log('sites.imported', metadata: ['cms' => $this->cms, 'provider' => $source, 'created' => $created, 'updated' => $updated, 'skipped' => $skipped]);
 
-        $this->result = ['created' => $created, 'skipped' => $skipped];
+        $this->result = ['created' => $created, 'updated' => $updated, 'skipped' => $skipped];
         $this->rows = [];
         $this->fetched = false;
         $this->csv = null;

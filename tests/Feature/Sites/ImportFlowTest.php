@@ -80,6 +80,51 @@ class ImportFlowTest extends TestCase
         $this->assertSame(2, Site::count());
     }
 
+    public function test_overwrite_updates_a_matched_site_and_reassigns_its_client(): void
+    {
+        $this->fakeWpMgr();
+        $manager = User::factory()->manager()->create();
+        $client = Client::factory()->create(['name' => 'Existing Co']);
+        $alpha = Site::factory()->for($client)->create(['url' => 'https://alpha.test', 'name' => 'Old name', 'cms_type' => null]);
+
+        Livewire::actingAs($manager)->test(Import::class)
+            ->set('provider', 'wpmgr')
+            ->set('config.api_key', 'wpmgr_test')
+            ->call('fetch')
+            ->set('duplicates', 'overwrite')
+            ->assertSet('rows.0.include', true)
+            ->call('import')
+            ->assertSet('result.updated', 1)
+            ->assertSet('result.created', 1);
+
+        $alpha->refresh();
+        $this->assertSame('Alpha', $alpha->name);
+        $this->assertSame('wordpress', $alpha->cms_type);
+        $this->assertSame('Alpha Ltd', $alpha->client->name);
+        $this->assertSame(2, Site::count());
+    }
+
+    public function test_update_refreshes_a_matched_site_but_keeps_its_client(): void
+    {
+        $this->fakeWpMgr();
+        $manager = User::factory()->manager()->create();
+        $client = Client::factory()->create(['name' => 'Existing Co']);
+        $alpha = Site::factory()->for($client)->create(['url' => 'https://alpha.test', 'name' => 'Old name', 'cms_type' => null]);
+
+        Livewire::actingAs($manager)->test(Import::class)
+            ->set('provider', 'wpmgr')
+            ->set('config.api_key', 'wpmgr_test')
+            ->call('fetch')
+            ->set('duplicates', 'update')
+            ->call('import')
+            ->assertSet('result.updated', 1);
+
+        $alpha->refresh();
+        $this->assertSame('Alpha', $alpha->name);
+        $this->assertSame('wordpress', $alpha->cms_type);
+        $this->assertSame($client->id, $alpha->client_id);
+    }
+
     public function test_it_defaults_to_a_cms_that_has_sources(): void
     {
         $manager = User::factory()->manager()->create();
