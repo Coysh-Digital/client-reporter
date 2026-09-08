@@ -39,6 +39,9 @@ class Form extends Component
     /** '' = use the workspace default, 'yes' = always send, 'no' = never. */
     public string $auto_send = '';
 
+    /** Days to wait after a period closes before generating (0 = immediately). */
+    public int $report_generation_delay_days = 0;
+
     public string $email_subject = '';
 
     public string $email_body = '';
@@ -61,6 +64,7 @@ class Form extends Component
             $this->auto_send = match ($site->autoSendSetting()) {
                 true => 'yes', false => 'no', default => ''
             };
+            $this->report_generation_delay_days = $site->generationDelayDays();
             $this->email_subject = (string) $site->email_subject;
             $this->email_body = (string) $site->email_body;
 
@@ -102,6 +106,7 @@ class Form extends Component
             'report_frequency' => ['required', 'in:none,weekly,monthly,quarterly'],
             'report_template_id' => ['nullable', 'integer', 'exists:report_templates,id'],
             'auto_send' => ['in:,yes,no'],
+            'report_generation_delay_days' => ['integer', 'min:0', 'max:28'],
             'email_subject' => ['nullable', 'string', 'max:255'],
             'email_body' => ['nullable', 'string', 'max:5000'],
         ]);

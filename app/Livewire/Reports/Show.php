@@ -26,6 +26,9 @@ class Show extends Component
     /** '' = use the workspace default, 'yes' = always send, 'no' = never. */
     public string $auto_send = '';
 
+    /** Days to wait after a period closes before generating (0 = immediately). */
+    public int $report_generation_delay_days = 0;
+
     public function mount(Report $report): void
     {
         $this->report = $report->load('site.client', 'latestRender');
@@ -34,6 +37,7 @@ class Show extends Component
         $this->auto_send = match ($this->report->site->autoSendSetting()) {
             true => 'yes', false => 'no', default => ''
         };
+        $this->report_generation_delay_days = $this->report->site->generationDelayDays();
     }
 
     public function generate(): void
@@ -75,6 +79,7 @@ class Show extends Component
             'report_frequency' => ['required', 'in:none,weekly,monthly,quarterly'],
             'report_template_id' => ['nullable', 'integer', 'exists:report_templates,id'],
             'auto_send' => ['in:,yes,no'],
+            'report_generation_delay_days' => ['integer', 'min:0', 'max:28'],
         ]);
 
         $autoSend = match ($validated['auto_send']) {
@@ -90,6 +95,7 @@ class Show extends Component
             'report_frequency' => $validated['report_frequency'],
             'report_template_id' => $validated['report_template_id'],
             'auto_send' => $autoSend,
+            'report_generation_delay_days' => $validated['report_generation_delay_days'],
         ]);
         $audit->log('site.updated', $this->report->site);
 
