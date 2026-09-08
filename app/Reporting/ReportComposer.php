@@ -39,6 +39,7 @@ class ReportComposer
         bool $comparePrevious = true,
         ?int $createdBy = null,
         bool $scheduled = false,
+        ?string $scheduledFor = null,
     ): Report {
         $report = Report::query()->create([
             'site_id' => $site->id,
@@ -50,6 +51,7 @@ class ReportComposer
             'created_by' => $createdBy,
             'status' => 'draft',
             'scheduled' => $scheduled,
+            'scheduled_for' => $scheduledFor,
         ]);
 
         $this->seedBlocks($report, $template);

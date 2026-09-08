@@ -8,6 +8,10 @@
                 <x-slot:action><x-button size="sm" wire:click="retryGeneration" icon="arrow-path">Try again</x-button></x-slot:action>
             @endcan
         </x-alert>
+    @elseif ($report->isAwaitingScheduledGeneration() && ! $report->isGenerating())
+        <x-alert variant="info" class="mb-4" title="Scheduled">
+            This report will generate automatically on {{ $report->scheduled_for->format('j M Y') }}{{ $report->site->autoSends() ? ' and email to the client' : '' }}. Edit its sections any time before then, or generate it now.
+        </x-alert>
     @elseif (! $report->isGenerated() && ! $report->isGenerating())
         <x-alert variant="warn" class="mb-4">
             This report is a draft. Generate it to freeze the data for sharing, PDF and email.
@@ -59,6 +63,8 @@
                     <div class="flex justify-between gap-3"><dt class="text-muted">Comparison</dt><dd class="text-ink">{{ $report->compare_previous ? 'Previous period' : 'Off' }}</dd></div>
                     @if ($report->generated_at)
                         <div class="flex justify-between gap-3"><dt class="text-muted">Generated</dt><dd class="text-ink">{{ $report->generated_at->diffForHumans() }}</dd></div>
+                    @elseif ($report->isAwaitingScheduledGeneration())
+                        <div class="flex justify-between gap-3"><dt class="text-muted">Generates on</dt><dd class="text-ink">{{ $report->scheduled_for->format('j M Y') }}</dd></div>
                     @endif
                     <div class="flex justify-between gap-3"><dt class="text-muted">Site</dt><dd class="min-w-0 truncate text-right"><a href="{{ route('sites.show', $report->site) }}" wire:navigate class="cr-link">{{ $report->site->name }}</a></dd></div>
                 </dl>

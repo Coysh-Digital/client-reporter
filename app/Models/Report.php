@@ -21,6 +21,7 @@ use Illuminate\Support\Carbon;
  * @property string $title
  * @property string $status
  * @property bool $scheduled
+ * @property Carbon|null $scheduled_for
  * @property Carbon $range_start
  * @property Carbon $range_end
  * @property bool $compare_previous
@@ -45,6 +46,7 @@ class Report extends Model
         'compare_previous',
         'status',
         'scheduled',
+        'scheduled_for',
         'intro',
         'created_by',
         'generated_at',
@@ -61,6 +63,7 @@ class Report extends Model
             'range_end' => 'date',
             'compare_previous' => 'boolean',
             'scheduled' => 'boolean',
+            'scheduled_for' => 'date',
             'generated_at' => 'datetime',
             'generation_status' => GenerationStatus::class,
             'generation_queued_at' => 'datetime',
@@ -129,6 +132,14 @@ class Report extends Model
     public function isGenerated(): bool
     {
         return $this->generated_at !== null;
+    }
+
+    /**
+     * A draft set to auto-generate on a specific date that hasn't generated yet.
+     */
+    public function isAwaitingScheduledGeneration(): bool
+    {
+        return $this->scheduled_for !== null && ! $this->isGenerated();
     }
 
     public function isGenerating(): bool

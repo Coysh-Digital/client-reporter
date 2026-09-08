@@ -43,8 +43,25 @@
 
         <x-checkbox wire:model="compare_previous" id="compare_previous" label="Compare with the previous period" />
 
+        <div class="border-t border-line pt-5">
+            <x-field label="When to generate" for="generate_when" help="Build it now to edit the sections and generate whenever you like, or pick a date to have it generate automatically — and email the client if the site's auto-send is on.">
+                <select wire:model.live="generate_when" id="generate_when" class="cr-input max-w-xs">
+                    <option value="now">Build it now</option>
+                    <option value="date">Auto-generate on a date</option>
+                </select>
+            </x-field>
+
+            @if ($generate_when === 'date')
+                <div class="mt-4">
+                    <x-field label="Generate on" for="scheduled_for" required>
+                        <input type="date" wire:model="scheduled_for" id="scheduled_for" min="{{ now()->toDateString() }}" class="cr-input max-w-xs">
+                    </x-field>
+                </div>
+            @endif
+        </div>
+
         <div class="flex items-center gap-3 border-t border-line pt-5">
-            <x-button type="submit" variant="primary">Create &amp; build</x-button>
+            <x-button type="submit" variant="primary">{{ $generate_when === 'date' ? 'Schedule report' : 'Create & build' }}</x-button>
             <x-button :href="route('reports.index')">Cancel</x-button>
         </div>
     </form>

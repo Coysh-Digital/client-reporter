@@ -32,6 +32,11 @@ class Create extends Component
 
     public bool $compare_previous = true;
 
+    /** 'now' = build the draft and open it; 'date' = auto-generate on a date. */
+    public string $generate_when = 'now';
+
+    public string $scheduled_for = '';
+
     public function mount(): void
     {
         $this->authorize('manage-reports');
@@ -64,11 +69,15 @@ class Create extends Component
             'range_start' => ['required', 'date'],
             'range_end' => ['required', 'date', 'after_or_equal:range_start'],
             'compare_previous' => ['boolean'],
+            'generate_when' => ['in:now,date'],
+            'scheduled_for' => ['exclude_unless:generate_when,date', 'required', 'date', 'after_or_equal:today'],
         ]);
 
         $template = $validated['report_template_id'] !== null
             ? ReportTemplate::query()->whereKey($validated['report_template_id'])->first()
             : null;
+
+        $onDate = $validated['generate_when'] === 'date';
 
         $report = app(ReportComposer::class)->compose(
             site: Site::query()->findOrFail($validated['site_id']),
@@ -77,11 +86,17 @@ class Create extends Component
             template: $template,
             comparePrevious: $validated['compare_previous'] ?? true,
             createdBy: auth()->id(),
+            // Scheduled-for reports auto-generate (and auto-send per the site's
+            // setting) on the chosen date, so they carry the scheduled flag.
+            scheduled: $onDate,
+            scheduledFor: $onDate ? $validated['scheduled_for'] : null,
         );
 
         $audit->log('report.created', $report);
 
-        return $this->redirectRoute('reports.edit', $report, navigate: true);
+        // A dated report generates itself later — send them to its page to
+        // review the schedule; a "now" report opens straight in the builder.
+        return $this->redirectRoute($onDate ? 'reports.show' : 'reports.edit', $report, navigate: true);
     }
 
     /**
