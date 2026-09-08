@@ -89,7 +89,16 @@
                     </x-field>
                 </div>
 
-                @php($nextRun = \App\Enums\ReportFrequency::tryFrom($report_frequency)?->nextGenerationDate())
+                <div class="mt-4">
+                    <x-field label="Generate" for="gen_delay" help="Days to wait after the period ends before generating — 0 generates as soon as it closes. For example, 4 generates a monthly report on the 5th, giving analytics time to settle.">
+                        <div class="flex items-center gap-2">
+                            <input type="number" min="0" max="28" wire:model.live="report_generation_delay_days" id="gen_delay" class="cr-input w-20">
+                            <span class="text-sm text-muted">day(s) after the period ends</span>
+                        </div>
+                    </x-field>
+                </div>
+
+                @php($nextRun = \App\Enums\ReportFrequency::tryFrom($report_frequency)?->nextGenerationDate()?->addDays(max(0, (int) $report_generation_delay_days)))
                 <p class="mt-3 text-xs text-faint">
                     The next report will be generated automatically
                     @if ($nextRun) on <span class="text-muted">{{ $nextRun->format('j M Y') }}</span>, @endif

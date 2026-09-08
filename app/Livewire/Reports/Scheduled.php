@@ -39,7 +39,7 @@ class Scheduled extends Component
                 'frequency' => $site->report_frequency?->label() ?? '',
                 'template' => $site->reportTemplate?->name,
                 'autoSend' => $site->autoSends(),
-                'next' => $site->report_frequency?->nextGenerationDate(),
+                'next' => $site->nextGenerationAt(),
                 'lastReport' => $site->reports()->where('scheduled', true)->latest('id')->first(),
                 'lastSent' => ReportDelivery::query()
                     ->where('succeeded', true)

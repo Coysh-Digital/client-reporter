@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Enums\ReportFrequency;
 use App\Support\Settings;
+use Carbon\CarbonImmutable;
 use Database\Factories\SiteFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -38,6 +39,7 @@ class Site extends Model
         'report_frequency',
         'report_template_id',
         'auto_send',
+        'report_generation_delay_days',
         'email_subject',
         'email_body',
     ];
@@ -73,6 +75,24 @@ class Site extends Model
     public function autoSends(): bool
     {
         return $this->autoSendSetting() ?? (bool) app(Settings::class)->get('report.auto_send', false);
+    }
+
+    /**
+     * Days to wait after a period closes before generating its scheduled
+     * report (0 = as soon as it closes).
+     */
+    public function generationDelayDays(): int
+    {
+        return max(0, (int) ($this->report_generation_delay_days ?? 0));
+    }
+
+    /**
+     * When the next scheduled report will generate: the day the current period
+     * closes, plus the configured delay. Null when the site isn't scheduled.
+     */
+    public function nextGenerationAt(): ?CarbonImmutable
+    {
+        return $this->report_frequency?->nextGenerationDate()?->addDays($this->generationDelayDays());
     }
 
     /**

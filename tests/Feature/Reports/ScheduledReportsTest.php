@@ -35,6 +35,35 @@ class ScheduledReportsTest extends TestCase
         $this->assertSame($period->end->toDateString(), $report->range_end->toDateString());
     }
 
+    public function test_a_generation_delay_holds_the_report_until_the_delay_has_passed(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake();
+
+        // Delay of 4 days on a monthly site: on the 3rd of the month the
+        // just-closed period is still within the settle window, so nothing
+        // generates yet.
+        $site = Site::factory()->create([
+            'report_frequency' => 'monthly',
+            'report_generation_delay_days' => 4,
+        ]);
+
+        $this->travelTo('2026-09-03 07:00:00');
+        $this->artisan('client-reporter:generate-scheduled')->assertSuccessful();
+        $this->assertSame(0, Report::query()->where('site_id', $site->id)->count());
+
+        // On the 5th the delay has elapsed and August's report is generated.
+        $this->travelTo('2026-09-05 07:00:00');
+        $this->artisan('client-reporter:generate-scheduled')->assertSuccessful();
+
+        $report = Report::query()->where('site_id', $site->id)->first();
+        $this->assertNotNull($report);
+        $this->assertSame('2026-08-01', $report->range_start->toDateString());
+        $this->assertSame('2026-08-31', $report->range_end->toDateString());
+
+        $this->travelBack();
+    }
+
     public function test_it_ignores_unscheduled_sites(): void
     {
         Site::factory()->create(['report_frequency' => 'none']);

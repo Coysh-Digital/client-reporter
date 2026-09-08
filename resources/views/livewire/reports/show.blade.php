@@ -95,6 +95,13 @@
                                     <option value="no">Never send</option>
                                 </select>
                             </x-field>
+
+                            <x-field label="Generate" for="sched-gen-delay" help="Days to wait after the period ends before generating — 0 generates as soon as it closes. For example, 4 generates a monthly report on the 5th, giving analytics time to settle.">
+                                <div class="flex items-center gap-2">
+                                    <input type="number" min="0" max="28" wire:model="report_generation_delay_days" id="sched-gen-delay" class="cr-input w-20">
+                                    <span class="text-sm text-muted">day(s) after the period ends</span>
+                                </div>
+                            </x-field>
                         @endif
 
                         <x-button type="submit" size="sm" variant="primary">
@@ -107,6 +114,9 @@
                         <div class="flex justify-between gap-3"><dt class="text-muted">Frequency</dt><dd class="text-ink">{{ $report->site->report_frequency->label() }}</dd></div>
                         @if ($report->site->hasReportSchedule())
                             <div class="flex justify-between gap-3"><dt class="text-muted">Auto-send</dt><dd class="text-ink">{{ $report->site->autoSends() ? 'On' : 'Off' }}{{ $report->site->autoSendSetting() === null ? ' (default)' : '' }}</dd></div>
+                            @if ($report->site->generationDelayDays() > 0)
+                                <div class="flex justify-between gap-3"><dt class="text-muted">Generation delay</dt><dd class="text-ink">{{ $report->site->generationDelayDays() }} day(s) after period ends</dd></div>
+                            @endif
                         @endif
                     </dl>
                 @endcan

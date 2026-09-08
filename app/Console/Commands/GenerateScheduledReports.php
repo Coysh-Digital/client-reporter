@@ -43,6 +43,14 @@ class GenerateScheduledReports extends Command
                 continue;
             }
 
+            // Respect the site's settle delay: hold generation until the
+            // configured number of days after the period closed, giving
+            // analytics time to catch up. A delay of 4 on a monthly site
+            // generates last month's report on the 5th, not the 1st.
+            if ($now->lessThan($period->end->addDays($site->generationDelayDays()))) {
+                continue;
+            }
+
             // A report already covering this exact closed period (scheduled or
             // hand-made) is never duplicated — but a scheduled one whose
             // generation failed gets another go on the next run.
