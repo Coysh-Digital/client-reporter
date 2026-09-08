@@ -6,6 +6,7 @@ namespace Tests\Feature\Integrations;
 
 use App\Enums\ConnectionStatus;
 use App\Integrations\Connector\SignedConnectorClient;
+use App\Integrations\WordPress\FormsCollector;
 use App\Integrations\WordPress\SiteStatusCollector;
 use App\Integrations\WordPress\WooCommerceCollector;
 use App\Integrations\WordPress\WordPressIntegration;
@@ -181,6 +182,44 @@ class WordPressConnectorTest extends TestCase
         Http::fake(['wp.test/*' => Http::response(['active' => false])]);
 
         $result = (new WooCommerceCollector)->collect($this->wpConnection(), new DateRange('2026-08-01', '2026-08-31'));
+
+        $this->assertCount(0, $result->metrics());
+        $this->assertFalse($result->snapshotPayload()['active']);
+    }
+
+    public function test_forms_collector_reads_submissions_when_a_forms_plugin_is_active(): void
+    {
+        Http::fake(['wp.test/*' => Http::response([
+            'active' => true,
+            'providers' => ['gravity', 'ninja'],
+            'total' => 42,
+            'forms' => [
+                ['name' => 'Contact', 'source' => 'Gravity Forms', 'submissions' => 30],
+                ['name' => 'Newsletter', 'source' => 'Ninja Forms', 'submissions' => 12],
+            ],
+            'timeseries' => [
+                ['date' => '2026-08-01', 'value' => 3],
+                ['date' => '2026-08-02', 'value' => 0],
+            ],
+        ])]);
+
+        $result = (new FormsCollector)->collect($this->wpConnection(), new DateRange('2026-08-01', '2026-08-31'));
+
+        $metrics = collect($result->metrics())->keyBy('key');
+        $this->assertSame(42, (int) $metrics['forms.responses']->value);
+        $this->assertSame(2, (int) $metrics['forms.forms']->value);
+
+        $snapshot = $result->snapshotPayload();
+        $this->assertTrue($snapshot['active']);
+        $this->assertCount(2, $snapshot['timeseries']);
+        $this->assertSame('Contact', $snapshot['forms'][0]['name']);
+    }
+
+    public function test_forms_collector_is_quiet_when_no_forms_plugin_is_installed(): void
+    {
+        Http::fake(['wp.test/*' => Http::response(['active' => false])]);
+
+        $result = (new FormsCollector)->collect($this->wpConnection(), new DateRange('2026-08-01', '2026-08-31'));
 
         $this->assertCount(0, $result->metrics());
         $this->assertFalse($result->snapshotPayload()['active']);

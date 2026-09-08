@@ -40,7 +40,6 @@ use App\Reporting\Blocks\ClosingBlock;
 use App\Reporting\Blocks\ContentsBlock;
 use App\Reporting\Blocks\CoverBlock;
 use App\Reporting\Blocks\EcommerceBlock;
-use App\Reporting\Blocks\Forms\EmailCampaignsBlock;
 use App\Reporting\Blocks\Forms\LeadsSummaryBlock;
 use App\Reporting\Blocks\Performance\PerformanceSummaryBlock;
 use App\Reporting\Blocks\Search\SearchPerformanceBlock;
@@ -155,7 +154,6 @@ return [
         SearchPerformanceBlock::class,
         EcommerceBlock::class,
         LeadsSummaryBlock::class,
-        EmailCampaignsBlock::class,
         UptimeOverviewBlock::class,
         UptimeSummaryBlock::class,
         IncidentsBlock::class,

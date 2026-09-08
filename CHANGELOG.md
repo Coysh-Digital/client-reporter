@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added a **Form responses** report section for WordPress sites: it pulls Gravity Forms and Ninja Forms submission counts through the connector plugin (whichever is installed) and shows a responses-over-time chart with a per-day activity strip, headline totals, and the busiest forms. Needs the WordPress connector plugin 0.3.0+.
+- Consolidated the two overlapping **Forms & Leads** report sections into one: the "Leads & signups" section now also shows email campaign performance and the campaign table (previously a separate "Email campaigns" section). Existing templates and reports are migrated automatically.
 - Added **merge tags** for report text: write `{{ client }}`, `{{ contact }}`, `{{ site }}`, `{{ period }}` or `{{ agency }}` in a section's commentary or heading and they're filled in with the real values when the report generates (and in the live preview) — so "Hi {{ client }}," reads "Hi Coastal Holidays,". Unknown tags are left untouched.
 - Mobile fixes: a report page's action buttons now wrap instead of running off the screen, and a client page's Websites table drops to its key columns (site and health) on small screens.
 

@@ -10,11 +10,15 @@ use App\Reporting\Contracts\BlockType;
 use App\Reporting\Support\BlockContext;
 use App\Reporting\Support\BlockOption;
 use App\Support\ReportLang;
+use Carbon\CarbonImmutable;
 
 /**
- * Provider-agnostic leads/signups summary. Reads from whichever Forms & Leads
- * integration the site has connected (Mailchimp today; form-plugin providers
- * later) via the shared leads.* metric layer.
+ * Provider-agnostic Forms & Leads section. Reads from whichever Forms & Leads
+ * integration the site has connected (Mailchimp, EmailOctopus) via the shared
+ * leads.* / email.* metric layer: new leads and audience size, email campaign
+ * performance, and — where the provider sends campaigns — a table of each one.
+ * Consolidates what were previously two separate "Leads" and "Email campaigns"
+ * sections into one.
  */
 class LeadsSummaryBlock extends BlockType
 {
@@ -29,6 +33,11 @@ class LeadsSummaryBlock extends BlockType
         return [
             'new_leads' => ['leads.new', ReportLang::get('leads.metric.new_leads'), 'number', true],
             'total' => ['leads.total', ReportLang::get('leads.metric.total_audience'), 'number', true],
+            'campaigns_sent' => ['email.campaigns_sent', ReportLang::get('email.metric.campaigns_sent'), 'number', true],
+            'open_rate' => ['email.open_rate', ReportLang::get('email.metric.open_rate'), 'percent1', true],
+            'click_rate' => ['email.click_rate', ReportLang::get('email.metric.click_rate'), 'percent1', true],
+            'recipients' => ['email.recipients', ReportLang::get('email.metric.recipients'), 'number', true],
+            'unsubscribed' => ['email.unsubscribed', ReportLang::get('email.metric.unsubscribed'), 'number', false],
         ];
     }
 
@@ -44,7 +53,7 @@ class LeadsSummaryBlock extends BlockType
 
     public function description(): string
     {
-        return 'New leads, form submissions or email signups for the period, versus the previous period.';
+        return 'New leads and audience size, email campaign performance, and a table of the period\'s campaigns — from a connected Forms & Leads provider.';
     }
 
     public function group(): string
@@ -67,7 +76,14 @@ class LeadsSummaryBlock extends BlockType
             BlockOption::multiselect('metrics', 'Metrics to show', [
                 'new_leads' => 'New leads',
                 'total' => 'Total audience',
-            ], ['new_leads', 'total']),
+                'campaigns_sent' => 'Campaigns sent',
+                'open_rate' => 'Open rate',
+                'click_rate' => 'Click rate',
+                'recipients' => 'Recipients',
+                'unsubscribed' => 'Unsubscribes',
+            ], ['new_leads', 'total', 'campaigns_sent', 'open_rate', 'click_rate']),
+            BlockOption::toggle('show_campaigns', 'Show campaign table', true),
+            BlockOption::number('campaigns_limit', 'Campaigns to list', 8, 1, 20),
             BlockOption::toggle('ai_summary', 'AI summary', false, 'Add an AI-written paragraph summarising this section (requires AI configured in Settings).'),
         ];
     }
@@ -79,9 +95,9 @@ class LeadsSummaryBlock extends BlockType
 
     public function defaultAiPrompt(): ?string
     {
-        return 'Summarise this period\'s leads and signups in two to three sentences for a '
-            .'non-technical client. Cover new leads and the total audience versus the prior '
-            .'period. Use only the figures provided.';
+        return 'Summarise this period\'s leads and email marketing in two to three sentences for a '
+            .'non-technical client. Cover new leads and the total audience versus the prior period, '
+            .'and how the email campaigns performed (opens and clicks). Use only the figures provided.';
     }
 
     /**
@@ -111,12 +127,13 @@ class LeadsSummaryBlock extends BlockType
     public function resolve(BlockContext $context): array
     {
         $compare = (bool) $context->block->configValue('compare', true);
-        $selected = (array) $context->block->configValue('metrics', array_keys(self::metrics()));
+        $selected = (array) $context->block->configValue('metrics', ['new_leads', 'total', 'campaigns_sent', 'open_rate', 'click_rate']);
 
         $current = $context->reader->metricsForCategory($context->site, IntegrationCategory::Forms, $context->range);
         $previous = $compare && $context->comparison
             ? $context->reader->metricsForCategory($context->site, IntegrationCategory::Forms, $context->comparison)
             : [];
+        $snapshot = $context->reader->snapshotForCategory($context->site, IntegrationCategory::Forms, 'summary', $context->range) ?? [];
 
         $connection = $context->reader->connectionForCategory($context->site, IntegrationCategory::Forms);
         $provider = $connection
@@ -139,10 +156,30 @@ class LeadsSummaryBlock extends BlockType
             ];
         }
 
+        $campaigns = is_array($snapshot['campaigns'] ?? null) ? $snapshot['campaigns'] : [];
+        $rows = [];
+        if ((bool) $context->block->configValue('show_campaigns', true)) {
+            $limit = (int) $context->block->configValue('campaigns_limit', 8);
+            foreach (array_slice($campaigns, 0, $limit) as $campaign) {
+                $sentAt = (string) ($campaign['sent_at'] ?? '');
+                $rows[] = [
+                    'name' => (string) ($campaign['name'] ?? 'Campaign'),
+                    'sent_at' => $sentAt !== '' ? CarbonImmutable::parse($sentAt)->format('j M Y') : '—',
+                    'recipients' => (int) ($campaign['recipients'] ?? 0),
+                    'opens' => (int) ($campaign['opens'] ?? 0),
+                    'clicks' => (int) ($campaign['clicks'] ?? 0),
+                    'open_rate' => (float) ($campaign['open_rate'] ?? 0),
+                    'click_rate' => (float) ($campaign['click_rate'] ?? 0),
+                    'unsubscribed' => $campaign['unsubscribed'] ?? null,
+                ];
+            }
+        }
+
         return [
             'has_data' => $current !== [],
             'provider' => $provider,
             'metrics' => $metrics,
+            'campaigns' => $rows,
             'insight' => $this->insight($current),
         ];
     }

@@ -488,6 +488,35 @@ return [
     ],
 
     /*
+    | Form responses block (WordPress: Gravity Forms / Ninja Forms).
+    */
+    'form_responses' => [
+        'heading' => 'Form responses',
+        'empty' => 'No form submissions were collected for this period yet.',
+        'over_time' => 'Responses over time',
+        'busiest' => 'Busiest forms',
+        'tile' => [
+            'responses' => 'Responses',
+            'forms' => 'Forms',
+        ],
+        'col' => [
+            'form' => 'Form',
+            'source' => 'Source',
+            'responses' => 'Responses',
+        ],
+        'legend' => [
+            'busy' => 'Busy day',
+            'some' => 'Some responses',
+            'none' => 'No responses',
+        ],
+        'insight' => [
+            'singular' => ':count response was submitted this period',
+            'plural' => ':count responses were submitted this period',
+            'change' => ', :direction :percent% on the previous period',
+        ],
+    ],
+
+    /*
     | Billing & invoices block.
     */
     'billing' => [
