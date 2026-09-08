@@ -235,19 +235,28 @@ class SitePanelTest extends TestCase
     {
         $manager = User::factory()->manager()->create();
         $site = Site::factory()->create();
-        SiteIntegration::factory()->create([
-            'site_id' => $site->id,
-            'integration_key' => 'pagespeed',
-            'credentials' => null,
-            'status' => ConnectionStatus::Connected,
-        ]);
-        WorkspaceIntegration::query()->create([
+
+        // A workspace-linked connection with no key of its own: the panel reads
+        // the key from the workspace connection, so workspaceIntegration must be
+        // eager-loaded (lazy loading is disabled outside production).
+        $workspace = WorkspaceIntegration::query()->create([
             'integration_key' => 'pagespeed',
             'name' => 'PageSpeed (workspace)',
             'status' => ConnectionStatus::Connected,
             'credentials' => ['api_key' => 'WS'],
         ]);
+        SiteIntegration::factory()->create([
+            'site_id' => $site->id,
+            'integration_key' => 'pagespeed',
+            'credentials' => null,
+            'workspace_integration_id' => $workspace->id,
+            'status' => ConnectionStatus::Connected,
+        ]);
 
+        // Renders the key-source badge for a workspace-linked connection, which
+        // reads the shared credentials off the workspace connection. (In
+        // production that relation must be eager-loaded — see SitePanel — or the
+        // read is a lazy-loading violation.)
         Livewire::actingAs($manager)->test(SitePanel::class, ['site' => $site])
             ->assertSee('Workspace API key');
     }
