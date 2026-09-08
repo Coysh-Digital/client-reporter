@@ -193,6 +193,23 @@ class PageSpeedTest extends TestCase
         $this->assertSame(90.0, collect($result->metrics())->firstWhere('key', 'performance.score')->value);
     }
 
+    public function test_api_key_falls_back_to_a_key_stored_on_any_other_connection(): void
+    {
+        // The connection being collected has no key and no workspace link.
+        $connection = $this->connection();
+        $connection->update(['credentials' => null]);
+
+        // Another site's PageSpeed connection carries a key. Since the key is a
+        // single workspace-wide Google key, it's reused here.
+        $other = Site::factory()->create(['url' => 'https://other.example']);
+        SiteIntegration::factory()->for($other)->create([
+            'integration_key' => 'pagespeed',
+            'credentials' => ['api_key' => 'SHARED-KEY'],
+        ]);
+
+        $this->assertSame('SHARED-KEY', PageSpeedIntegration::apiKeyFor($connection->fresh()));
+    }
+
     public function test_a_site_connections_own_key_takes_precedence_over_the_workspace_key(): void
     {
         $connection = $this->connection();

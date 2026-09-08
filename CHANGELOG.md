@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- PageSpeed now uses a Google API key entered **anywhere** in the workspace (the workspace connection or any site connection), since the key is a single Google Cloud key that works for every URL — so a key set once is used for every PageSpeed call. Added `php artisan client-reporter:pagespeed-key` (with `--test`) to show which key each connection resolves and prove it live.
 - Fixed a crash (`UNIQUE constraint failed`) when connecting an integration on a site that already had it connected (e.g. a PageSpeed connection a workspace connection had already created): the connect form now edits the existing connection instead of trying to insert a duplicate.
 - Fixed a site page crash (`LazyLoadingViolationException`) introduced with the PageSpeed key-source badge: the badge reads a workspace-linked connection's shared credentials, so the site panel now eager-loads that relation.
 - PageSpeed connections now show **where their API key comes from** — an "Own API key" / "Workspace API key" badge, or a "No API key" warning when a call would run anonymously and be rate-limited.
