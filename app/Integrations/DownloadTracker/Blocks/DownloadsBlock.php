@@ -35,6 +35,11 @@ class DownloadsBlock extends BlockType
         return 'Downloads';
     }
 
+    public function canBeEmpty(): bool
+    {
+        return true;
+    }
+
     public function icon(): string
     {
         return 'download';

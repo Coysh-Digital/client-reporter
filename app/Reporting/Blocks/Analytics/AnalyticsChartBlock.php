@@ -17,6 +17,19 @@ class AnalyticsChartBlock extends BlockType
         return 'analytics.chart';
     }
 
+    public function canBeEmpty(): bool
+    {
+        return true;
+    }
+
+    /**
+     * @param  array<string, mixed>  $resolved
+     */
+    public function isEmpty(array $resolved): bool
+    {
+        return empty($resolved['timeseries']);
+    }
+
     public function label(): string
     {
         return ReportLang::get('analytics_chart.label');

@@ -23,6 +23,19 @@ class CustomEventsBlock extends BlockType
         return 'analytics.events';
     }
 
+    public function canBeEmpty(): bool
+    {
+        return true;
+    }
+
+    /**
+     * @param  array<string, mixed>  $resolved
+     */
+    public function isEmpty(array $resolved): bool
+    {
+        return empty($resolved['events']);
+    }
+
     public function label(): string
     {
         return ReportLang::get('events.heading');

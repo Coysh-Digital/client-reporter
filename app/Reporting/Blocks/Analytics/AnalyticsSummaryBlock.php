@@ -49,6 +49,11 @@ class AnalyticsSummaryBlock extends BlockType
         return 'Analytics';
     }
 
+    public function canBeEmpty(): bool
+    {
+        return true;
+    }
+
     public function requiresCategory(): ?IntegrationCategory
     {
         return IntegrationCategory::Analytics;

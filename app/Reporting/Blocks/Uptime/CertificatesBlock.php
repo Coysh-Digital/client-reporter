@@ -37,6 +37,11 @@ class CertificatesBlock extends BlockType
         return 'Uptime';
     }
 
+    public function canBeEmpty(): bool
+    {
+        return true;
+    }
+
     public function icon(): string
     {
         return 'globe';

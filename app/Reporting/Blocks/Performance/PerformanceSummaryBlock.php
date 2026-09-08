@@ -37,6 +37,11 @@ class PerformanceSummaryBlock extends BlockType
         return 'Performance';
     }
 
+    public function canBeEmpty(): bool
+    {
+        return true;
+    }
+
     public function requiresCategory(): ?IntegrationCategory
     {
         return IntegrationCategory::Performance;

@@ -46,18 +46,22 @@
             -webkit-font-smoothing: antialiased;
         }
         .report { max-width: 800px; margin: 0 auto; padding: 32px 16px 64px; }
-        .sheet {
-            background: #fffdf9;
-            border: 1px solid #e2dccf;
-            border-radius: 6px;
-            overflow: hidden;
-            box-shadow: 0 20px 60px -24px rgba(40, 34, 20, .28), 0 2px 8px rgba(40, 34, 20, .05);
-        }
         h1, h2, h3 { font-family: {!! $branding->headingFontStack() !!}; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
-        .block { padding: 34px 46px; border-top: 1px solid #ede6d8; }
-        .block:first-child { border-top: 0; }
+        /* Each section is its own card, floating on the warm page background so
+           the page colour shows through the gaps between sections. overflow:hidden
+           lets a full-bleed cover band round to the card's corners. */
+        .block {
+            background: #fffdf9;
+            border: 1px solid #e7ded0;
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 1px 2px rgba(40, 34, 20, .04), 0 12px 30px -20px rgba(40, 34, 20, .30);
+            padding: 34px 46px;
+            margin-bottom: 18px;
+        }
+        .block:last-child { margin-bottom: 0; }
         /* Gently marks the section the builder preview just scrolled to. */
-        .block:target { box-shadow: inset 3px 0 0 var(--brand-primary); }
+        .block:target { box-shadow: inset 3px 0 0 var(--brand-primary), 0 1px 2px rgba(40, 34, 20, .04), 0 12px 30px -20px rgba(40, 34, 20, .30); }
         /* Section header: a brand icon chip + title, laid out as a table (no
            floats) so it survives PDF page breaks. Shared by every block. */
         .block-heading-row { width: 100%; border-collapse: collapse; margin-bottom: 20px; border-bottom: 1px solid #e7ded0; }
@@ -122,7 +126,7 @@
         @media (max-width: 640px) {
             body { overflow-x: hidden; }
             .report { padding: 20px 10px 48px; }
-            .block { padding: 24px 20px !important; }
+            .block { padding: 24px 20px !important; margin-bottom: 14px; border-radius: 12px; }
             .cover-band { margin: -24px -20px 0 !important; padding: 36px 20px 30px !important; }
             .cover-band h1 { font-size: 32px !important; }
             .cover-minimal h1 { font-size: 30px !important; }
@@ -160,13 +164,11 @@
 </head>
 <body>
     <div class="report">
-        <div class="sheet">
-            @foreach ($blocks as $b)
-                <section id="block-{{ $b['id'] ?? $loop->index }}" class="block block--{{ $b['type'] }}">
-                    @includeIf($b['view'], ['data' => $b['data'], 'heading' => $b['heading'], 'commentary' => $b['commentary'], 'icon' => $b['icon'] ?? 'document', 'branding' => $branding, 'report' => $report])
-                </section>
-            @endforeach
-        </div>
+        @foreach ($blocks as $b)
+            <section id="block-{{ $b['id'] ?? $loop->index }}" class="block block--{{ $b['type'] }}">
+                @includeIf($b['view'], ['data' => $b['data'], 'heading' => $b['heading'], 'commentary' => $b['commentary'], 'icon' => $b['icon'] ?? 'document', 'branding' => $branding, 'report' => $report])
+            </section>
+        @endforeach
 
         <div class="report-footer">
             @if ($branding->reportFooter)

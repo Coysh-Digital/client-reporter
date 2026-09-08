@@ -154,15 +154,64 @@ abstract class BlockType
     }
 
     /**
+     * Whether this block can resolve to an "empty" state for a period (no
+     * invoices raised, no email campaigns sent, and so on). Empty-capable
+     * blocks expose a "hide when empty" toggle in the builder and can be left
+     * out of the report entirely when they have nothing to show. Blocks that
+     * always have something to render (cover, contents, free text) leave this
+     * false.
+     */
+    public function canBeEmpty(): bool
+    {
+        return false;
+    }
+
+    /**
+     * Whether this block's resolved data amounts to nothing worth showing for
+     * the period. Defaults to the shared `has_data` convention every data block
+     * follows; a block with a different shape overrides this.
+     *
+     * @param  array<string, mixed>  $resolved  this block's resolve() output
+     */
+    public function isEmpty(array $resolved): bool
+    {
+        return array_key_exists('has_data', $resolved) && $resolved['has_data'] === false;
+    }
+
+    /**
+     * The options the builder actually renders and normalises against: the
+     * block's own options() plus the shared "hide when empty" toggle that every
+     * empty-capable block gets for free, so the behaviour is defined in one
+     * place rather than repeated on each block.
+     *
+     * @return array<int, BlockOption>
+     */
+    public function builderOptions(): array
+    {
+        $options = $this->options();
+
+        if ($this->canBeEmpty()) {
+            $options[] = BlockOption::toggle(
+                'hide_when_empty',
+                "Hide this section when there's no data",
+                true,
+                help: 'Leave the section out of the report entirely when it has nothing to show for the period, instead of printing an empty state.',
+            );
+        }
+
+        return $options;
+    }
+
+    /**
      * Default per-block configuration when the block is added — derived from the
-     * declared options() so a block only states its options in one place.
+     * builder options so a block only states its options in one place.
      *
      * @return array<string, mixed>
      */
     public function defaultConfig(): array
     {
         $config = [];
-        foreach ($this->options() as $option) {
+        foreach ($this->builderOptions() as $option) {
             $config[$option->key] = $option->default;
         }
 
@@ -196,7 +245,7 @@ abstract class BlockType
     public function normaliseConfig(array $config): array
     {
         $out = [];
-        foreach ($this->options() as $option) {
+        foreach ($this->builderOptions() as $option) {
             $value = $config[$option->key] ?? $option->default;
 
             $out[$option->key] = match ($option->type) {

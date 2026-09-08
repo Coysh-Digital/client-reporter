@@ -9,6 +9,7 @@ use App\Enums\ConnectionStatus;
 use App\Integrations\IntegrationRegistry;
 use App\Jobs\GenerateReport;
 use App\Models\Report;
+use App\Models\ReportBlock;
 use App\Models\ReportTemplate;
 use App\Reporting\BlockAvailability;
 use App\Reporting\Blocks\Ai\AiSummaryBlock;
@@ -63,9 +64,24 @@ class Builder extends Component
                 'commentary' => (string) $block->commentary,
                 'ai_summary' => (string) $block->ai_summary,
                 'is_hidden' => $block->is_hidden,
-                'config' => $block->config ?? [],
+                'config' => $this->editConfig($block),
             ];
         }
+    }
+
+    /**
+     * The config used to seed a block's editable form, with the block type's
+     * defaults filled in under the stored values — so options added since the
+     * block was created (e.g. "hide when empty") show their real default rather
+     * than an empty control.
+     *
+     * @return array<string, mixed>
+     */
+    private function editConfig(ReportBlock $block): array
+    {
+        $type = app(BlockTypeRegistry::class)->find($block->type);
+
+        return array_merge($type?->defaultConfig() ?? [], $block->config ?? []);
     }
 
     public function updatedPreset(string $value): void
@@ -152,7 +168,7 @@ class Builder extends Component
                 'commentary' => (string) $block->commentary,
                 'ai_summary' => (string) $block->ai_summary,
                 'is_hidden' => $block->is_hidden,
-                'config' => $block->config ?? [],
+                'config' => $this->editConfig($block),
             ];
         }
         $this->dispatch('preview-refresh');
@@ -189,7 +205,7 @@ class Builder extends Component
             'commentary' => (string) $clone->commentary,
             'ai_summary' => (string) $clone->ai_summary,
             'is_hidden' => $clone->is_hidden,
-            'config' => $clone->config ?? [],
+            'config' => $this->editConfig($clone),
         ];
         $this->dispatch('preview-refresh', blockId: $clone->id);
     }

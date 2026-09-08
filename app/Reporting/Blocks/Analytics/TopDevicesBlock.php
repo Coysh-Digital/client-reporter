@@ -17,6 +17,19 @@ class TopDevicesBlock extends BlockType
         return 'analytics.devices';
     }
 
+    public function canBeEmpty(): bool
+    {
+        return true;
+    }
+
+    /**
+     * @param  array<string, mixed>  $resolved
+     */
+    public function isEmpty(array $resolved): bool
+    {
+        return empty($resolved['devices']);
+    }
+
     public function label(): string
     {
         return ReportLang::get('devices.heading');

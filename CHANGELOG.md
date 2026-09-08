@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Refreshed report design:** each section is now its own rounded, bordered card floating on the page background, with the page colour showing through the gaps — more whitespace and a clearer separation between sections than the previous single-sheet layout. Applies to the web report, the live preview and the PDF.
+- Added **hide empty sections**: a section that has nothing to show for the period (no invoices, no email campaigns, no store, no analytics rows, and so on) is left out of the report entirely, and the table of contents is pruned to match. It's a per-section switch in the builder — on by default for every data section — so you can force one to show its "nothing this period" note instead. Sections with meaningful empty states (like "no outages this period") always stay.
 - Added **merge tags** for report text: write `{{ client }}`, `{{ contact }}`, `{{ site }}`, `{{ period }}` or `{{ agency }}` in a section's commentary or heading and they're filled in with the real values when the report generates (and in the live preview) — so "Hi {{ client }}," reads "Hi Coastal Holidays,". Unknown tags are left untouched.
 - Mobile fixes: a report page's action buttons now wrap instead of running off the screen, and a client page's Websites table drops to its key columns (site and health) on small screens.
 

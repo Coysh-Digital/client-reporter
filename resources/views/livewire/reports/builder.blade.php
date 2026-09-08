@@ -181,10 +181,10 @@
                                             </x-field>
                                         @endif
 
-                                        @if ($type && $type->options() !== [])
+                                        @if ($type && $type->builderOptions() !== [])
                                             <div class="space-y-3 rounded-lg border border-line bg-surface p-3">
                                                 <p class="cr-eyebrow">Options</p>
-                                                @foreach ($type->options() as $opt)
+                                                @foreach ($type->builderOptions() as $opt)
                                                     <div wire:key="opt-{{ $block->id }}-{{ $opt->key }}">
                                                         @php $optId = "opt-{$block->id}-{$opt->key}"; @endphp
                                                         @if ($opt->type === 'toggle')

@@ -63,6 +63,9 @@ class ReportResolver
 
     /**
      * Resolve every visible block into a keyed payload for rendering/freezing.
+     * Empty sections set to hide are dropped, and the table of contents is
+     * pruned to match, so a frozen render never carries — or links to — a
+     * section that has nothing to show.
      *
      * @return array<int, array<string, mixed>>
      */
@@ -76,12 +79,64 @@ class ReportResolver
                 continue;
             }
 
+            $resolved = $this->resolveBlock($report, $block, $branding);
+
+            if ($this->hiddenWhenEmpty($block, $resolved)) {
+                continue;
+            }
+
             $data[$block->id] = [
                 'type' => $block->type,
                 'heading' => MergeTags::apply($block->heading, $report, $branding),
                 'commentary' => MergeTags::apply($block->commentary, $report, $branding),
-                'data' => $this->resolveBlock($report, $block, $branding),
+                'data' => $resolved,
             ];
+        }
+
+        return self::pruneContents($data);
+    }
+
+    /**
+     * Whether a block should be left out because it has no data and is set to
+     * hide when empty (the default for every empty-capable section).
+     *
+     * @param  array<string, mixed>  $resolved  the block's resolve() output
+     */
+    public function hiddenWhenEmpty(ReportBlock $block, array $resolved): bool
+    {
+        $type = $this->blocks->find($block->type);
+
+        return $type !== null
+            && $type->canBeEmpty()
+            && (bool) $block->configValue('hide_when_empty', true)
+            && $type->isEmpty($resolved);
+    }
+
+    /**
+     * Drop table-of-contents entries that point at sections not present in the
+     * given set (hidden, or empty and set to hide), so the contents never links
+     * to a section that isn't in the report.
+     *
+     * @param  array<int, array<string, mixed>>  $data  entries keyed by block id
+     * @return array<int, array<string, mixed>>
+     */
+    public static function pruneContents(array $data): array
+    {
+        $present = [];
+        foreach (array_keys($data) as $id) {
+            $present['block-'.$id] = true;
+        }
+
+        foreach ($data as $id => $entry) {
+            if (($entry['type'] ?? null) !== 'contents') {
+                continue;
+            }
+
+            $items = $entry['data']['items'] ?? [];
+            $data[$id]['data']['items'] = array_values(array_filter(
+                $items,
+                static fn (array $item): bool => isset($present[$item['anchor'] ?? '']),
+            ));
         }
 
         return $data;

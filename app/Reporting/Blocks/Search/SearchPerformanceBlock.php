@@ -52,6 +52,11 @@ class SearchPerformanceBlock extends BlockType
         return 'Search';
     }
 
+    public function canBeEmpty(): bool
+    {
+        return true;
+    }
+
     public function requiresCategory(): ?IntegrationCategory
     {
         return IntegrationCategory::Search;

@@ -54,6 +54,11 @@ class UptimeSummaryBlock extends BlockType
         return 'Uptime';
     }
 
+    public function canBeEmpty(): bool
+    {
+        return true;
+    }
+
     public function requiresCategory(): ?IntegrationCategory
     {
         return IntegrationCategory::Monitoring;

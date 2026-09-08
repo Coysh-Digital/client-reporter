@@ -54,6 +54,11 @@ class AdsSummaryBlock extends BlockType
         return 'Analytics';
     }
 
+    public function canBeEmpty(): bool
+    {
+        return true;
+    }
+
     public function requiresIntegration(): ?string
     {
         return 'google_ads';
