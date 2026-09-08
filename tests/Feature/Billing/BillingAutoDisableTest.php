@@ -6,6 +6,7 @@ namespace Tests\Feature\Billing;
 
 use App\Billing\BillingSyncer;
 use App\Enums\ConnectionStatus;
+use App\Integrations\Support\IntegrationException;
 use App\Jobs\SyncBillingConnection;
 use App\Models\Client;
 use App\Models\ClientBillingConnection;
@@ -104,6 +105,29 @@ class BillingAutoDisableTest extends TestCase
         // The next sweep skips it, so it stops re-erroring every hour.
         $result = app(BillingSyncer::class)->syncAll();
         $this->assertSame([], $result['failed']);
+    }
+
+    public function test_the_job_does_not_retry_or_relog_an_auth_failure(): void
+    {
+        $this->fakeFailingXero();
+        $link = $this->link();
+
+        // The job completes without throwing, so the queue won't retry it (and
+        // Laravel won't re-log the same dead-credential error) three times over.
+        (new SyncBillingConnection($link))->handle(app(BillingSyncer::class));
+
+        $this->assertNotNull($link->refresh()->disabled_at);
+    }
+
+    public function test_the_job_rethrows_a_soft_failure_so_it_can_still_retry(): void
+    {
+        $this->fakeSoftFailingXero();
+        $link = $this->link();
+
+        // A transient (non-auth) failure re-throws, so the queue's retry grace
+        // still applies.
+        $this->expectException(IntegrationException::class);
+        (new SyncBillingConnection($link))->handle(app(BillingSyncer::class));
     }
 
     public function test_the_hourly_sweep_does_not_queue_disabled_links(): void
