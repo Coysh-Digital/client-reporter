@@ -42,6 +42,19 @@ class EcommerceBlock extends BlockType
         return 'ecommerce.summary';
     }
 
+    public function canBeEmpty(): bool
+    {
+        return true;
+    }
+
+    /**
+     * @param  array<string, mixed>  $resolved
+     */
+    public function isEmpty(array $resolved): bool
+    {
+        return ! ($resolved['active'] ?? false) || empty($resolved['metrics']);
+    }
+
     public function label(): string
     {
         return ReportLang::get('ecommerce.heading');

@@ -17,6 +17,19 @@ class TopPagesBlock extends BlockType
         return 'analytics.top_pages';
     }
 
+    public function canBeEmpty(): bool
+    {
+        return true;
+    }
+
+    /**
+     * @param  array<string, mixed>  $resolved
+     */
+    public function isEmpty(array $resolved): bool
+    {
+        return empty($resolved['pages']);
+    }
+
     public function label(): string
     {
         return ReportLang::get('top_pages.heading');

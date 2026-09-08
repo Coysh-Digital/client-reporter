@@ -56,6 +56,11 @@ class EmailCampaignsBlock extends BlockType
         return 'Forms & Leads';
     }
 
+    public function canBeEmpty(): bool
+    {
+        return true;
+    }
+
     public function requiresCategory(): ?IntegrationCategory
     {
         return IntegrationCategory::Forms;

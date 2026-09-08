@@ -42,6 +42,11 @@ class BillingBlock extends BlockType
         return 'Billing';
     }
 
+    public function canBeEmpty(): bool
+    {
+        return true;
+    }
+
     /** @var array<int, bool> */
     private array $availability = [];
 

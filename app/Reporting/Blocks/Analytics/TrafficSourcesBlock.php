@@ -17,6 +17,19 @@ class TrafficSourcesBlock extends BlockType
         return 'analytics.sources';
     }
 
+    public function canBeEmpty(): bool
+    {
+        return true;
+    }
+
+    /**
+     * @param  array<string, mixed>  $resolved
+     */
+    public function isEmpty(array $resolved): bool
+    {
+        return empty($resolved['sources']);
+    }
+
     public function label(): string
     {
         return ReportLang::get('sources.label');
