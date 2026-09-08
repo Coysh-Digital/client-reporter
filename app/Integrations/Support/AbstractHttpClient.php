@@ -67,7 +67,15 @@ abstract class AbstractHttpClient
      */
     protected function get(string $path, array $query = [], ?callable $configure = null): Response
     {
-        return $this->send(fn (PendingRequest $request): Response => $this->configure($request, $configure)->get($this->url($path), $query));
+        // Passing an (even empty) query array to Laravel's get() sets Guzzle's
+        // query option, which REPLACES any query string already on the URL. So
+        // when no query array is given, call get() with the URL alone — this
+        // preserves query strings a client built into the path itself (e.g.
+        // PageSpeed's repeated `category` params, which can't be expressed as a
+        // plain array).
+        return $this->send(fn (PendingRequest $request): Response => $query === []
+            ? $this->configure($request, $configure)->get($this->url($path))
+            : $this->configure($request, $configure)->get($this->url($path), $query));
     }
 
     /**
