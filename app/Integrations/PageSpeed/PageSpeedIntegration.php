@@ -108,11 +108,36 @@ class PageSpeedIntegration extends Integration
             return $key;
         }
 
-        $workspaceKey = trim((string) (WorkspaceIntegration::query()
-            ->where('integration_key', 'pagespeed')
-            ->first()?->credential('api_key') ?? ''));
+        return self::sharedApiKey();
+    }
 
-        return $workspaceKey !== '' ? $workspaceKey : null;
+    /**
+     * Any PageSpeed API key configured anywhere in the workspace. The key is a
+     * single Google Cloud key that works for every URL (not site-specific), so
+     * one entered once — on the workspace connection or on any site — is used
+     * for every PageSpeed call. The workspace connection is preferred; then any
+     * site connection carrying its own key.
+     */
+    public static function sharedApiKey(): ?string
+    {
+        $workspaceKey = WorkspaceIntegration::query()
+            ->where('integration_key', 'pagespeed')
+            ->get()
+            ->map(fn (WorkspaceIntegration $w): string => trim((string) $w->credential('api_key')))
+            ->first(fn (string $k): bool => $k !== '');
+
+        if ($workspaceKey !== null && $workspaceKey !== '') {
+            return $workspaceKey;
+        }
+
+        $siteKey = SiteIntegration::query()
+            ->where('integration_key', 'pagespeed')
+            ->whereNotNull('credentials')
+            ->get()
+            ->map(fn (SiteIntegration $c): string => trim((string) (($c->credentials ?? [])['api_key'] ?? '')))
+            ->first(fn (string $k): bool => $k !== '');
+
+        return ($siteKey !== null && $siteKey !== '') ? $siteKey : null;
     }
 
     /**
