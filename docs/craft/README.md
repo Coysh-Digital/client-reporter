@@ -4,8 +4,6 @@ The Craft CMS integration hooks a Craft site up to Client Reporter through a sma
 
 That companion plugin lives in its own repo, [coysh-digital/client-reporter-craft](https://github.com/coysh-digital/client-reporter-craft). It hands back read-only data over HMAC-signed requests. As with all the companion connectors, Client Reporter only reads from the site — it never runs remote updates.
 
-![Craft connector plugin](../images/craft-plugin.png)
-
 ## Installing the companion plugin
 
 The connector is a Craft plugin, installed with Composer and enabled through Craft. On the Craft site's server:

@@ -4,8 +4,6 @@ The WordPress integration hooks a WordPress site up to Client Reporter through a
 
 That companion plugin lives in its own repo, [coysh-digital/client-reporter-wordpress](https://github.com/coysh-digital/client-reporter-wordpress). It hands back read-only data over HMAC-signed requests, and that's all it does. Client Reporter only ever reads from the site — it never runs updates, installs plugins, or changes anything.
 
-![WordPress connector plugin](../images/wordpress-plugin.png)
-
 ## Installing the companion plugin
 
 The connector is a normal WordPress plugin, so install it on whichever site you want to report on:

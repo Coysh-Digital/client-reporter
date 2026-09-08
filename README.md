@@ -44,7 +44,7 @@ Keeping the scope tight is a feature, not laziness. On purpose, Client Reporter 
 - a deployment tracker, server monitor, or anything that SSHes into boxes
 - a backup, malware-scanning, or "update all the plugins for me" tool (the companion plugins are **read-only** — it never changes your clients' sites)
 - its own uptime monitor (it plugs into UptimeRobot, Uptime Kuma or Better Uptime instead)
-- an AI commentary generator — the plain-English summaries are worked out straight from your numbers, so there's nothing to hallucinate
+- a black-box AI that writes your reports for you — an AI "month in review" summary is available but **optional and off by default**; switch it on with your own provider key (OpenAI, Anthropic or a local Ollama) and it's told to work only from your real figures, so it never invents numbers, and clients only ever see a label you choose
 - your invoicing or accounting system (it keeps a light invoice ledger and can pull invoices in from FreeAgent or Xero *just* so they can show up in a report — that's it)
 - a CRM, a project manager, or an integration marketplace
 
@@ -111,6 +111,10 @@ This is the bit I most wanted to nail. Client-facing reports can be branded comp
 ![Branding and white-label settings](docs/images/branding.png)
 
 Branding cascades from global → per-client → per-site, so you can set a house style once and tweak it for individual clients. There's more in [docs/branding](docs/branding/README.md).
+
+The same branding carries into the **client portal** — a simple, secure place where the people you report to sign in to read their reports, under your name, not ours.
+
+![The white-labelled client portal](docs/images/client-portal.png)
 
 ## Keeping it updated
 
