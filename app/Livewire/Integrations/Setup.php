@@ -50,6 +50,16 @@ class Setup extends Component
             abort_unless($site?->exists, 404);
             $this->site = $site;
             $integration = $key ? $registry->find($key) : null;
+
+            // If this integration is already connected on the site (for example
+            // a workspace connection discovered it), edit that connection rather
+            // than creating a second one — (site, integration) is unique.
+            if ($integration !== null) {
+                $this->connectionId = SiteIntegration::query()
+                    ->where('site_id', $site->id)
+                    ->where('integration_key', $integration->key())
+                    ->value('id');
+            }
         }
 
         abort_if($integration === null, 404, 'Integration not available.');
@@ -158,11 +168,17 @@ class Setup extends Component
             $this->revealConnectionCode($credentials['secret']);
         }
 
-        $connection = $existing ?? new SiteIntegration([
+        // firstOrNew on the unique (site, integration) pair, so a connection the
+        // form didn't already load (e.g. one discovered by a workspace
+        // connection) is updated rather than duplicated into a constraint error.
+        $connection = $existing ?? SiteIntegration::query()->firstOrNew([
             'site_id' => $this->site->id,
             'integration_key' => $integration->key(),
-            'status' => ConnectionStatus::NotConnected,
         ]);
+
+        if (! $connection->exists) {
+            $connection->status = ConnectionStatus::NotConnected;
+        }
 
         $connection->fill([
             'name' => $this->name,

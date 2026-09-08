@@ -7,6 +7,7 @@ namespace Tests\Feature\Integrations;
 use App\Enums\ConnectionStatus;
 use App\Integrations\PageSpeed\PageSpeedCollector;
 use App\Integrations\PageSpeed\PageSpeedIntegration;
+use App\Livewire\Integrations\Setup;
 use App\Livewire\Integrations\WorkspaceSetup;
 use App\Models\MetricSnapshot;
 use App\Models\Site;
@@ -227,5 +228,25 @@ class PageSpeedTest extends TestCase
             'credentials' => ['api_key' => 'WS'],
         ]);
         $this->assertSame('workspace', PageSpeedIntegration::apiKeySource($connection->fresh()));
+    }
+
+    public function test_connecting_a_site_that_already_has_the_integration_updates_it_instead_of_duplicating(): void
+    {
+        $this->fakePageSpeed(90);
+
+        $manager = User::factory()->manager()->create();
+        $site = Site::factory()->create(['url' => 'https://example.com']);
+        // An existing connection (e.g. discovered earlier by the workspace flow).
+        SiteIntegration::factory()->for($site)->create(['integration_key' => 'pagespeed', 'credentials' => null]);
+
+        Livewire::actingAs($manager)->test(Setup::class, ['site' => $site, 'key' => 'pagespeed'])
+            ->set('values.strategy', 'desktop')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        // Still one connection — updated, not a second row that trips the unique key.
+        $connections = SiteIntegration::query()->where('site_id', $site->id)->where('integration_key', 'pagespeed')->get();
+        $this->assertCount(1, $connections);
+        $this->assertSame('desktop', $connections->first()->setting('strategy'));
     }
 }
