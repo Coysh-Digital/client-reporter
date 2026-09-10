@@ -46,6 +46,18 @@ class SharingTest extends TestCase
         $this->assertSame(1, $result['share']->refresh()->views);
     }
 
+    public function test_an_agency_users_own_view_is_not_counted_as_a_client_open(): void
+    {
+        $report = $this->generatedReport();
+        $result = app(ReportShareService::class)->create($report);
+        $url = app(ReportShareService::class)->url($result['token']);
+
+        $this->actingAs(User::factory()->create())->get($url)->assertOk();
+
+        $this->assertSame(0, $result['share']->refresh()->views);
+        $this->assertNull($result['share']->refresh()->last_viewed_at);
+    }
+
     public function test_a_share_link_offers_a_pdf_download(): void
     {
         $report = $this->generatedReport();

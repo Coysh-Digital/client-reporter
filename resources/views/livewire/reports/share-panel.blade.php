@@ -50,9 +50,18 @@
                                     <span class="min-w-0 text-muted">
                                         <span class="inline-flex items-center gap-1.5">
                                             @if ($share->requiresPassword())<x-icon name="lock-closed" class="h-3 w-3 text-faint" /><span class="sr-only">Password protected</span>@endif
-                                            Created {{ $share->created_at?->isoFormat('D MMM') }}
+                                            @if ($share->views > 0)
+                                                <span class="font-semibold text-ok">Opened</span>
+                                            @else
+                                                <span class="text-faint">Not opened yet</span>
+                                            @endif
                                         </span>
-                                        <span class="block text-xs text-faint">{{ $share->views }} {{ Str::plural('view', $share->views) }}{{ $share->expires_at ? ' · expires '.$share->expires_at->isoFormat('D MMM YYYY') : ' · no expiry' }}</span>
+                                        <span class="block text-xs text-faint">
+                                            @if ($share->views > 0)
+                                                {{ $share->views }} {{ Str::plural('open', $share->views) }}{{ $share->last_viewed_at ? ' · last '.$share->last_viewed_at->diffForHumans() : '' }} ·
+                                            @endif
+                                            Sent {{ $share->created_at?->isoFormat('D MMM') }}{{ $share->expires_at ? ' · expires '.$share->expires_at->isoFormat('D MMM YYYY') : '' }}
+                                        </span>
                                     </span>
                                     <x-confirm-button action="revoke({{ $share->id }})" title="Revoke this link?" message="Anyone who has it will see “this link is no longer available”." confirm="Revoke" :danger="true" class="cr-btn cr-btn-ghost cr-btn-sm text-danger">Revoke</x-confirm-button>
                                 </li>

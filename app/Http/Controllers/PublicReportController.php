@@ -50,7 +50,11 @@ class PublicReportController
             return $this->unavailable($share);
         }
 
-        $share->forceFill(['views' => $share->views + 1, 'last_viewed_at' => now()])->save();
+        // Count only the recipient's opens, not an agency user previewing their
+        // own link, so the open count is a trustworthy "did the client see it".
+        if (! auth()->check()) {
+            $share->forceFill(['views' => $share->views + 1, 'last_viewed_at' => now()])->save();
+        }
 
         return view('reports.document', $document->fromRender($render) + [
             'pdfUrl' => route('public-report.pdf', ['token' => $token]),
