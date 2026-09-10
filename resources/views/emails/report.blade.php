@@ -1,11 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
+@php
+    // Email clients do not load the branded web font, so a branded family
+    // only ever renders as its generic fallback. Use a fixed system sans-serif
+    // stack so the email is reliably sans-serif regardless of the branding font.
+    $sansStack = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+@endphp
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $report->title }}</title>
 </head>
-<body style="margin:0; background:#f4f2ee; font-family:{{ str_replace('"', "'", $branding->bodyFontStack()) }}; color:#1b1a18;">
+<body style="margin:0; background:#f4f2ee; font-family:{{ $sansStack }}; color:#1b1a18;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f2ee; padding:28px 12px;">
         <tr>
             <td align="center">
@@ -21,7 +27,7 @@
                                 <div style="font-size:18px; font-weight:600; color:{{ $branding->primaryColor }}; margin-bottom:20px;">{{ $branding->agencyName }}</div>
                             @endif
 
-                            <h1 style="font-family:{{ str_replace('"', "'", $branding->bodyFontStack()) }}; font-size:20px; margin:0 0 6px;">{{ $report->title }}</h1>
+                            <h1 style="font-family:{{ $sansStack }}; font-size:20px; margin:0 0 6px;">{{ $report->title }}</h1>
                             <p style="color:#6c675f; font-size:14px; margin:0 0 20px;">{{ $report->site->name }} &middot; {{ $report->dateRange()->label() }}</p>
 
                             @if ($reportMessage)
