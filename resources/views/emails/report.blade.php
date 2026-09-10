@@ -21,7 +21,7 @@
                                 <div style="font-size:18px; font-weight:600; color:{{ $branding->primaryColor }}; margin-bottom:20px;">{{ $branding->agencyName }}</div>
                             @endif
 
-                            <h1 style="font-family:{{ str_replace('"', "'", $branding->headingFontStack()) }}; font-size:20px; margin:0 0 6px;">{{ $report->title }}</h1>
+                            <h1 style="font-family:{{ str_replace('"', "'", $branding->bodyFontStack()) }}; font-size:20px; margin:0 0 6px;">{{ $report->title }}</h1>
                             <p style="color:#6c675f; font-size:14px; margin:0 0 20px;">{{ $report->site->name }} &middot; {{ $report->dateRange()->label() }}</p>
 
                             @if ($reportMessage)
